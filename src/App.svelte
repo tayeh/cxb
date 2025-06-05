@@ -2,8 +2,6 @@
   import { Router, createRouter } from "@roxi/routify";
   import routes from "../.routify/routes.default";
   import { SvelteToast } from "@zerodevx/svelte-toast";
-  const rtlUrl = new URL('bootstrap/dist/css/bootstrap.rtl.min.css', import.meta.url).href;
-  const ltrUrl = new URL('bootstrap/dist/css/bootstrap.min.css', import.meta.url).href;
 
   const prefix="sysadmin"; // ""
 
@@ -133,19 +131,7 @@
 </script>
 
 <svelte:head>
-  <link rel="stylesheet" media="screen" href="{new URL('bootstrap-icons/font/bootstrap-icons.min.css', import.meta.url).href}">
   <link rel="stylesheet" media="screen" href="{new URL('./app.css', import.meta.url).href}">
-
-  {#if $dir === "rtl"}
-    <link rel="stylesheet" id="bootstrap" media="screen"
-          href="{rtlUrl}"
-    />
-  {:else}
-    <link rel="stylesheet" id="bootstrap" media="screen"
-          href="{ltrUrl}"
-    />
-  {/if}
-
 </svelte:head>
 
 <div id="routify-app">
