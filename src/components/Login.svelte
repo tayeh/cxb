@@ -1,88 +1,98 @@
 <script lang="ts">
   import {
-    Card,
     Label,
     Input,
     Button,
+    Heading,
+    ButtonGroup,
+    InputAddon,
+    Spinner,
   } from "flowbite-svelte";
   import { EyeSolid, EyeSlashSolid } from 'flowbite-svelte-icons';
-    import { signin } from "@/stores/user";
-    import { _ } from "@/i18n";
+  import { signin } from "@/stores/user";
+  import { _ } from "@/i18n";
+  import { goto } from "@roxi/routify";
+  $goto
 
-    let username: string;
-    let password: string;
-    let isError: boolean;
-    let showPassword: boolean = false;
+  let username: string;
+  let password: string;
+  let isError: boolean;
+  let showPassword: boolean = false;
+  let isLoginLoading: boolean = $state(false);
 
-    async function handleSubmit(event: Event) {
-        event.preventDefault();
-        isError = false;
-        try {
-            await signin(username, password);
-        } catch (error) {
-            isError = true;
-        }
+  async function handleSubmit(event: Event) {
+    event.preventDefault();
+    isError = false;
+      isLoginLoading = false;
+    try {
+        isLoginLoading = true;
+      await signin(username, password);
+      window.location.href = "/management/content";
+    } catch (error) {
+      isError = true;
     }
+    isLoginLoading = false;
+  }
 
-    function togglePasswordVisibility() {
-        showPassword = !showPassword;
-    }
+  function togglePasswordVisibility() {
+    showPassword = !showPassword;
+  }
 </script>
 
-<Card class="w-25 mx-auto my-auto">
-  <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{$_("login_to_members")}</h5>
-  <div>
-    <form onsubmit={handleSubmit}>
-      <div>
+<div class="flex row h-svh">
+  <div class="flex justify-center w-1/2 p-12 flex flex-col">
+    <Heading class="text-primary">
+      Welcome back <br>
+      log in to your account
+    </Heading>
+
+    <form onsubmit={handleSubmit} class="mt-12">
         <Label for="username">{$_("username")}</Label>
         <Input
-                class={isError ? "border-danger" : ""}
-                type="text"
-                name="username"
-                bind:value={username}
-                required
+          id="username"
+          placeholder={$_("shortname")}
+          type="text"
+          bind:value={username}
+          color={isError ? "red" : "default"}
+          required
         />
-      </div>
-      <div>
+        <div class="mt-6"></div>
         <Label for="password">{$_("password")}</Label>
-        <div class="input-group">
-          <Input
-                  class={isError ? "border-danger" : ""}
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  bind:value={password}
-                  minlength={8}
-                  maxlength={24}
-                  required
-          />
-          <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <span class="input-group-text" onclick={togglePasswordVisibility} style="cursor: pointer;" aria-controls="password">
-            {#if showPassword}
-              <EyeSolid />
+        <ButtonGroup class="w-full">
+            <Input
+              id="password"
+              placeholder={$_("password")}
+              type={showPassword ? "text" : "password"}
+              bind:value={password}
+              color={isError ? "red" : "default"}
+              minlength={8}
+              maxlength={24}
+              required
+            />
+          <InputAddon>
+            <Button class="absolute inset-y-0 right-0 flex items-center px-3" color="light"
+                    onclick={togglePasswordVisibility} aria-controls="password">
+              {#if showPassword}
+                <EyeSolid />
+              {:else}
+                <EyeSlashSolid />
+              {/if}
+            </Button>
+          </InputAddon>
+        </ButtonGroup>
+      <div class="mt-6"></div>
+        <Button type="submit" class="w-full bg-primary" style="cursor: pointer">
+            {#if isLoginLoading}
+                <Spinner class="me-3" size="4" color="blue" />
+                Loading ...
             {:else}
-              <EyeSlashSolid />
+                {$_("login")}
             {/if}
-          </span>
-        </div>
-      </div>
-      {#if isError}
-        <p class="text-danger">Wrong credentials!</p>
-      {/if}
-      <div class="w-100 d-flex align-items-end">
-        <Button type="submit" color="primary" class="ms-auto">{$_("login")}</Button>
-      </div>
+        </Button>
+        {#if isError}
+            <p class="text-red-600 mt-2">{$_("login_error")}</p>
+        {/if}
     </form>
   </div>
-</Card>
-
-<style>
-    .input-group {
-        display: flex;
-        align-items: center;
-    }
-    .input-group-text {
-        background: none;
-        border: none;
-    }
-</style>
+  <div class="flex content-center items-center justify-center w-1/2 bg-primary"></div>
+</div>

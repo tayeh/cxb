@@ -1,0 +1,233 @@
+<script lang="ts">
+    import ListView from "@/components/management/ListView.svelte";
+    import {Dmart, RequestType, ResourceType, type ResponseEntry} from "@edraj/tsdmart";
+    import {checkAccess} from "@/utils/checkAccess";
+    import {
+        ListOutline,
+        EditOutline,
+        PaperClipOutline,
+        ClockOutline,
+        EyeSolid,
+        CodeForkSolid,
+        ChevronDoubleRightOutline,
+    } from "flowbite-svelte-icons";
+    import {JSONEditor, Mode} from "svelte-jsoneditor";
+    import {jsonEditorContentParser} from "@/utils/jsonEditor";
+    import {Level, showToast} from "@/utils/toast";
+    import Prism from "@/components/Prism.svelte";
+    import Table2Cols from "@/components/management/Table2Cols.svelte";
+    import Attachments from "@/components/management/renderers/Attachments.svelte";
+    import { Breadcrumb, BreadcrumbItem } from "flowbite-svelte";
+    import BreadCrumbLite from "@/components/management/BreadCrumbLite.svelte";
+
+    let {
+        entry = $bindable(),
+        space_name,
+        subpath,
+        resource_type,
+        schema_name = null,
+    }: {
+        entry: ResponseEntry,
+        space_name: string,
+        subpath: string,
+        resource_type: ResourceType,
+        schema_name?: string | null,
+    } = $props();
+
+    console.log({resource_type})
+
+    let jeContent = $state({ json: structuredClone(entry) });
+    let errorMessage = null;
+
+    const canUpdate = checkAccess("update", space_name, subpath, resource_type);
+    const canDelete = checkAccess("delete", space_name, subpath, resource_type)
+        && !(space_name === "management" && subpath === "/");
+    let allowedResourceTypes = $state([ResourceType.content]);
+
+    // Tab state management
+    let activeTab = $state(0);
+
+    async function handleSave(){
+        const content = jsonEditorContentParser($state.snapshot(jeContent));
+        const shortname = content.shortname;
+        delete content.uuid;
+        delete content.shortname;
+        try {
+            errorMessage = null;
+            await Dmart.request({
+                space_name: space_name,
+                request_type: RequestType.replace,
+                records: [{
+                    resource_type: resource_type,
+                    shortname: shortname,
+                    subpath: '/',
+                    attributes: content
+                }]
+            })
+            showToast(Level.info, `Entry has been updated successfully!`);
+
+        } catch (error) {
+            errorMessage = error;
+        }
+    }
+
+    function handleRenderMenu(
+        items: any,
+        context: { mode: "tree" | "text" | "table"; modal: boolean }
+    ) {
+        return items.concat([
+            {
+                onClick: handleSave,
+                icon: {
+                    prefix: 'prefix',
+                    iconName: 'iconName',
+                    icon: [
+                        448,
+                        512,
+                        [128190,128426,"save"],
+                        'f0c7',
+                        'M64 32C28.7 32 0 60.7 0 96L0 416c0 35.3 28.7 64 64 64l320 0c35.3 0 64-28.7 64-64l0-242.7c0-17-6.7-33.3-18.7-45.3L352 50.7C340 38.7 323.7 32 306.7 32L64 32zm0 96c0-17.7 14.3-32 32-32l192 0c17.7 0 32 14.3 32 32l0 64c0 17.7-14.3 32-32 32L96 224c-17.7 0-32-14.3-32-32l0-64zM224 288a64 64 0 1 1 0 128 64 64 0 1 1 0-128z'
+                    ]
+                },
+                title: "Save",
+            }
+        ]);
+    }
+
+    async function refreshEntry() {
+        if (resource_type === ResourceType.folder) {
+            const _subpath = subpath.split("/");
+            let parent_subpath: string = _subpath.slice(0, _subpath.length - 1).join("/") || "__root__";
+            let _shortname: string = _subpath[_subpath.length - 1];
+
+            const result = await Dmart.retrieve_entry(ResourceType.folder, space_name, parent_subpath, _shortname, true, true);
+            entry = result;
+        } else {
+            const result = await Dmart.retrieve_entry(resource_type, space_name, subpath, entry.shortname, true, true);
+            entry = result;
+        }
+    }
+</script>
+
+
+
+<div class="flex flex-col w-full">
+    <BreadCrumbLite
+        {space_name}
+        {subpath}
+        {resource_type}
+        {schema_name}
+        shortname={entry.shortname}
+    />
+
+    <!-- Tab navigation -->
+    <div class="border-b border-gray-200">
+        <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" role="tablist">
+            <li class="mr-2" role="presentation">
+                <button
+                        class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === 0 ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
+                        id="list-tab"
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === 0}
+                        onclick={() => activeTab = 0}
+                >
+                    <div class="flex items-center gap-2">
+                        {#if [ResourceType.folder, ResourceType.space].includes(resource_type)}
+                            <ListOutline size="md" />
+                            <p>List view</p>
+                        {:else}
+                            <EyeSolid size="md" />
+                            <p>Content</p>
+                        {/if}
+                    </div>
+                </button>
+            </li>
+            <li class="mr-2" role="presentation">
+                <button
+                        class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === 1 ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
+                        id="attachment-tab"
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === 1}
+                        onclick={() => activeTab = 1}
+                >
+                    <div class="flex items-center gap-2">
+                        <EditOutline size="md" />
+                        <p>Entry</p>
+                    </div>
+                </button>
+            </li>
+            <li class="mr-2" role="presentation">
+                <button
+                        class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === 2 ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
+                        id="attachment-tab"
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === 2}
+                        onclick={() => activeTab = 2}
+                >
+                    <div class="flex items-center gap-2">
+                        <PaperClipOutline size="md" />
+                        <p>Attachments</p>
+                    </div>
+                </button>
+            </li>
+            <li role="presentation">
+                <button
+                        class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === 3 ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
+                        id="history-tab"
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === 3}
+                        onclick={() => activeTab = 3}
+                >
+                    <div class="flex items-center gap-2">
+                        <ClockOutline size="md" />
+                        <p>History</p>
+                    </div>
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <div class="mt-2">
+        <div class={activeTab === 0 ? '' : 'hidden'} role="tabpanel">
+            {#if [ResourceType.folder, ResourceType.space].includes(resource_type)}
+                <ListView
+                    {space_name}
+                    {subpath}
+                    folderColumns={entry?.payload?.body?.index_attributes ?? null}
+                    sort_by={entry?.payload?.body?.sort_by ?? null}
+                    sort_order={entry?.payload?.body?.sort_type ?? null}
+                    canDelete={canDelete}
+                />
+            {:else}
+                <Table2Cols entry={{ "Resource type": resource_type, ...entry }}/>
+            {/if}
+        </div>
+
+        <div class={activeTab === 1 ? '' : 'hidden'} role="tabpanel">
+            <JSONEditor bind:content={jeContent} mode={Mode.text} onRenderMenu={handleRenderMenu} />
+            {#if errorMessage}
+                <div class="max-h-60 overflow-auto">
+                    <Prism code={errorMessage} />
+                </div>
+            {/if}
+        </div>
+
+        <div class={activeTab === 2 ? '' : 'hidden'} role="tabpanel">
+            <Attachments {resource_type}
+                         {space_name}
+                         {subpath}
+                         parent_shortname={entry.shortname}
+                         attachments={$state.snapshot(entry).attachments}
+                         {refreshEntry}
+            />
+        </div>
+
+        <div class={activeTab === 3 ? '' : 'hidden'} role="tabpanel">
+            <p>rrrr</p>
+        </div>
+    </div>
+</div>
