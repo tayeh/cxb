@@ -1,2 +1,3 @@
 import { writable } from "svelte/store";
-export const spaces = writable(null);
+
+export const bulkBucket = writable([]);

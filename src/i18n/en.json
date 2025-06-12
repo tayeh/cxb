@@ -50,6 +50,7 @@
   "searching_for_what": "Searching for?",
   "memberprofile": "Member profile",
   "login": "Login",
+  "login_error": "Wrong username or password",
   "logout": "Logout",
   "query": "Query",
   "logs": "Logs",

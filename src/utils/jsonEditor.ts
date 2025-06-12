@@ -1,3 +1,3 @@
 export function jsonEditorContentParser(jeContent: any){
-    return jeContent.json ? jeContent.json : JSON.parse(jeContent.text)
+    return jeContent.json ? structuredClone(jeContent.json) : JSON.parse(jeContent.text)
 }
