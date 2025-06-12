@@ -1,13 +1,15 @@
 <script>
-    import { spaces } from "@/stores/management/spaces.js";
+    import { spaces } from "@/stores/management/spaces";
     import { Input, Modal, Card, Dropdown, DropdownItem, Button } from "flowbite-svelte";
     import { DotsHorizontalOutline, EyeSolid, PenSolid, TrashBinSolid, PlusOutline } from "flowbite-svelte-icons";
     import {JSONEditor, Mode} from "svelte-jsoneditor";
-    import {getSpaces} from "@/lib/dmart_services.js";
+    import {jsonEditorContentParser} from "@/utils/jsonEditor";
+    import {getSpaces} from "@/lib/dmart_services";
     import {Dmart, RequestType, ResourceType} from "@edraj/tsdmart";
-    import {Level, showToast} from "@/utils/toast.js";
+    import {Level, showToast} from "@/utils/toast";
     import Prism from "@/components/Prism.svelte";
-    import {jsonEditorContentParser} from "@/utils/jsonEditor.js";
+    import {goto} from "@roxi/routify";
+    $goto
 
     let viewMetaModal = false;
     let editModal = false;
@@ -99,6 +101,7 @@
 
     async function deleteSpace() {
         if (selectedSpace) {
+
             try {
                 modelError = null;
                 await Dmart.request({
@@ -119,6 +122,12 @@
                 modelError = error;
             }
         }
+    }
+
+    async function handleSelectedSpace(spaceShortname) {
+        $goto(`/management/content/[space_name]`, {
+            space_name: spaceShortname
+        });
     }
 </script>
 
@@ -156,7 +165,9 @@
                     </Button>
                 </div>
 
-                <div class="flex flex-col items-center text-center p-4">
+                <div class="flex flex-col items-center text-center p-4"
+                     style="cursor: pointer"
+                     onclick={() => handleSelectedSpace(space.shortname)}>
                     <span class="inline-block px-3 py-1 mb-3 border border-gray-300 rounded-md text-sm font-medium">
                         {space.shortname}
                     </span>
