@@ -8,6 +8,7 @@ import {
 } from "@edraj/tsdmart";
 import {spaces} from "@/stores/management/spaces";
 
+
 export async function getAvatar(shortname: string){
     const query: QueryRequest = {
         "filter_shortnames": [],
