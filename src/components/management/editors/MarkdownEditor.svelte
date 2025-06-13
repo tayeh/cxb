@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {Card, CardHeader, CardFooter, TabContent, TabPane} from "sveltestrap";
+  import {Card} from "flowbite-svelte";
   import { createEventDispatcher } from "svelte";
   import { marked } from "marked";
   import { mangle } from "marked-mangle";
@@ -10,6 +10,9 @@
   marked.use(gfmHeadingId({
       prefix: "my-prefix-",
   }));
+
+
+  let activeTab = 0;
 
   let {
       content = $bindable(""),
@@ -105,53 +108,94 @@
 </script>
 
 <Card class="h-100 pt-1">
-  <CardHeader></CardHeader>
-    <TabContent>
-      <TabPane tabId="editor" tab="Editor" active>
-        <textarea
-          onblur={(e)=>{
-            e.preventDefault();
-            textarea.focus();
-          }}
-          onkeydown={handleKeyDown}
-          bind:this={textarea}
-          onselect={handleSelect}
-          rows="22"
-          maxlength="4096"
-          class="h-100 w-100 m-0 font-monospace form-control form-control-sm"
-          bind:value={content}
-          oninput={() => dispatch("changed")}
-        ></textarea>
-      </TabPane>
-      <TabPane tabId="preview" tab="Preview">
-        <div class="h-100 w-100 p-3" style="overflow: hidden auto">
-          {@html marked(content)}
-        </div>
-      </TabPane>
-      <!-- svelte-ignore a11y_no_noninteractive_element_interactions a11y_click_events_have_key_events -->
-      <div class="d-flex justify-content-end flex-grow-1">
-        <TabPane class="m-0 p-0" onClick={()=>handleFormatting("**")}><p class="text-dark p-0 m-0" slot="tab"><strong>B</strong></p></TabPane>
-        <TabPane onClick={()=>handleFormatting("_")}><p class="text-dark p-0 m-0" slot="tab"><i>I</i></p></TabPane>
-        <TabPane onClick={()=>handleFormatting("~~")}><p class="text-dark p-0 m-0" slot="tab"><del>S</del></p></TabPane>
-        <TabPane onClick={()=>handleFormatting("*", false, true)}>
-          <Icon class="text-dark p-0 m-0" name="list-ul" slot="tab"/>
-        </TabPane>
-        <TabPane onClick={()=>handleFormatting("1.", false, true)}>
-          <Icon class="text-dark p-0 m-0" name="list-ol" slot="tab"/>
-        </TabPane>
-        <TabPane onClick={()=>handleFormatting("#", false)}><p class="text-dark p-0 m-0" slot="tab">H1</p></TabPane>
-        <TabPane onClick={()=>handleFormatting("##", false)}><p class="text-dark p-0 m-0" slot="tab">H2</p></TabPane>
-        <TabPane onClick={()=>handleFormatting("###", false)}><p class="text-dark p-0 m-0" slot="tab">H3</p></TabPane>
-        <TabPane onClick={()=>handleFormatting(tableInsert, false)}>
-          <Icon class="text-dark p-0 m-0" name="table" slot="tab"/>
-        </TabPane>
-        <TabPane onClick={()=>handleFormatting(listViewInsert, false)}>
-          <Icon class="text-dark p-0 m-0" name="newspaper" slot="tab"/>
-        </TabPane>
-        <TabPane onClick={handleSave}>
-          <Icon class="text-success p-0 m-0" name="save" slot="tab"/>
-        </TabPane>
+  <!-- Tab navigation -->
+  <div class="border-b border-gray-200">
+    <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" role="tablist">
+      <li class="mr-2" role="presentation">
+        <button
+                class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === 0 ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 0}
+                onclick={() => activeTab = 0}
+        >
+          Editor
+        </button>
+      </li>
+      <li class="mr-2" role="presentation">
+        <button
+          class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === 1 ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 1}
+          onclick={() => activeTab = 1}
+        >
+          Preview
+        </button>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Tab content -->
+  <div class="mt-2">
+    <div class={activeTab === 0 ? '' : 'hidden'} role="tabpanel">
+            <textarea
+                    onblur={(e)=>{
+                    e.preventDefault();
+                    textarea.focus();
+                }}
+                    onkeydown={handleKeyDown}
+                    bind:this={textarea}
+                    onselect={handleSelect}
+                    rows="22"
+                    maxlength="4096"
+                    class="w-full h-full m-0 font-mono form-control"
+                    bind:value={content}
+                    oninput={() => dispatch("changed")}
+            ></textarea>
+    </div>
+
+    <div class={activeTab === 1 ? '' : 'hidden'} role="tabpanel">
+      <div class="h-full w-full p-3 overflow-auto">
+        {@html marked(content)}
       </div>
-    </TabContent>
-  <CardFooter></CardFooter>
+    </div>
+  </div>
+
+  <!-- Formatting toolbar -->
+  <div class="flex justify-end mt-2 border-t pt-2">
+    <button class="p-1 mx-1 text-gray-700 hover:bg-gray-100 rounded" onclick={() => handleFormatting("**")}>
+      <strong>B</strong>
+    </button>
+    <button class="p-1 mx-1 text-gray-700 hover:bg-gray-100 rounded" onclick={() => handleFormatting("_")}>
+      <i>I</i>
+    </button>
+    <button class="p-1 mx-1 text-gray-700 hover:bg-gray-100 rounded" onclick={() => handleFormatting("~~")}>
+      <del>S</del>
+    </button>
+    <button class="p-1 mx-1 text-gray-700 hover:bg-gray-100 rounded" onclick={() => handleFormatting("*", false, true)}>
+      <span class="fa fa-list-ul"></span>
+    </button>
+    <button class="p-1 mx-1 text-gray-700 hover:bg-gray-100 rounded" onclick={() => handleFormatting("1.", false, true)}>
+      <span class="fa fa-list-ol"></span>
+    </button>
+    <button class="p-1 mx-1 text-gray-700 hover:bg-gray-100 rounded" onclick={() => handleFormatting("#", false)}>
+      <span>H1</span>
+    </button>
+    <button class="p-1 mx-1 text-gray-700 hover:bg-gray-100 rounded" onclick={() => handleFormatting("##", false)}>
+      <span>H2</span>
+    </button>
+    <button class="p-1 mx-1 text-gray-700 hover:bg-gray-100 rounded" onclick={() => handleFormatting("###", false)}>
+      <span>H3</span>
+    </button>
+    <button class="p-1 mx-1 text-gray-700 hover:bg-gray-100 rounded" onclick={() => handleFormatting(tableInsert, false)}>
+      <span class="fa fa-table"></span>
+    </button>
+    <button class="p-1 mx-1 text-gray-700 hover:bg-gray-100 rounded" onclick={() => handleFormatting(listViewInsert, false)}>
+      <span class="fa fa-newspaper"></span>
+    </button>
+    <button class="p-1 mx-1 text-green-600 hover:bg-gray-100 rounded" onclick={handleSave}>
+      <span class="fa fa-save"></span>
+    </button>
+  </div>
 </Card>
