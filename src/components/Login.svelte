@@ -16,8 +16,8 @@
 
   let username: string;
   let password: string;
-  let isError: boolean;
-  let showPassword: boolean = false;
+  let isError: boolean = $state(false);
+  let showPassword: boolean = $state(false);
   let isLoginLoading: boolean = $state(false);
 
   async function handleSubmit(event: Event) {
