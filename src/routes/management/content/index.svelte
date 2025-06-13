@@ -47,7 +47,7 @@
                 addSpaceModal = false;
                 await getSpaces();
             } catch (error) {
-                modelError = error;
+                modelError = error.response.data;
             }
         }
     }
