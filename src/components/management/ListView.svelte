@@ -19,12 +19,13 @@
     TableBodyCell,
     TableHead,
     TableHeadCell,
-    ListPlaceholder
+    ListPlaceholder,
   } from "flowbite-svelte";
   import {bulkBucket} from "@/stores/management/bulk_bucket";
   import {spaces} from "@/stores/management/spaces";
   import {getSpaces} from "@/lib/dmart_services";
   import {Level, showToast} from "@/utils/toast";
+  import ListViewActionBar from "@/components/management/ListViewActionBar.svelte";
   $goto
 
   $bulkBucket = [];
@@ -404,6 +405,8 @@
 {/key}
 
 <svelte:window bind:innerHeight={height} />
+
+<ListViewActionBar {space_name} {subpath} />
 
 {#await fetchPageRecords()}
   <div class="flex flex-col w-full">
