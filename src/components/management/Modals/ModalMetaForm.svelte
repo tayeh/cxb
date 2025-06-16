@@ -21,6 +21,7 @@
         formData = {
             ...formData,
             shortname: formData.shortname || null,
+            is_active: formData.is_active || null,
             slug: formData.slug || null,
             displayname: {
                 en: formData.displayname?.en || null,
@@ -52,11 +53,6 @@
         return isValid;
     }
 
-    // Make validation function available to parent
-    $effect(() => {
-        validateFn = validate;
-    });
-
 </script>
 
 <Card class="w-full max-w-4xl mx-auto p-4">
@@ -69,6 +65,14 @@
             </Label>
             <Input required id="shortname" placeholder="Short name" bind:value={formData.shortname} />
             <p class="text-xs text-gray-500 mt-1">A shortname (1-64 alphanumeric characters)</p>
+        </div>
+
+        <div class="mb-4">
+            <div class="flex items-center gap-2">
+                <Checkbox id="is_active" bind:checked={formData.is_active} />
+                <Label for="is_active" class="mb-0">Active</Label>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Whether this item is currently active</p>
         </div>
 
         <div class="mb-4">

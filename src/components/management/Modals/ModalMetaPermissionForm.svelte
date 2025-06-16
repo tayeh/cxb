@@ -1,20 +1,21 @@
 <script lang="ts">
     import {
-        Card,
-        Label,
-        Input,
-        Button,
         Accordion,
         AccordionItem,
-        Select,
+        Button,
+        Card,
         Helper,
-        Textarea,
-        Spinner
+        Input,
+        Label,
+        Select,
+        Spinner,
+        Textarea
     } from 'flowbite-svelte';
-    import { PlusOutline } from 'flowbite-svelte-icons';
-    import { ResourceType, RequestType } from '@edraj/tsdmart';
+    import {PlusOutline} from 'flowbite-svelte-icons';
+    import {RequestType, ResourceType} from '@edraj/tsdmart';
     import {onMount} from "svelte";
     import {getChildren, getChildrenAndSubChildren, getSpaces} from "@/lib/dmart_services";
+    import {Level, showToast} from "@/utils/toast";
 
     let {
         formData = $bindable(),
@@ -23,15 +24,17 @@
 
     let form;
 
-    formData = {
-        ...formData,
-        subpaths: formData.subpaths || {  },
-        resource_types: formData.resource_types || [],
-        actions: formData.actions || [],
-        conditions: formData.conditions || [],
-        restricted_fields: formData.restricted_fields || [],
-        allowed_fields_values: formData.allowed_fields_values || {}
-    };
+    onMount(()=>{
+        formData = {
+            ...formData,
+            subpaths: formData.subpaths || {},
+            resource_types: formData.resource_types || [],
+            actions: formData.actions || [],
+            conditions: formData.conditions || [],
+            restricted_fields: formData.restricted_fields || [],
+            allowed_fields_values: formData.allowed_fields_values || {}
+        };
+    })
 
     // Convert enums to select options
     const resourceTypeOptions = Object.keys(ResourceType).map(key => ({
@@ -205,14 +208,14 @@
     function validate() {
         try {
             formData.allowed_fields_values = JSON.parse(jsonEditorContent);
-        } catch (e) {}
+        } catch (e) {
+            showToast(Level.warn, 'Invalid JSON format in Allowed Fields Values', 'Please correct the JSON syntax.');
+        }
 
-        const isValid = form.checkValidity() &&
-            formData.resource_types.length > 0 &&
-            formData.actions.length > 0;
+        const isValid = form.checkValidity();
 
         if (!isValid) {
-            form.reportValidity();
+            form.reportValidity()
         }
 
         return isValid;
@@ -237,7 +240,7 @@
         <!-- Resource Types Section -->
         <div class="mb-4">
             <Label class="mb-2">
-                <span class="text-red-500 text-lg" style="vertical-align: center">*</span>
+                
                 Resource Types
             </Label>
             <div class="flex space-x-2">
@@ -272,7 +275,7 @@
         <!-- Actions Section -->
         <div class="mb-4">
             <Label class="mb-2">
-                <span class="text-red-500 text-lg" style="vertical-align: center">*</span>
+                
                 Actions
             </Label>
             <div class="flex space-x-2">
@@ -309,7 +312,7 @@
             <AccordionItem>
                 {#snippet header()}
         <span>
-            <span class="text-red-500 text-lg" style="vertical-align: center">*</span>
+            
             Subpaths
         </span>
                 {/snippet}
@@ -393,7 +396,7 @@
             <AccordionItem>
                 {#snippet header()}
         <span>
-            <span class="text-red-500 text-lg" style="vertical-align: center">*</span>
+            
             Conditions
         </span>
                 {/snippet}
@@ -437,7 +440,7 @@
             <AccordionItem>
                 {#snippet header()}
                     <span>
-                        <span class="text-red-500 text-lg" style="vertical-align: center">*</span>
+                        
                         Restricted Fields
                     </span>
                 {/snippet}
@@ -474,7 +477,7 @@
             <AccordionItem>
                 {#snippet header()}
                     <span>
-                        <span class="text-red-500 text-lg" style="vertical-align: center">*</span>
+                        
                         Allowed Fields Values
                     </span>
                 {/snippet}

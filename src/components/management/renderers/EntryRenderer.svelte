@@ -3,13 +3,14 @@
     import {Dmart, RequestType, ResourceType, type ResponseEntry} from "@edraj/tsdmart";
     import {checkAccess} from "@/utils/checkAccess";
     import {
-        ListOutline,
-        EditOutline,
-        PaperClipOutline,
         ClockOutline,
+        EditOutline,
         EyeSolid,
-        CodeForkSolid,
-        ChevronDoubleRightOutline,
+        FloppyDiskOutline,
+        ListOutline,
+        PaperClipOutline,
+        RectangleListOutline,
+        TrashBinOutline,
     } from "flowbite-svelte-icons";
     import {JSONEditor, Mode} from "svelte-jsoneditor";
     import {jsonEditorContentParser} from "@/utils/jsonEditor";
@@ -18,7 +19,20 @@
     import Table2Cols from "@/components/management/Table2Cols.svelte";
     import Attachments from "@/components/management/renderers/Attachments.svelte";
     import BreadCrumbLite from "@/components/management/BreadCrumbLite.svelte";
-    import {currentEntry, currentListView} from "@/stores/global";
+    import {currentEntry} from "@/stores/global";
+    import ModalMetaForm from "@/components/management/Modals/ModalMetaForm.svelte";
+    import ModalMetaUserForm from "@/components/management/Modals/ModalMetaUserForm.svelte";
+    import ModalMetaRoleForm from "@/components/management/Modals/ModalMetaRoleForm.svelte";
+    import ModalMetaPermissionForm from "@/components/management/Modals/ModalMetaPermissionForm.svelte";
+    import {untrack} from "svelte";
+
+    enum TabMode {
+        list = 0,
+        entry = 1,
+        form = 2,
+        attachments = 3,
+        history = 4
+    }
 
     let {
         entry = $bindable(),
@@ -36,9 +50,7 @@
 
     currentEntry.set(entry);
 
-    console.log({resource_type})
-
-    let jeContent = $state({ json: structuredClone(entry) });
+    let jeContent: any = $state({ json: structuredClone(entry) });
     let errorMessage = null;
 
     const canUpdate = checkAccess("update", space_name, subpath, resource_type);
@@ -47,8 +59,9 @@
     let allowedResourceTypes = $state([ResourceType.content]);
 
     // Tab state management
-    let activeTab = $state(0);
-
+    let activeTab: TabMode = $state(TabMode.list);
+    let validateMetaForm;
+    let validateRTForm;
     async function handleSave(){
         const content = jsonEditorContentParser($state.snapshot(jeContent));
         const shortname = content.shortname;
@@ -67,9 +80,32 @@
                 }]
             })
             showToast(Level.info, `Entry has been updated successfully!`);
-
+            await refreshEntry();
         } catch (error) {
             errorMessage = error;
+        }
+    }
+
+    async function deleteCurrentEntry() {
+        if (!confirm(`Are you sure you want to delete this ${resource_type}?`)) {
+            return;
+        }
+
+        try {
+            await Dmart.request({
+                space_name: space_name,
+                request_type: RequestType.delete,
+                records: [{
+                    resource_type: resource_type,
+                    shortname: entry.shortname,
+                    subpath: subpath,
+                    attributes: {}
+                }]
+            });
+            showToast(Level.info, `Entry deleted successfully`);
+        } catch (error) {
+            errorMessage = error.message;
+            showToast(Level.warn, `Failed to delete the entry!`);
         }
     }
 
@@ -101,14 +137,27 @@
             const _subpath = subpath.split("/");
             let parent_subpath: string = _subpath.slice(0, _subpath.length - 1).join("/") || "__root__";
             let _shortname: string = _subpath[_subpath.length - 1];
-
-            const result = await Dmart.retrieve_entry(ResourceType.folder, space_name, parent_subpath, _shortname, true, true);
-            entry = result;
+            entry = await Dmart.retrieve_entry(ResourceType.folder, space_name, parent_subpath, _shortname, true, true);
         } else {
-            const result = await Dmart.retrieve_entry(resource_type, space_name, subpath, entry.shortname, true, true);
-            entry = result;
+            entry = await Dmart.retrieve_entry(resource_type, space_name, subpath, entry.shortname, true, true);
         }
+        jeContent = { json: structuredClone(entry) };
+        currentEntry.set(entry);
     }
+
+    $effect(()=>{
+        if(activeTab === TabMode.entry){
+            untrack(()=>{
+                const _jeContent = jsonEditorContentParser($state.snapshot(jeContent));
+                jeContent = { text: JSON.stringify(_jeContent, null, 2) };
+            });
+        } else if(activeTab === TabMode.form){
+            untrack(()=>{
+                const _jeContent = jsonEditorContentParser($state.snapshot(jeContent));
+                jeContent = { json: _jeContent };
+            });
+        }
+    });
 </script>
 
 
@@ -127,12 +176,11 @@
         <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" role="tablist">
             <li class="mr-2" role="presentation">
                 <button
-                        class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === 0 ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
-                        id="list-tab"
+                        class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === TabMode.list ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
                         type="button"
                         role="tab"
-                        aria-selected={activeTab === 0}
-                        onclick={() => activeTab = 0}
+                        aria-selected={activeTab === TabMode.list}
+                        onclick={() => activeTab = TabMode.list}
                 >
                     <div class="flex items-center gap-2">
                         {#if [ResourceType.folder, ResourceType.space].includes(resource_type)}
@@ -147,12 +195,11 @@
             </li>
             <li class="mr-2" role="presentation">
                 <button
-                        class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === 1 ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
-                        id="attachment-tab"
+                        class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === TabMode.entry ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
                         type="button"
                         role="tab"
-                        aria-selected={activeTab === 1}
-                        onclick={() => activeTab = 1}
+                        aria-selected={activeTab === TabMode.entry}
+                        onclick={() => activeTab = TabMode.entry}
                 >
                     <div class="flex items-center gap-2">
                         <EditOutline size="md" />
@@ -162,12 +209,25 @@
             </li>
             <li class="mr-2" role="presentation">
                 <button
-                        class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === 2 ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
-                        id="attachment-tab"
+                        class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === TabMode.form ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
                         type="button"
                         role="tab"
-                        aria-selected={activeTab === 2}
-                        onclick={() => activeTab = 2}
+                        aria-selected={activeTab === TabMode.form}
+                        onclick={() => activeTab = TabMode.form}
+                >
+                    <div class="flex items-center gap-2">
+                        <RectangleListOutline size="md" />
+                        <p>Form</p>
+                    </div>
+                </button>
+            </li>
+            <li class="mr-2" role="presentation">
+                <button
+                        class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === TabMode.attachments ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === TabMode.attachments}
+                        onclick={() => activeTab = TabMode.attachments}
                 >
                     <div class="flex items-center gap-2">
                         <PaperClipOutline size="md" />
@@ -177,12 +237,11 @@
             </li>
             <li role="presentation">
                 <button
-                        class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === 3 ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
-                        id="history-tab"
+                        class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === TabMode.history ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
                         type="button"
                         role="tab"
-                        aria-selected={activeTab === 3}
-                        onclick={() => activeTab = 3}
+                        aria-selected={activeTab === TabMode.history}
+                        onclick={() => activeTab = TabMode.history}
                 >
                     <div class="flex items-center gap-2">
                         <ClockOutline size="md" />
@@ -190,11 +249,37 @@
                     </div>
                 </button>
             </li>
+            {#if ![ResourceType.space, ResourceType.folder].includes(resource_type)}
+                <li class="ml-auto" role="presentation">
+                    <button
+                            class="cursor-pointer inline-flex items-center p-4 border-b-2 rounded-t-lg border-transparent hover:text-primary hover:border-primary"
+                            type="button"
+                            onclick={handleSave}
+                            title="Delete this entry">
+                        <div class="flex items-center gap-2">
+                            <FloppyDiskOutline size="md" class="text-primary" />
+                            <p class="text-primary">Save</p>
+                        </div>
+                    </button>
+                </li>
+                <li role="presentation">
+                    <button
+                            class="cursor-pointer inline-flex items-center p-4 border-b-2 rounded-t-lg border-transparent hover:text-red-600 hover:border-red-600"
+                            type="button"
+                            onclick={deleteCurrentEntry}
+                            title="Delete this entry">
+                        <div class="flex items-center gap-2">
+                            <TrashBinOutline size="md" class="text-red-500" />
+                            <p class="text-red-500">Delete</p>
+                        </div>
+                    </button>
+                </li>
+            {/if}
         </ul>
     </div>
 
     <div class="mt-2">
-        <div class={activeTab === 0 ? '' : 'hidden'} role="tabpanel">
+        <div class={activeTab === TabMode.list ? '' : 'hidden'} role="tabpanel">
             {#if [ResourceType.folder, ResourceType.space].includes(resource_type)}
                 <ListView
                     {space_name}
@@ -209,8 +294,27 @@
             {/if}
         </div>
 
-        <div class={activeTab === 1 ? '' : 'hidden'} role="tabpanel">
-            <JSONEditor bind:content={jeContent} mode={Mode.text} onRenderMenu={handleRenderMenu} />
+        <div class={activeTab === TabMode.entry ? '' : 'hidden'} role="tabpanel">
+            {#if jeContent.text}
+                <JSONEditor bind:content={jeContent} mode={Mode.text} onRenderMenu={handleRenderMenu} />
+            {/if}
+            {#if errorMessage}
+                <div class="max-h-60 overflow-auto">
+                    <Prism code={errorMessage} />
+                </div>
+            {/if}
+        </div>
+        <div class={activeTab === TabMode.form ? '' : 'hidden'} role="tabpanel">
+            {#if jeContent.json}
+                <ModalMetaForm bind:formData={jeContent.json} bind:validateFn={validateMetaForm} />
+                {#if resource_type === ResourceType.user}
+                    <ModalMetaUserForm bind:formData={jeContent.json} bind:validateFn={validateRTForm}/>
+                {:else if resource_type === ResourceType.role}
+                    <ModalMetaRoleForm bind:formData={jeContent.json} bind:validateFn={validateRTForm} />
+                {:else if resource_type === ResourceType.permission}
+                    <ModalMetaPermissionForm bind:formData={jeContent.json} bind:validateFn={validateRTForm} />
+                {/if}
+            {/if}
             {#if errorMessage}
                 <div class="max-h-60 overflow-auto">
                     <Prism code={errorMessage} />
@@ -218,7 +322,7 @@
             {/if}
         </div>
 
-        <div class={activeTab === 2 ? '' : 'hidden'} role="tabpanel">
+        <div class={activeTab === TabMode.attachments ? '' : 'hidden'} role="tabpanel">
             <Attachments {resource_type}
                          {space_name}
                          {subpath}
@@ -228,7 +332,7 @@
             />
         </div>
 
-        <div class={activeTab === 3 ? '' : 'hidden'} role="tabpanel">
+        <div class={activeTab === TabMode.history ? '' : 'hidden'} role="tabpanel">
             <p>rrrr</p>
         </div>
     </div>

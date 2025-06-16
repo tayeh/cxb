@@ -1,11 +1,11 @@
 <script module lang="ts">
   import { Router, createRouter } from "@roxi/routify";
   import routes from "../.routify/routes.default";
-  import { SvelteToast } from "@zerodevx/svelte-toast";
+  import {SvelteToast, type SvelteToastOptions} from "@zerodevx/svelte-toast";
 
   const prefix="sysadmin"; // ""
 
-  const options = {
+  const options: SvelteToastOptions = {
     duration: 2500, // duration of progress bar tween to the `next` value
     initial: 1, // initial progress bar value
     next: 0, // next progress value
@@ -140,3 +140,16 @@
     <Router {router} />
   {/await}
 </div>
+
+<style lang="postcss">
+  :global(.custom-toast.info) {
+    --toastBackground: rgba(72, 187, 120, 0.9);
+    --toastBarBackground: #2f855a;
+    z-index: 999;
+  }
+  :global(.custom-toast.warn) {
+    --toastBackground: #bb4848e6;
+    --toastBarBackground: #852f2f;
+    --toastContainerZIndex: 99999999999999;
+  }
+</style>

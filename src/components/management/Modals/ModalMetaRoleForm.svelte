@@ -85,7 +85,7 @@
                 <span class="text-red-500 text-lg" style="vertical-align: center">*</span>
                 Role Name
             </Label>
-            <Input required
+            <Input
                    id="role_name"
                    placeholder="Enter role name"
                    bind:value={formData.name} />

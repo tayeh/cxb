@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {Button, Label, Modal, Select, Skeleton, Spinner} from "flowbite-svelte";
+    import {Button, Label, Modal, Select, Spinner} from "flowbite-svelte";
     import {Dmart, QueryType, RequestType, ResourceType} from "@edraj/tsdmart";
     import FolderSchemaEditor from "@/components/management/editors/FolderSchemaEditor.svelte";
     import {onMount, untrack} from "svelte";
@@ -9,9 +9,10 @@
     import ModalMetaUserForm from "@/components/management/Modals/ModalMetaUserForm.svelte";
     import {jsonEditorContentParser} from "@/utils/jsonEditor";
     import {JSONEditor, Mode} from "svelte-jsoneditor";
-    import {currentEntry, currentListView} from "@/stores/global";
+    import {currentListView, resourceTypeWithNoPayload} from "@/stores/global";
     import ModalMetaRoleForm from "@/components/management/Modals/ModalMetaRoleForm.svelte";
     import ModalMetaPermissionForm from "@/components/management/Modals/ModalMetaPermissionForm.svelte";
+    import {Level, showToast} from "@/utils/toast";
 
     let {
         space_name,
@@ -22,11 +23,6 @@
         subpath:string
         isOpen:boolean,
     } = $props();
-
-    console.log({
-        isOpen,
-        $currentEntry
-    })
 
     let selectedResourceType = $state(ResourceType.content);
     let allowedResourceTypes = $state();
@@ -120,13 +116,32 @@
     let metaContent: any = $state({});
     let errorContent: any = $state(null);
     let validateMetaForm;
-    let validateUserForm;
+    let validateRTForm;
 
     let isHandleCreateEntryLoading = $state(false);
     async function handleCreateEntry() {
-        if (!validateUserForm() || !validateMetaForm()) {
+        console.log("Creating entry with data:", {
+            space_name,
+            subpath,
+            selectedResourceType,
+            metaContent,
+            content
+        });
+        if (!validateMetaForm()) {
+            showToast(Level.warn, "Please fill all required fields in the meta form.");
             return;
         }
+        console.log("Validating resource type form for:", selectedResourceType);
+        if([ResourceType.user, ResourceType.role, ResourceType.permission].includes(selectedResourceType)){
+            console.log(111111)
+            if (!validateRTForm()) {
+                console.log(222222)
+                showToast(Level.warn, "Please fill all required fields in the respective resource type form.");
+                return;
+            }
+            console.log(333333)
+        }
+        console.log("Resource type form validated for:", selectedResourceType);
 
         try {
             isHandleCreateEntryLoading = true;
@@ -176,6 +191,7 @@
             await $currentListView.fetchPageRecords();
             isOpen = false;
         } catch (e) {
+            console.log(e)
             scrollToElById("#error-content");
             errorContent = e.response.data;
         }
@@ -257,43 +273,45 @@
         <ModalMetaForm bind:formData={metaContent} bind:validateFn={validateMetaForm} />
 
         {#if selectedResourceType === ResourceType.user}
-            <ModalMetaUserForm bind:formData={metaContent} bind:validateFn={validateUserForm}/>
+            <ModalMetaUserForm bind:formData={metaContent} bind:validateFn={validateRTForm}/>
         {:else if selectedResourceType === ResourceType.role}
-            <ModalMetaRoleForm bind:formData={metaContent} bind:validateFn={validateMetaForm} />
+            <ModalMetaRoleForm bind:formData={metaContent} bind:validateFn={validateRTForm} />
         {:else if selectedResourceType === ResourceType.permission}
-            <ModalMetaPermissionForm bind:formData={metaContent} bind:validateFn={validateMetaForm} />
+            <ModalMetaPermissionForm bind:formData={metaContent} bind:validateFn={validateRTForm} />
         {/if}
 
-        {#if !["workflows", "schema"].includes(subpath) && ![ResourceType.folder, ResourceType.role, ResourceType.permission].includes(selectedResourceType)}
-            <Label class="mt-3">
-                Schema
-                {#await Dmart.query({
-                    space_name,
-                    type: QueryType.search,
-                    subpath: "/schema",
-                    search: "",
-                    retrieve_json_payload: true,
-                    limit: 100
-                })}
-                    <div role="status" class="max-w-sm animate-pulse">
-                        <div class="h-3 bg-gray-200 rounded-full dark:bg-gray-700 mx-2 my-2.5"></div>
-                    </div>
-                {:then schemas}
-                    <Select class="mt-2" items={parseQuerySchemaResponse(schemas)} bind:value={selectedSchema} />
-                {/await}
-            </Label>
-        {/if}
-        {#if isFolderFormReady}
-            <FolderSchemaEditor bind:content={content.json} />
+        {#if !resourceTypeWithNoPayload.includes(selectedResourceType)}
+            {#if !["workflows", "schema"].includes(subpath) && ![ResourceType.folder, ResourceType.role, ResourceType.permission].includes(selectedResourceType)}
+                <Label class="mt-3">
+                    Schema
+                    {#await Dmart.query({
+                        space_name,
+                        type: QueryType.search,
+                        subpath: "/schema",
+                        search: "",
+                        retrieve_json_payload: true,
+                        limit: 100
+                    })}
+                        <div role="status" class="max-w-sm animate-pulse">
+                            <div class="h-3 bg-gray-200 rounded-full dark:bg-gray-700 mx-2 my-2.5"></div>
+                        </div>
+                    {:then schemas}
+                        <Select class="mt-2" items={parseQuerySchemaResponse(schemas)} bind:value={selectedSchema} />
+                    {/await}
+                </Label>
+            {/if}
+            {#if isFolderFormReady}
+                <FolderSchemaEditor bind:content={content.json} />
+            {/if}
+            <div class="my-2">
+                <JSONEditor
+                        onRenderMenu={handleRenderMenu}
+                        mode={Mode.text}
+                        bind:content={content}
+                />
+            </div>
         {/if}
 
-        <div class="my-2">
-            <JSONEditor
-                onRenderMenu={handleRenderMenu}
-                mode={Mode.text}
-                bind:content={content}
-            />
-        </div>
 
         {#if errorContent}
             <div id="error-content" class="mt-3">
