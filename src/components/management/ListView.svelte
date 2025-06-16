@@ -26,6 +26,7 @@
   import {getSpaces} from "@/lib/dmart_services";
   import {Level, showToast} from "@/utils/toast";
   import ListViewActionBar from "@/components/management/ListViewActionBar.svelte";
+  import {currentListView} from "@/stores/global";
   $goto
 
   $bulkBucket = [];
@@ -53,6 +54,10 @@
     canDelete?: boolean,
     scope?: string,
   } = $props();
+
+  $effect(() => {
+    $currentListView = {fetchPageRecords};
+  });
 
   let columns = $state(null);
 

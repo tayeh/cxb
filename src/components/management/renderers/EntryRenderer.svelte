@@ -17,8 +17,8 @@
     import Prism from "@/components/Prism.svelte";
     import Table2Cols from "@/components/management/Table2Cols.svelte";
     import Attachments from "@/components/management/renderers/Attachments.svelte";
-    import { Breadcrumb, BreadcrumbItem } from "flowbite-svelte";
     import BreadCrumbLite from "@/components/management/BreadCrumbLite.svelte";
+    import {currentEntry, currentListView} from "@/stores/global";
 
     let {
         entry = $bindable(),
@@ -33,6 +33,8 @@
         resource_type: ResourceType,
         schema_name?: string | null,
     } = $props();
+
+    currentEntry.set(entry);
 
     console.log({resource_type})
 

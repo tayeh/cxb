@@ -95,3 +95,10 @@ export async function get_schema(space_name:string, schema_shortname:string) {
         return  null;
     }
 }
+
+export function scrollToElById(elementId: string) {
+    const el = document.querySelector(elementId);
+    if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+    }
+}

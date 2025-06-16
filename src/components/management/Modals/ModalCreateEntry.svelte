@@ -1,10 +1,17 @@
 <script lang="ts">
-    import {Button, Label, Modal, Select} from "flowbite-svelte";
-    import {Dmart, QueryType, ResourceType} from "@edraj/tsdmart";
+    import {Button, Label, Modal, Select, Skeleton, Spinner} from "flowbite-svelte";
+    import {Dmart, QueryType, RequestType, ResourceType} from "@edraj/tsdmart";
     import FolderSchemaEditor from "@/components/management/editors/FolderSchemaEditor.svelte";
-    import {untrack} from "svelte";
-    import {generateObjectFromSchema} from "@/utils/renderer/rendererUtils";
+    import {onMount, untrack} from "svelte";
+    import {generateObjectFromSchema, scrollToElById} from "@/utils/renderer/rendererUtils";
     import Prism from "@/components/Prism.svelte";
+    import ModalMetaForm from "@/components/management/Modals/ModalMetaForm.svelte";
+    import ModalMetaUserForm from "@/components/management/Modals/ModalMetaUserForm.svelte";
+    import {jsonEditorContentParser} from "@/utils/jsonEditor";
+    import {JSONEditor, Mode} from "svelte-jsoneditor";
+    import {currentEntry, currentListView} from "@/stores/global";
+    import ModalMetaRoleForm from "@/components/management/Modals/ModalMetaRoleForm.svelte";
+    import ModalMetaPermissionForm from "@/components/management/Modals/ModalMetaPermissionForm.svelte";
 
     let {
         space_name,
@@ -16,21 +23,71 @@
         isOpen:boolean,
     } = $props();
 
+    console.log({
+        isOpen,
+        $currentEntry
+    })
+
     let selectedResourceType = $state(ResourceType.content);
-    let allowedResourceTypes = $state([
-        {
-            name: ResourceType.folder.toString(),
-            value: ResourceType.folder,
-        },
-        {
-            name: ResourceType.content.toString(),
-            value: ResourceType.content,
+    let allowedResourceTypes = $state();
+
+    function prepareResourceTypes() {
+        if (space_name === "management" ){
+            if (subpath === "users") {
+                allowedResourceTypes = [
+                    {
+                        name: ResourceType.user.toString(),
+                        value: ResourceType.user,
+                    }
+                ]
+            } else if (subpath === "roles") {
+                allowedResourceTypes = [
+                    {
+                        name: ResourceType.role.toString(),
+                        value: ResourceType.role,
+                    }
+                ]
+            } else if (subpath === "permissions") {
+                allowedResourceTypes = [
+                    {
+                        name: ResourceType.permission.toString(),
+                        value: ResourceType.permission,
+                    }
+                ]
+            }
         }
-    ]);
+        else if (subpath === "schema") {
+            allowedResourceTypes = [
+                {
+                    name: ResourceType.schema.toString(),
+                    value: ResourceType.schema,
+                }
+            ];
+        }
+        else {
+            allowedResourceTypes = [
+                {
+                    name: ResourceType.folder.toString(),
+                    value: ResourceType.folder,
+                },
+                {
+                    name: ResourceType.content.toString(),
+                    value: ResourceType.content,
+                }
+            ];
+        }
+        selectedResourceType = allowedResourceTypes[0].value;
+    }
+
+    onMount(()=>{
+        prepareResourceTypes();
+    });
 
 
     let selectedSchema = $state(null);
+    let tmpSchemas = [];
     function parseQuerySchemaResponse(schemas){
+        tmpSchemas = schemas.records;
         if (schemas === null) {
             return [{
                 name: "None",
@@ -57,12 +114,74 @@
         return r;
     }
 
-    let content = $state({
+    let content: any = $state({
         json: {}
     });
-    let errorContent = $state(null);
-    function handleSave() {}
-    function handleCreateEntry() {}
+    let metaContent: any = $state({});
+    let errorContent: any = $state(null);
+    let validateMetaForm;
+    let validateUserForm;
+
+    let isHandleCreateEntryLoading = $state(false);
+    async function handleCreateEntry() {
+        if (!validateUserForm() || !validateMetaForm()) {
+            return;
+        }
+
+        try {
+            isHandleCreateEntryLoading = true;
+            let response = null;
+            const _metaContent = $state.snapshot(metaContent);
+            const shortname = _metaContent.shortname;
+            delete _metaContent.shortname;
+
+            const requestCreateUser = {
+                "resource_type": selectedResourceType,
+                "shortname": shortname,
+                "subpath": subpath,
+                "attributes": {
+                    ..._metaContent
+                },
+            }
+            if(selectedSchema){
+                requestCreateUser.attributes.schema_shortname = selectedSchema;
+                requestCreateUser.attributes = {
+                    ...requestCreateUser.attributes,
+                    payload: {
+                        body: jsonEditorContentParser($state.snapshot(content)),
+                        schema: selectedSchema,
+                        content_type: "json"
+                    }
+                };
+            }
+
+            response = await Dmart.request({
+                space_name,
+                request_type: RequestType.create,
+                records: [{
+                    resource_type: selectedResourceType,
+                    subpath: subpath,
+                    shortname: metaContent.shortname,
+                    attributes: {
+                        ...metaContent,
+                    }
+                }]
+            });
+
+            if (response.attributes && response.attributes.error) {
+                isHandleCreateEntryLoading = false;
+                errorContent = response.attributes.error;
+                return;
+            }
+            await $currentListView.fetchPageRecords();
+            isOpen = false;
+        } catch (e) {
+            scrollToElById("#error-content");
+            errorContent = e.response.data;
+        }
+
+        isHandleCreateEntryLoading = false;
+    }
 
     let isFolderFormReady = $state(false);
     async function setFolderSchemaContent(){
@@ -85,10 +204,37 @@
         }
     }
 
+    function handleRenderMenu(items: any, _context: any) {
+        items = items.filter(
+            (item) => !["tree", "text", "table"].includes(item.text)
+        );
+        const separator = {
+            separator: true,
+        };
+
+        const itemsWithoutSpace = items.slice(0, items.length - 2);
+        return itemsWithoutSpace.concat([
+            separator,
+            {
+                space: true,
+            },
+        ]);
+    }
+
     $effect(()=>{
         if(selectedResourceType === ResourceType.folder){
             untrack(()=>{
                 setFolderSchemaContent();
+            });
+        }
+    });
+    $effect(()=>{
+        if(selectedSchema){
+            untrack(()=>{
+                const _schemaContent = tmpSchemas.find(t => t.shortname === selectedSchema);
+                content = {
+                    json: _schemaContent && generateObjectFromSchema(_schemaContent.attributes.payload.body)
+                }
             });
         }
     });
@@ -108,6 +254,16 @@
             <Select class="my-2" items={allowedResourceTypes} bind:value={selectedResourceType} />
         </Label>
 
+        <ModalMetaForm bind:formData={metaContent} bind:validateFn={validateMetaForm} />
+
+        {#if selectedResourceType === ResourceType.user}
+            <ModalMetaUserForm bind:formData={metaContent} bind:validateFn={validateUserForm}/>
+        {:else if selectedResourceType === ResourceType.role}
+            <ModalMetaRoleForm bind:formData={metaContent} bind:validateFn={validateMetaForm} />
+        {:else if selectedResourceType === ResourceType.permission}
+            <ModalMetaPermissionForm bind:formData={metaContent} bind:validateFn={validateMetaForm} />
+        {/if}
+
         {#if !["workflows", "schema"].includes(subpath) && ![ResourceType.folder, ResourceType.role, ResourceType.permission].includes(selectedResourceType)}
             <Label class="mt-3">
                 Schema
@@ -117,8 +273,12 @@
                     subpath: "/schema",
                     search: "",
                     retrieve_json_payload: true,
-                    limit: 99
-                }) then schemas}
+                    limit: 100
+                })}
+                    <div role="status" class="max-w-sm animate-pulse">
+                        <div class="h-3 bg-gray-200 rounded-full dark:bg-gray-700 mx-2 my-2.5"></div>
+                    </div>
+                {:then schemas}
                     <Select class="mt-2" items={parseQuerySchemaResponse(schemas)} bind:value={selectedSchema} />
                 {/await}
             </Label>
@@ -127,8 +287,16 @@
             <FolderSchemaEditor bind:content={content.json} />
         {/if}
 
+        <div class="my-2">
+            <JSONEditor
+                onRenderMenu={handleRenderMenu}
+                mode={Mode.text}
+                bind:content={content}
+            />
+        </div>
+
         {#if errorContent}
-            <div class="mt-3">
+            <div id="error-content" class="mt-3">
                 <Prism code={errorContent} language={"json"} />
             </div>
         {/if}
@@ -136,10 +304,20 @@
 
     {#snippet footer()}
         <div class="w-full flex flex-row justify-end">
-            <Button class="text-primary mx-1" outline onclick={() => isOpen = false}>
-                Close
+            {#if !isHandleCreateEntryLoading}
+                <Button class="text-primary mx-1" outline onclick={() => isOpen = false}>
+                    Close
+                </Button>
+            {/if}
+
+            <Button class="bg-primary mx-1" onclick={handleCreateEntry}>
+                {#if isHandleCreateEntryLoading}
+                    <Spinner class="me-3" size="4" color="blue" />
+                    Creating ...
+                {:else}
+                    Create
+                {/if}
             </Button>
-            <Button class="bg-primary mx-1" onclick={handleCreateEntry}>Create</Button>
         </div>
     {/snippet}
 

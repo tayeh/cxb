@@ -38,6 +38,7 @@
   import {website} from "@/config";
   import ModalViewAttachments from "@/components/management/Modals/ModalViewAttachments.svelte";
   import {getFileExtension} from "@/utils/getFileExtension";
+  import ModalCreateAttachments from "@/components/management/Modals/ModalCreateAttachments.svelte";
 
 
   let {
@@ -127,10 +128,8 @@
     openMetaEditAttachmentModal = !openMetaEditAttachmentModal;
   }
 
-  let openCreateAttachemntModal = $state(false);
-
   function toggleCreateAttachemntModal() {
-    openCreateAttachemntModal = !openCreateAttachemntModal;
+    openCreateAttachmentModal = !openCreateAttachmentModal;
   }
 
   let content = $state({
@@ -176,7 +175,7 @@
       attachments = attachments.filter(
         (e: { shortname: string }) => e.shortname !== item.shortname
       );
-      openCreateAttachemntModal = false;
+      openCreateAttachmentModal = false;
       refreshEntry()
     } else {
       showToast(Level.warn);
@@ -310,7 +309,7 @@
 
     if (response.status === "success") {
       showToast(Level.info);
-      openCreateAttachemntModal = false;
+      openCreateAttachmentModal = false;
       refreshEntry()
     } else {
       showToast(Level.warn);
@@ -345,7 +344,7 @@
     const response = await Dmart.request(request_dict);
     if (response.status === "success") {
       showToast(Level.info);
-      openCreateAttachemntModal = false;
+      openCreateAttachmentModal = false;
       refreshEntry()
     } else {
       showToast(Level.warn);
@@ -401,7 +400,7 @@
       payloadData = _attachment.attributes.payload.body;
     }
 
-    openCreateAttachemntModal = true;
+    openCreateAttachmentModal = true;
     isModalInUpdateMode = true;
   }
 
@@ -437,6 +436,7 @@
   function confirmDelete(attachment){}
 
   let openViewContentModal = $state(false);
+  let openCreateAttachmentModal = $state(false);
   let selectedAttachment = $state(null);
 
   function handleViewContentModal(attachment) {
@@ -451,6 +451,9 @@
         filteredAttachments = attachments[selectedFilter] || [];
     }
   });
+
+  let createMetaContent = $state({});
+  let createPayloadContent = $state({});
 </script>
 
 <Modal
@@ -473,208 +476,6 @@
     >
       close
     </Button>
-  </div>
-</Modal>
-
-<Modal
-  bind:open={openCreateAttachemntModal}
-  size={"lg"}
->
-<!--  <ModalHeader toggle={toggleCreateAttachemntModal}>-->
-<!--    <h3>-->
-<!--      {isModalInUpdateMode ? "Update attachment" : "Add attachment"}-->
-<!--    </h3>-->
-<!--  </ModalHeader>-->
-
-  <div class="modal-header">
-    <h5 class="modal-title">
-      {isModalInUpdateMode ? "Update attachment" : "Add attachment"}
-    </h5>
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <button type="button" onclick={toggleCreateAttachemntModal} class="btn-close" aria-label="Close">
-    </button>
-  </div>
-
-  <div>
-    <div class="d-flex flex-column">
-      <Label>Attachment shortname</Label>
-      <Input
-        accept="image/png, image/jpeg"
-        bind:value={shortname}
-        disabled={isModalInUpdateMode}
-      />
-
-      <div class="flex-row my-2">
-        <div class="12"><Label>Displayname</Label></div>
-        <div class="4">
-          <Input
-                  type="text"
-                  class="form-control"
-                  bind:value={displayname.en}
-                  placeholder={"english..."}
-          />
-        </div>
-        <div class="4">
-          <Input
-                  type="text"
-                  class="form-control"
-                  bind:value={displayname.ar}
-                  placeholder={"arabic..."}
-          />
-        </div>
-        <div class="4">
-          <Input
-                  type="text"
-                  class="form-control"
-                  bind:value={displayname.ku}
-                  placeholder={"kurdish..."}
-          />
-        </div>
-      </div>
-
-      <div class="flex-row my-2">
-        <div class="12"><Label>Description</Label></div>
-        <div class="4">
-          <Input
-                  type="text"
-                  class="form-control"
-                  bind:value={description.en}
-                  placeholder={"english..."}
-          />
-        </div>
-        <div class="4">
-          <Input
-                  type="text"
-                  class="form-control"
-                  bind:value={description.ar}
-                  placeholder={"arabic..."}
-          />
-        </div>
-        <div class="4">
-          <Input
-                  type="text"
-                  class="form-control"
-                  bind:value={description.ku}
-                  placeholder={"kurdish..."}
-          />
-        </div>
-      </div>
-
-      <Label>Attachment Type</Label>
-      <Input
-        type="select"
-        bind:value={resourceType}
-        disabled={isModalInUpdateMode}
-      >
-        {#each Object.values(ResourceAttachmentType).filter((type) => type !== ResourceAttachmentType.alteration) as type}
-          <option value={type}>{type}</option>
-        {/each}
-      </Input>
-      {#key resourceType}
-        {#if resourceType === ResourceAttachmentType.media}
-          <Label>Content Type</Label>
-          <Input
-            type="select"
-            bind:value={contentType}
-            disabled={isModalInUpdateMode}
-          >
-            {#each Object.values(ContentTypeMedia) as type}
-              <option value={type}>{type}</option>
-            {/each}
-          </Input>
-        {/if}
-      {/key}
-      <hr />
-      {#key resourceType}
-        {#if resourceType === ResourceAttachmentType.media}
-          {#if contentType === ContentType.image}
-            <Label>Image File</Label>
-            <Input
-              accept="image/png, image/jpeg"
-              files={payloadFiles}
-              type="file"
-            />
-          {:else if contentType === ContentType.pdf}
-            <Label>PDF File</Label>
-            <Input
-              accept="application/pdf"
-              files={payloadFiles}
-              type="file"
-            />
-          {:else if contentType === ContentType.audio}
-            <Label>Audio File</Label>
-            <Input accept="audio/*" files={payloadFiles} type="file" />
-          {:else if contentType === ContentType.python}
-            <Label>Python File</Label>
-            <Input accept=".py" files={payloadFiles} type="file" />
-          {:else if contentType === ContentType.markdown}
-            <MarkdownEditor bind:content={payloadData} />
-          {:else if contentType === ContentType.html}
-            <HtmlEditor bind:content={payloadData} />
-          {:else}
-            <Input type={"textarea"} bind:value={payloadData} />
-          {/if}
-        {:else if resourceType === ResourceAttachmentType.json}
-          <Label>Schema</Label>
-          <Input
-            class="mb-3"
-            bind:value={selectedSchema}
-            type="select"
-            disabled={isModalInUpdateMode}
-          >
-            <option value={""}>{"None"}</option>
-            {#await Dmart.query( { space_name, type: QueryType.search, subpath: "/schema", search: "", retrieve_json_payload: true, limit: 99 } ) then schemas}
-              {#each schemas.records.map((e) => e.shortname) as schema}
-                <option value={schema}>{schema}</option>
-              {/each}
-            {/await}
-          </Input>
-          <JSONEditor
-            onRenderMenu={handleRenderMenu}
-            mode={Mode.text}
-            bind:content={payloadContent}
-          />
-        {:else if resourceType === ResourceAttachmentType.comment}
-          <Input type={"textarea"} bind:value={payloadData} />
-        {:else if resourceType === ResourceAttachmentType.csv}
-          <Label>Schema</Label>
-          <Input bind:value={selectedSchema} type="select">
-            <option value={null}>{"None"}</option>
-            {#await Dmart.query( { space_name, type: QueryType.search, subpath: "/schema", search: "", retrieve_json_payload: true, limit: 99 } ) then schemas}
-              {#each setSchemaItems(schemas) as schema}
-                <option value={schema}>{schema}</option>
-              {/each}
-            {/await}
-          </Input>
-          <Label class="mt-3">CSV File</Label>
-          <Input files={payloadFiles} type="file" accept=".csv" />
-        {:else if resourceType === ResourceAttachmentType.jsonl}
-          <Label>JSONL File</Label>
-          <Input files={payloadFiles} type="file" accept=".jsonl" />
-        {:else if resourceType === ResourceAttachmentType.sqlite}
-          <Label>SQLite File</Label>
-          <Input
-            files={payloadFiles}
-            type="file"
-            accept=".sqlite,.sqlite3,.db,.db3,.s3db,.sl3"
-          />
-        {:else if resourceType === ResourceAttachmentType.parquet}
-          <Label>Parquet File</Label>
-          <Input files={payloadFiles} type="file" accept=".parquet" />
-          <b> TBD ... show custom fields for resource type : {resourceType} </b>
-        {/if}
-      {/key}
-    </div>
-  </div>
-  <div>
-    <Button
-      type="button"
-      color="secondary"
-      onclick={() => (openCreateAttachemntModal = false)}
-      >close
-    </Button>
-    <Button type="button" color="primary" onclick={upload}>Upload</Button>
   </div>
 </Modal>
 
@@ -744,7 +545,8 @@
           </Badge>
         {/each}
       </div>
-      <Button class="bg-primary cursor-pointer">
+      <Button class="text-primary cursor-pointer hover:bg-primary hover:text-white" outline
+      onclick={toggleCreateAttachemntModal}>
         <UploadOutline size="md" class="mr-2"/>
         <strong>UPLOAD</strong>
       </Button>
@@ -824,4 +626,11 @@
   space_name={space_name}
   subpath={subpath}
   parent_shortname={parent_shortname}
+/>
+
+<ModalCreateAttachments
+  isOpen={openCreateAttachmentModal}
+  space_name={space_name}
+  meta={createMetaContent}
+  payload={createPayloadContent}
 />

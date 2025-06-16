@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+    import {mount, onMount} from "svelte";
   import Editor from "cl-editor";
   import { createEventDispatcher } from "svelte";
 
@@ -18,53 +18,52 @@
   let editor = null;
 
   onMount(async () => {
-    editor = new Editor({
-      target: maindiv,
-      props: {
-        height: "calc(90%)",
-        actions: [
-          "viewHtml",
-          "undo",
-          "redo",
-          "b",
-          "i",
-          'u',
-          'strike',
-          'sup',
-          "sub",
-          "h1",
-          "h2",
-          "p",
-          "blockquote",
-          "ol",
-          "ul",
-          "hr",
-          "left",
-          "right",
-          "center",
-          "justify",
-          "a",
-          "image",
-          //'forecolor',
-          //'backcolor',
-          "removeFormat",
-          /*{
-							name: 'save', // required
-							icon: '<svg class="icon blink"><use xlink:href="/symbol-defs.svg#floppy-disk" /></svg>', // string or html string (ex. <svg>...</svg>)
-							title: 'Save',
-							result: () => {
-								if(changed) {
-									let html = editor.getHtml(true);
-									data.attributes.payload.embedded = html;
-									update(html);
-									//console.log("Hi there: ", html);
-									changed = false;
-								}
-							}
-            }*/
-        ],
-      },
-    });
+    editor = mount(Editor, {
+        target: maindiv,
+        props: {
+            actions: [
+                "viewHtml",
+                "undo",
+                "redo",
+                "b",
+                "i",
+                'u',
+                'strike',
+                'sup',
+                "sub",
+                "h1",
+                "h2",
+                "p",
+                "blockquote",
+                "ol",
+                "ul",
+                "hr",
+                "left",
+                "right",
+                "center",
+                "justify",
+                "a",
+                "image",
+                //'forecolor',
+                //'backcolor',
+                "removeFormat",
+                /*{
+                                  name: 'save', // required
+                                  icon: '<svg class="icon blink"><use xlink:href="/symbol-defs.svg#floppy-disk" /></svg>', // string or html string (ex. <svg>...</svg>)
+                                  title: 'Save',
+                                  result: () => {
+                                      if(changed) {
+                                          let html = editor.getHtml(true);
+                                          data.attributes.payload.embedded = html;
+                                          update(html);
+                                          //console.log("Hi there: ", html);
+                                          changed = false;
+                                      }
+                                  }
+                  }*/
+            ],
+        },
+    })
     editor.setHtml(content, true);
     editor.$on("change", () => {
       content = editor.getHtml(true);

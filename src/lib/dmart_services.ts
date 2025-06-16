@@ -94,3 +94,12 @@ export async function getChildren(
     return folders
 }
 
+export async function getChildrenAndSubChildren(subpathsPTR: any,spacename, base: string, _subpaths: any) {
+    for (const _subpath of _subpaths.records) {
+        if (_subpath.resource_type === "folder") {
+            const childSubpaths = await getChildren(spacename, _subpath.shortname);
+            await getChildrenAndSubChildren(subpathsPTR, spacename, `${base}/${_subpath.shortname}`, childSubpaths);
+            subpathsPTR.push(`${base}/${_subpath.shortname}`);
+        }
+    }
+}
