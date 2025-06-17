@@ -1,6 +1,6 @@
 <script>
     import { spaces } from "@/stores/management/spaces";
-    import { Input, Modal, Card, Dropdown, DropdownItem, Button } from "flowbite-svelte";
+    import { Input, Modal, Card, Dropdown, DropdownItem, Button, Spinner } from "flowbite-svelte";
     import { DotsHorizontalOutline, EyeSolid, PenSolid, TrashBinSolid, PlusOutline } from "flowbite-svelte-icons";
     import {JSONEditor, Mode} from "svelte-jsoneditor";
     import {jsonEditorContentParser} from "@/utils/jsonEditor";
@@ -11,13 +11,15 @@
     import {goto} from "@roxi/routify";
     $goto
 
-    let viewMetaModal = false;
-    let editModal = false;
-    let deleteModal = false;
-    let addSpaceModal = false;
-    let selectedSpace = null;
-    let modelError = null;
-    let newSpaceShortname = "";
+    let viewMetaModal = $state(false);
+    let editModal = $state(false);
+    let deleteModal = $state(false);
+    let addSpaceModal = $state(false);
+    let selectedSpace = $state(null);
+    let modelError = $state(null);
+    let newSpaceShortname = $state("");
+
+    let isActionLoading = $state(false);
 
     let jeContent = { json: undefined };
 
@@ -30,6 +32,7 @@
     async function createSpace() {
         if (newSpaceShortname.trim()) {
             try {
+                isActionLoading = true;
                 modelError = null;
                 await Dmart.space({
                     space_name: newSpaceShortname.trim(),
@@ -44,10 +47,12 @@
                     ]
                 });
                 showToast(Level.info, `Space "${newSpaceShortname.trim()}" created successfully!`);
-                addSpaceModal = false;
                 await getSpaces();
+                addSpaceModal = false;
             } catch (error) {
                 modelError = error.response.data;
+            } finally {
+                isActionLoading = false;
             }
         }
     }
@@ -71,6 +76,7 @@
             const record = jsonEditorContentParser(jeContent);
             delete record.uuid;
             try {
+                isActionLoading = true;
                 modelError = null;
                 await Dmart.request({
                     space_name: selectedSpace.shortname,
@@ -89,6 +95,8 @@
                 await getSpaces();
             } catch (error) {
                 modelError = error;
+            } finally {
+                isActionLoading = false;
             }
         }
     }
@@ -103,6 +111,7 @@
         if (selectedSpace) {
 
             try {
+                isActionLoading = true;
                 modelError = null;
                 await Dmart.request({
                     space_name: selectedSpace.shortname,
@@ -120,6 +129,8 @@
                 await getSpaces();
             } catch (error) {
                 modelError = error;
+            } finally {
+                isActionLoading = false;
             }
         }
     }
@@ -204,7 +215,14 @@
 
     <div class="flex justify-between w-full">
         <Button color="alternative" onclick={() => addSpaceModal = false}>Cancel</Button>
-        <Button class="bg-primary" onclick={createSpace}>Create</Button>
+        <Button class="bg-primary" onclick={createSpace}>
+            {#if isActionLoading}
+                <Spinner class="me-3" size="4" color="blue" />
+                Creating ...
+            {:else}
+                Create
+            {/if}
+        </Button>
     </div>
 </Modal>
 
@@ -233,7 +251,14 @@
     </div>
     <div class="flex justify-between w-full">
         <Button color="alternative" onclick={() => editModal = false}>Cancel</Button>
-        <Button class="bg-primary" onclick={saveChanges}>Save Changes</Button>
+        <Button class="bg-primary" onclick={saveChanges}>
+            {#if isActionLoading}
+                <Spinner class="me-3" size="4" color="blue" />
+                Saving Changes ...
+            {:else}
+                Save Changes
+            {/if}
+        </Button>
     </div>
 </Modal>
 
@@ -256,6 +281,14 @@
 
     <div class="flex justify-between w-full">
         <Button color="alternative" onclick={() => deleteModal = false}>Cancel</Button>
-        <Button color="red" onclick={deleteSpace}>Delete</Button>
+        <Button color="red" onclick={deleteSpace}>
+            {#if isActionLoading}
+                <Spinner class="me-3" size="4" color="blue" />
+                Deleting ...
+            {:else}
+                Delete
+            {/if}
+        </Button>
+
     </div>
 </Modal>

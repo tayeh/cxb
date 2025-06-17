@@ -219,7 +219,7 @@
     }
   }
 
-  async function onListClick(record: any) {
+  async function onListClick(event: any, record: any) {
     if (!is_clickable) {
       return;
     }
@@ -334,9 +334,12 @@
       open = !open;
   }
 
-  function handleBulk(e) {
+  function handleBulk(event: any) {
       try {
-          const { name, checked } = e.target;
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          const { name, checked } = event.target;
           const _shortname = objectDatatable.arrayRawData[name].shortname;
           if (checked) {
               const _resource_type = objectDatatable.arrayRawData[name].resource_type;
@@ -420,7 +423,7 @@
 {:then _}
   <div class="w-full">
     {#if total === null}
-      <div class="text-center text-gray-500">Reading data...</div>
+      <ListPlaceholder class="m-5" size="lg" style="width: 100vw"/>
     {:else}
       {#if objectDatatable}
         <Engine bind:propDatatable={objectDatatable} />
@@ -448,14 +451,16 @@
             </TableHead>
             <TableBody>
               {#each objectDatatable.arrayRawData as row, index}
-                <TableBodyRow class="hover:bg-gray-200" onclick={() => onListClick(row)}>
+                <TableBodyRow class="hover:bg-gray-200">
                   {#if canDelete}
                     <TableBodyCell class="p-2 border border-gray-300">
-                      <Checkbox class="bg-white" id={row.shortname} onchange={handleBulk} name={index.toString()}/>
+                      <Checkbox class="bg-white" id={row.shortname} onchange={handleBulk} name={index.toString()}
+                                checked={$bulkBucket.some(e => e.shortname === row.shortname)}
+                      />
                     </TableBodyCell>
                   {/if}
                   {#each Object.keys(columns) as col}
-                    <TableBodyCell class="p-2 border border-gray-300 cursor-pointer">
+                    <TableBodyCell class="p-2 border border-gray-300 cursor-pointer" onclick={(e) => onListClick(e, row)}>
                       {value(columns[col].path.split("."), row, columns[col].type)}
                     </TableBodyCell>
                   {/each}

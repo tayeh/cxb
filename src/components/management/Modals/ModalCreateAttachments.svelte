@@ -43,15 +43,11 @@
     function setSchemaItems(schemas) {
         return schemas?.records?.map(e => e.shortname) || [];
     }
-
-    $effect(()=>{
-
-    });
 </script>
 
 <Modal
-        bind:open={isOpen}
-        size="xl"
+    bind:open={isOpen}
+    size="xl"
 >
     <div class="flex justify-between items-center px-4 pt-4 border-b rounded-t">
         <h3 class="text-xl font-semibold text-gray-900">

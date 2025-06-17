@@ -17,42 +17,37 @@
         validateFn = $bindable()
     } = $props();
 
-    onMount(()=>{
-        formData = {
-            ...formData,
-            shortname: formData.shortname || null,
-            is_active: formData.is_active || null,
-            slug: formData.slug || null,
-            displayname: {
-                en: formData.displayname?.en || null,
-                ar: formData.displayname?.ar || null,
-                ku: formData.displayname?.ku || null
-            },
-            description: {
-                en: formData.description?.en || null,
-                ar: formData.description?.ar || null,
-                ku: formData.description?.ku || null
-            },
-        }
-    });
+
+    formData = {
+        ...formData,
+        shortname: formData.shortname || null,
+        is_active: formData.is_active || true,
+        slug: formData.slug || null,
+        displayname: {
+            en: formData.displayname?.en || null,
+            ar: formData.displayname?.ar || null,
+            ku: formData.displayname?.ku || null
+        },
+        description: {
+            en: formData.description?.en || null,
+            ar: formData.description?.ar || null,
+            ku: formData.description?.ku || null
+        },
+    }
 
     let form;
     $effect(() => {
         validateFn = validate;
     });
-    // Validation function that a parent component can call
     function validate() {
-        // Trigger native HTML5 validation
         const isValid = form.checkValidity();
 
         if (!isValid) {
-            // Report validation to the browser (shows native validation messages)
             form.reportValidity();
         }
 
         return isValid;
     }
-
 </script>
 
 <Card class="w-full max-w-4xl mx-auto p-4">

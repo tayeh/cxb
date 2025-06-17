@@ -24,19 +24,17 @@
 
     let form;
 
-    onMount(()=>{
-        formData = {
-            ...formData,
-            subpaths: formData.subpaths || {},
-            resource_types: formData.resource_types || [],
-            actions: formData.actions || [],
-            conditions: formData.conditions || [],
-            restricted_fields: formData.restricted_fields || [],
-            allowed_fields_values: formData.allowed_fields_values || {}
-        };
-    })
+    formData = {
+        ...formData,
+        subpaths: formData.subpaths || {},
+        resource_types: formData.resource_types || [],
+        actions: formData.actions || [],
+        conditions: formData.conditions || [],
+        restricted_fields: formData.restricted_fields || [],
+        allowed_fields_values: formData.allowed_fields_values || {}
+    };
 
-    // Convert enums to select options
+
     const resourceTypeOptions = Object.keys(ResourceType).map(key => ({
         name: key,
         value: ResourceType[key]
@@ -60,7 +58,6 @@
     let newCondition = '';
     let newRestrictedField = '';
 
-    // For spaces and subpaths
     let spaces = $state([]);
     let subpaths = $state([]);
     let selectedSpace = $state('');
@@ -155,12 +152,10 @@
     function addSubpathToSpace() {
         if (!selectedSpace || !selectedSubpath) return;
 
-        // Initialize the array for this space if it doesn't exist
         if (!formData.subpaths[selectedSpace]) {
             formData.subpaths[selectedSpace] = [];
         }
 
-        // Add the subpath if it's not already in the list
         if (!formData.subpaths[selectedSpace].includes(selectedSubpath)) {
             formData.subpaths[selectedSpace] = [
                 ...formData.subpaths[selectedSpace],
@@ -236,11 +231,8 @@
     <h2 class="text-2xl font-bold mb-4">Permission Settings</h2>
 
     <form bind:this={form} class="space-y-4">
-
-        <!-- Resource Types Section -->
         <div class="mb-4">
             <Label class="mb-2">
-                
                 Resource Types
             </Label>
             <div class="flex space-x-2">
@@ -272,7 +264,6 @@
             {/if}
         </div>
 
-        <!-- Actions Section -->
         <div class="mb-4">
             <Label class="mb-2">
                 
@@ -308,11 +299,9 @@
         </div>
 
         <Accordion>
-            <!-- Subpaths Section -->
             <AccordionItem>
                 {#snippet header()}
         <span>
-            
             Subpaths
         </span>
                 {/snippet}
@@ -361,7 +350,6 @@
                         </div>
                     </div>
 
-                    <!-- Display selected spaces and their subpaths -->
                     {#if Object.keys(formData.subpaths).length > 0}
                         <div class="mt-4 border rounded-lg p-4 bg-gray-50">
                             {#each Object.entries(formData.subpaths) as [space, paths]}
@@ -392,14 +380,8 @@
                 </div>
             </AccordionItem>
 
-            <!-- Conditions Section -->
             <AccordionItem>
-                {#snippet header()}
-        <span>
-            
-            Conditions
-        </span>
-                {/snippet}
+                {#snippet header()}<span>Conditions</span>{/snippet}
                 <div class="p-4 space-y-4">
                     <div class="mb-4">
                         <div class="flex space-x-2">
@@ -436,11 +418,9 @@
                 </div>
             </AccordionItem>
 
-            <!-- Restricted Fields Section -->
             <AccordionItem>
                 {#snippet header()}
                     <span>
-                        
                         Restricted Fields
                     </span>
                 {/snippet}
@@ -473,11 +453,9 @@
                 </div>
             </AccordionItem>
 
-            <!-- Allowed Fields Values Section -->
             <AccordionItem>
                 {#snippet header()}
                     <span>
-                        
                         Allowed Fields Values
                     </span>
                 {/snippet}

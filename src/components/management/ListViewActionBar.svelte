@@ -4,7 +4,10 @@ import {Button, Input} from "flowbite-svelte";
 import ModalCreateEntry from "@/components/management/Modals/ModalCreateEntry.svelte";
 import {onMount} from "svelte";
 import {checkAccess} from "@/utils/checkAccess";
-import {subpathInManagementNoAction} from "@/stores/global";
+import {currentListView, subpathInManagementNoAction} from "@/stores/global";
+import {bulkBucket} from "@/stores/management/bulk_bucket";
+import {Dmart,RequestType} from "@edraj/tsdmart";
+import {Level, showToast} from "@/utils/toast";
 
 let {space_name,subpath}:{space_name:string,subpath:string} = $props();
 
@@ -14,7 +17,6 @@ let canDownloadCSV = $state(false);
 let canDelete = $state(false);
 
 onMount(() => {
-    // Check if the user has permission to create entries in the specified space and subpath
     if(space_name === "management" && subpath === "/") {
         canCreate = false;
         canDelete = false;
@@ -25,11 +27,49 @@ onMount(() => {
         if(subpathInManagementNoAction.includes(subpath)) {
             canCreate = checkAccess("create", space_name, subpath, subpath.slice(1));
         }
+    } else {
+        canCreate = checkAccess("create", space_name, subpath, "content") || checkAccess("create", space_name, subpath, "folder");
     }
-    canCreate = checkAccess("create", space_name, subpath, "content") || checkAccess("create", space_name, subpath, "folder");
+
 });
 
 let isOpen = $state(false);
+
+async function handleBulkDelete() {
+    if ($bulkBucket.length) {
+        if (
+            confirm(`Are you sure want to delete (${$bulkBucket.map(e => e.shortname).join(", ")}) ${$bulkBucket.length === 1 ? "entry" : "entries"} ?`) ===
+            false
+        ) {
+            return;
+        }
+
+        const records = []
+        $bulkBucket.map(b => {
+            records.push({
+                resource_type: b.resource_type,
+                shortname: b.shortname,
+                subpath: subpath || "/",
+                attributes: {},
+            });
+        });
+
+        const request_body = {
+            space_name,
+            request_type: RequestType.delete,
+            records: records,
+        };
+        const response = await Dmart.request(request_body);
+
+        if (response?.status === "success") {
+            showToast(Level.info);
+        } else {
+            showToast(Level.warn);
+        }
+        await $currentListView.fetchPageRecords();
+        bulkBucket.set([]);
+    }
+}
 </script>
 
 <div class="flex flex-col md:flex-row justify-between items-center my-2 mx-3">
@@ -55,8 +95,15 @@ let isOpen = $state(false);
                 <TrashBinOutline size="md"/> Delete
             </Button>
         {/if}
+        {#if $bulkBucket.length}
+            <Button class="text-red-600 cursor-pointer hover:text-red-600" size="xs" outline onclick={handleBulkDelete}>
+                <TrashBinOutline size="md"/> Bulk delete
+            </Button>
+        {/if}
 
     </div>
 </div>
 
-<ModalCreateEntry {space_name} {subpath} bind:isOpen={isOpen} />
+{#if canCreate}
+    <ModalCreateEntry {space_name} {subpath} bind:isOpen={isOpen} />
+{/if}

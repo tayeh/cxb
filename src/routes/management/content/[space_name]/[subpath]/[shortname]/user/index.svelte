@@ -2,12 +2,19 @@
   import { params } from "@roxi/routify";
   import { Dmart, ResourceType } from "@edraj/tsdmart";
   import EntryRenderer from "@/components/management/renderers/EntryRenderer.svelte";
+  import {TextPlaceholder} from "flowbite-svelte";
 
 </script>
 
 {#if $params.space_name && $params.subpath && $params.shortname}
   {#await Dmart.retrieve_entry(ResourceType.user, $params.space_name, $params.subpath.replaceAll("-", "/"), $params.shortname, true, true)}
-    <h6>Loading ... @{$params.space_name}/{$params.subpath}</h6>
+    <div class="flex flex-col w-full">
+      <TextPlaceholder class="m-5" size="lg" style="width: 100vw"/>
+      <TextPlaceholder class="m-5" size="lg" style="width: 100vw"/>
+      <TextPlaceholder class="m-5" size="lg" style="width: 100vw"/>
+      <TextPlaceholder class="m-5" size="lg" style="width: 100vw"/>
+      <TextPlaceholder class="m-5" size="lg" style="width: 100vw"/>
+    </div>
   {:then entry}
     <EntryRenderer
       {entry}

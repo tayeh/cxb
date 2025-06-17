@@ -25,6 +25,10 @@
     import ModalMetaRoleForm from "@/components/management/Modals/ModalMetaRoleForm.svelte";
     import ModalMetaPermissionForm from "@/components/management/Modals/ModalMetaPermissionForm.svelte";
     import {untrack} from "svelte";
+    import {goto} from "@roxi/routify";
+    import {getSpaces} from "@/lib/dmart_services";
+    import HistoryListView from "@/components/management/HistoryListView.svelte";
+    $goto
 
     enum TabMode {
         list = 0,
@@ -54,15 +58,16 @@
     let errorMessage = null;
 
     const canUpdate = checkAccess("update", space_name, subpath, resource_type);
-    const canDelete = checkAccess("delete", space_name, subpath, resource_type)
-        && !(space_name === "management" && subpath === "/");
+    const canDelete = !(space_name === "management" && subpath === "/")
+        && checkAccess("delete", space_name, subpath, resource_type);
     let allowedResourceTypes = $state([ResourceType.content]);
 
-    // Tab state management
     let activeTab: TabMode = $state(TabMode.list);
+    let isActionLoading = $state(false);
     let validateMetaForm;
     let validateRTForm;
     async function handleSave(){
+        isActionLoading = true;
         const content = jsonEditorContentParser($state.snapshot(jeContent));
         const shortname = content.shortname;
         delete content.uuid;
@@ -83,6 +88,8 @@
             await refreshEntry();
         } catch (error) {
             errorMessage = error;
+        } finally {
+            isActionLoading = false;
         }
     }
 
@@ -103,6 +110,19 @@
                 }]
             });
             showToast(Level.info, `Entry deleted successfully`);
+            if(resource_type === ResourceType.space) {
+                $goto(`/management/content`);
+            } else if(resource_type === ResourceType.folder) {
+                await getSpaces();
+                $goto(`/management/content/[space_name]`, {
+                    space_name: space_name
+                });
+            } else {
+                $goto(`/management/content/[space_name]/[subpath]`, {
+                    space_name: space_name,
+                    subpath: subpath
+                });
+            }
         } catch (error) {
             errorMessage = error.message;
             showToast(Level.warn, `Failed to delete the entry!`);
@@ -249,12 +269,14 @@
                     </div>
                 </button>
             </li>
-            {#if ![ResourceType.space, ResourceType.folder].includes(resource_type)}
+            {#if canUpdate}
                 <li class="ml-auto" role="presentation">
                     <button
-                            class="cursor-pointer inline-flex items-center p-4 border-b-2 rounded-t-lg border-transparent hover:text-primary hover:border-primary"
+                            class="inline-flex items-center p-4 border-b-2 rounded-t-lg border-transparent hover:text-primary hover:border-primary"
                             type="button"
                             onclick={handleSave}
+                            disabled={isActionLoading}
+                            style={isActionLoading ? "cursor: not-allowed" : "cursor: pointer"}
                             title="Delete this entry">
                         <div class="flex items-center gap-2">
                             <FloppyDiskOutline size="md" class="text-primary" />
@@ -262,10 +284,14 @@
                         </div>
                     </button>
                 </li>
+            {/if}
+            {#if canDelete}
                 <li role="presentation">
                     <button
-                            class="cursor-pointer inline-flex items-center p-4 border-b-2 rounded-t-lg border-transparent hover:text-red-600 hover:border-red-600"
+                            class="inline-flex items-center p-4 border-b-2 rounded-t-lg border-transparent hover:text-red-600 hover:border-red-600"
                             type="button"
+                            disabled={isActionLoading}
+                            style={isActionLoading ? "cursor: not-allowed" : "cursor: pointer"}
                             onclick={deleteCurrentEntry}
                             title="Delete this entry">
                         <div class="flex items-center gap-2">
@@ -287,7 +313,7 @@
                     folderColumns={entry?.payload?.body?.index_attributes ?? null}
                     sort_by={entry?.payload?.body?.sort_by ?? null}
                     sort_order={entry?.payload?.body?.sort_type ?? null}
-                    canDelete={canDelete}
+                    {canDelete}
                 />
             {:else}
                 <Table2Cols entry={{ "Resource type": resource_type, ...entry }}/>
@@ -333,7 +359,11 @@
         </div>
 
         <div class={activeTab === TabMode.history ? '' : 'hidden'} role="tabpanel">
-            <p>rrrr</p>
+            <HistoryListView
+                {space_name}
+                {subpath}
+                shortname={entry.shortname}
+            />
         </div>
     </div>
 </div>

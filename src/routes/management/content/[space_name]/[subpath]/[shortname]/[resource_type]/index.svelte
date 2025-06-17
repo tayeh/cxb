@@ -13,6 +13,8 @@
       <TextPlaceholder class="m-5" size="lg" style="width: 100vw"/>
       <TextPlaceholder class="m-5" size="lg" style="width: 100vw"/>
       <TextPlaceholder class="m-5" size="lg" style="width: 100vw"/>
+      <TextPlaceholder class="m-5" size="lg" style="width: 100vw"/>
+      <TextPlaceholder class="m-5" size="lg" style="width: 100vw"/>
     </div>
   {:then entry}
     <EntryRenderer

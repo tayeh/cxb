@@ -120,28 +120,16 @@
 
     let isHandleCreateEntryLoading = $state(false);
     async function handleCreateEntry() {
-        console.log("Creating entry with data:", {
-            space_name,
-            subpath,
-            selectedResourceType,
-            metaContent,
-            content
-        });
         if (!validateMetaForm()) {
             showToast(Level.warn, "Please fill all required fields in the meta form.");
             return;
         }
-        console.log("Validating resource type form for:", selectedResourceType);
         if([ResourceType.user, ResourceType.role, ResourceType.permission].includes(selectedResourceType)){
-            console.log(111111)
             if (!validateRTForm()) {
-                console.log(222222)
                 showToast(Level.warn, "Please fill all required fields in the respective resource type form.");
                 return;
             }
-            console.log(333333)
         }
-        console.log("Resource type form validated for:", selectedResourceType);
 
         try {
             isHandleCreateEntryLoading = true;
@@ -177,9 +165,7 @@
                     resource_type: selectedResourceType,
                     subpath: subpath,
                     shortname: metaContent.shortname,
-                    attributes: {
-                        ...metaContent,
-                    }
+                    attributes: requestCreateUser.attributes
                 }]
             });
 
