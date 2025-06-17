@@ -1,262 +1,167 @@
 <script lang="ts">
-  import { status_line } from "@/stores/management/status_line.js";
-  import {
-    Engine,
-    functionCreateDatatable,
-    Pagination,
-    RowsPerPage,
-  } from "svelte-datatables-net";
-  import { query, QueryType } from "@/dmart";
-  import { onDestroy } from "svelte";
-  import { fade } from "svelte/transition";
-  import { isDeepEqual } from "@/utils/compare";
-  import columns from "@/stores/management/list_cols_history.json";
+  import { Dmart, QueryType } from "@edraj/tsdmart";
+  import { ListPlaceholder, Pagination, Button, Card, Table } from "flowbite-svelte";
+  import { onMount } from "svelte";
 
-  onDestroy(() => status_line.set(""));
+  let { space_name, subpath, shortname }: { space_name:string, subpath:string, shortname:string } = $props();
 
-  let {
-      space_name,
-      subpath,
-      shortname = null,
-      type = QueryType.search
-  } : {
-      space_name: string,
-      subpath: string,
-      shortname?: string,
-      type?: QueryType
-  } = $props();
+  let records = $state([]);
+  let loading = $state(true);
+  let limit = $state(10);
+  let offset = $state(0);
+  let totalItems = $state(0);
 
-  let total: number = $state(0);
-
-  let objectDatatable = $state(
-      functionCreateDatatable({
-        parData: [],
-        parSearchableColumns: Object.keys(columns),
-        parRowsPerPage: (typeof localStorage !== 'undefined' && localStorage.getItem("rowPerPage") as `${number}`) || "15",
-        parSearchString: "",
-        parSortBy: "shortname",
-        parSortOrder: "ascending",
-      })
-  );
-
-  function parseRequestHeader(data) {
-    if (data === undefined) {
-      return {};
-    }
-
-    const blacklist = ["sec", "content-type", "accept", "host", "connection"];
-    return Object.keys(data).reduce(
-      (acc, key) =>
-        blacklist.some((item) => key.includes(item))
-          ? acc
-          : { ...acc, [key]: data[key] },
-      {}
-    );
-  }
-  function parseDiff(data): any {
-    if (data === undefined) {
-      return {};
-    }
-    const blacklist = ["x_request_data"];
-    return Object.keys(data).reduce(
-      (acc, key) =>
-        blacklist.some((item) => key.includes(item))
-          ? acc
-          : { ...acc, [key]: data[key] },
-      {}
-    );
-  }
-
-  let height: number = $state();
-
-  let numberActivePage = 1;
-  let propNumberOfPages = $state(1);
-  let numberRowsPerPage: number =
-    parseInt(typeof localStorage !== 'undefined' && localStorage.getItem("rowPerPage")) || 15;
-
-  function setNumberOfPages() {
-    propNumberOfPages = Math.ceil(total / numberRowsPerPage);
-  }
-
-  async function fetchPageRecords(isSetPage = true, requestExtra = {}) {
-    const resp = await query({
-      filter_shortnames: shortname ? [shortname] : [],
-      type,
-      space_name: space_name,
-      subpath: subpath,
-      exact_subpath: true,
-      limit: objectDatatable.numberRowsPerPage,
-      offset:
-        objectDatatable.numberRowsPerPage *
-        (objectDatatable.numberActivePage - 1),
-      search: "",
-      ...requestExtra,
-    });
-
-    total = resp.attributes.total;
-
-    objectDatatable.arrayRawData = resp.records;
-    if (isSetPage) {
-      if (objectDatatable.arrayRawData.length === 0) {
-        propNumberOfPages = 0;
-      } else {
-        setNumberOfPages();
-      }
+  async function fetchHistory() {
+    loading = true;
+    try {
+      const response = await Dmart.query({
+        type: QueryType.history,
+        space_name,
+        subpath,
+        search: '',
+        limit,
+        offset,
+      });
+      records = response.records || [];
+      // Fix for total_count error
+      totalItems = response.attributes.total || records.length;
+    } catch (error) {
+      console.error('Failed to fetch history:', error);
+    } finally {
+      loading = false;
     }
   }
 
-  let paginationBottomInfoFrom = $state(0);
-  let paginationBottomInfoTo = $state(0);
-  let sort = {
-    sort_by: "shortname",
-    sort_type: "ascending",
-  };
+  function handlePageChange(event) {
+    offset = event.detail.page * limit;
+    fetchHistory();
+  }
 
-  // Helper function to format values for display in the UI
-  function formatValueForDisplay(
-    v: any,
-    key: string
-  ) {
-    if(typeof (v[key]) === "object") {
-      return JSON.stringify(v[key]);
-    }
-    return v[key] || "";
+  function changeLimit(newLimit) {
+    limit = newLimit;
+    offset = 0;
+    fetchHistory();
+  }
+
+  onMount(fetchHistory);
+
+  function formatKey(key) {
+    return key.split('.').map(part =>
+            part.charAt(0).toUpperCase() + part.slice(1)
+    ).join(' > ');
   }
 </script>
 
-<svelte:window bind:innerHeight={height} />
+{#if loading}
+  <ListPlaceholder class="m-5" size="lg" style="width: 100%"/>
+{:else}
+  <div class="p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 w-full">
+  {#each records as record, i}
 
-<div class="list">
-  {#await fetchPageRecords()}
-    READING DATA...
-  {:then}
-    <Engine bind:propDatatable={objectDatatable} />
+      <div class="flex justify-between mb-4">
+        <p class="text-lg">
+          <strong>By: </strong> {record.attributes?.owner_shortname || 'Unknown'}
+        </p>
+        <p class="text-lg">
+          <strong>At: </strong> {new Date(record.attributes?.timestamp).toLocaleString()}
+        </p>
+      </div>
 
-    <div class="mx-3" transition:fade={{ delay: 25 }}>
-      {#if objectDatatable?.arraySearched.length === 0}
-        <div class="text-center pt-5">
-          <strong>NO RECORDS FOUND.</strong>
-        </div>
-      {:else}
-        <table class="table table-striped table-sm mt-2">
-          <thead>
-            <tr style="text-align: center">
-              <th style="width: 20%">Information</th>
-              <th style="width: 20%">Request Headers</th>
-              <th>DIFF</th>
+      {#if record.attributes?.diff && Object.keys(record.attributes.diff).length > 0}
+        <div class="border rounded-lg overflow-hidden">
+          <Table class="w-full table-fixed">
+            <thead>
+            <tr>
+              <th class="px-4 py-2 w-[20%]">Property</th>
+              <th class="px-4 py-2 w-[40%]">Previous Value</th>
+              <th class="px-4 py-2 w-[40%]">New Value</th>
             </tr>
-          </thead>
-          <tbody>
-            {#each objectDatatable.arrayRawData as row}
-              <tr>
-                <td>
-                  <ul>
-                    <li>
-                      <b>Owner shortname: </b><br>{row["attributes"][
-                        "owner_shortname"
-                      ]}
-                    </li>
-                    <li>
-                      <b>Timestamp: </b><br>{row["attributes"]["timestamp"]}
-                    </li>
-                  </ul>
+            </thead>
+            <tbody>
+            {#each Object.entries(record.attributes.diff) as [key, change]}
+              {@const typedChange = change as {old?: any, new?: any}}
+              <tr class="border-b hover:bg-gray-50">
+                <td class="px-4 py-2 font-medium">{formatKey(key)}</td>
+                <td class="px-4 py-2 bg-red-50 whitespace-normal">
+                  <span class="text-red-600 font-bold block break-words">{typedChange?.old || ''}</span>
                 </td>
-                <td>
-                  <ul>
-                    {#each Object.entries(parseRequestHeader(row["attributes"]["request_headers"])) as [k, v]}
-                      <li><b>{k}: </b><br>{v}</li>
-                    {/each}
-                  </ul>
-                </td>
-                <td>
-                  {#each Object.entries(parseDiff(row["attributes"]["diff"])) as [k, v]}
-                    <ul>
-                      <li><b>Field: </b><br>{k}</li>
-                      <li>
-                        <b
-                          >Old:
-                        </b><br>{formatValueForDisplay(
-                          v,
-                          "old"
-                      )}
-                      </li>
-                      <li>
-                        <b
-                          >New:
-                        </b><br>{formatValueForDisplay(
-                          v,
-                          "new"
-                      )}
-                      </li>
-                    </ul>
-                  {/each}
+                <td class="px-4 py-2 bg-green-50 whitespace-normal">
+                  <span class="text-green-600 font-bold block break-words">{typedChange?.new || ''}</span>
                 </td>
               </tr>
             {/each}
-          </tbody>
-        </table>
-        <div class="d-flex justify-content-center justify-content-md-end">
-          {#key propNumberOfPages}
-            <div
-              class="d-flex justify-content-between align-items-center w-100"
-            >
-              <RowsPerPage
-                bind:propDatatable={objectDatatable}
-                class="d-inline form-select form-select-sm w-auto"
-              >
-                <option value="15">15</option>
-                <option value="30">30</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-              </RowsPerPage>
-              <p class="p-0 m-0">
-                Showing {paginationBottomInfoFrom} to {paginationBottomInfoTo}
-                of {total} entries
-              </p>
-              <Pagination
-                bind:propDatatable={objectDatatable}
-                bind:propNumberOfPages
-                maxPageDisplay={5}
-                propSize="default"
-              />
-            </div>
-          {/key}
+            </tbody>
+          </Table>
         </div>
+      {:else}
+        <div class="text-center py-4 text-gray-500">No changes recorded</div>
       {/if}
+
+  {/each}
+    <div class="flex flex-col sm:flex-row justify-between my-6">
+      <div class="mb-2 sm:mb-0">
+        <span class="mr-2">Items per page:</span>
+        <div class="inline-flex space-x-1">
+          {#each [5, 10, 25, 50] as pageSize}
+            <button
+                    class="px-3 py-1 text-sm rounded {limit === pageSize ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}"
+                    onclick={() => changeLimit(pageSize)}
+            >
+              {pageSize}
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2">
+      <span class="text-sm text-gray-700 dark:text-gray-300">
+    {Math.floor(offset / limit) + 1} of {Math.ceil(totalItems / limit)} pages
+  </span>
+
+        <div class="flex space-x-1">
+          <button
+                  class="px-2 py-1 rounded {offset === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200'}"
+                  disabled={offset === 0}
+                  onclick={() => {
+        offset = Math.max(0, offset - limit);
+        fetchHistory();
+      }}
+          >
+            &lt; Prev
+          </button>
+
+          {#each Array(Math.min(5, Math.ceil(totalItems / limit))) as _, pageIndex}
+            {@const startPage = Math.max(0, Math.min(Math.floor(offset / limit) - 2, Math.ceil(totalItems / limit) - 5))}
+            {@const currentPageIndex = startPage + pageIndex}
+            {@const isCurrentPage = Math.floor(offset / limit) === currentPageIndex}
+            <button
+                    class="px-3 py-1 rounded {isCurrentPage ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200'}"
+                    onclick={() => {
+          offset = currentPageIndex * limit;
+          fetchHistory();
+        }}
+            >
+              {currentPageIndex + 1}
+            </button>
+          {/each}
+
+          <button
+                  class="px-2 py-1 rounded {offset + limit >= totalItems ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200'}"
+                  disabled={offset + limit >= totalItems}
+                  onclick={() => {
+        offset = Math.min(totalItems - limit, offset + limit);
+        fetchHistory();
+      }}
+          >
+            Next &gt;
+          </button>
+        </div>
+      </div>
     </div>
-  {/await}
-</div>
+  </div>
+  {#if records.length === 0}
+    <div class="text-center py-8 text-gray-500">No history records found</div>
+  {/if}
 
-<style>
-  :global(.virtual-list-wrapper) {
-    margin: 0 0px;
-    background: #fff;
-    border-radius: 2px;
-    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14),
-      0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 1px 5px 0 rgba(0, 0, 0, 0.12);
-    background: #fafafa;
-    font-family: -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
-    color: #333;
-    -webkit-font-smoothing: antialiased;
-  }
 
-  table,
-  th,
-  td {
-    padding: 10px;
-    border: 1px solid black;
-    border-collapse: collapse;
-    overflow-wrap: anywhere;
-  }
-  th {
-    vertical-align: middle;
-  }
-
-  tr:hover > td {
-    background-color: rgba(128, 128, 128, 0.266);
-  }
-  ul {
-    list-style: none;
-    padding: 0px;
-  }
-</style>
+{/if}
