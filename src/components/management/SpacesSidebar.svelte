@@ -15,7 +15,7 @@
     import Prism from "@/components/Prism.svelte";
     import {Dmart, RequestType, ResourceType} from "@edraj/tsdmart";
     import {Level, showToast} from "@/utils/toast";
-    import {getSpaces} from "@/lib/dmart_services";
+    import {getChildren, getSpaces} from "@/lib/dmart_services";
     import {jsonEditorContentParser} from "@/utils/jsonEditor";
 
     let viewMetaModal = false;
@@ -129,6 +129,25 @@
             }
         }
     }
+
+    async function handleClickSpace(space) {
+        await getChildren(space.shortname, '/')
+    }
+
+    export function preventAndStop(node: HTMLElement, space: any) {
+        const handleEvent = (event: Event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            handleClickSpace(space);
+        };
+        node.addEventListener('click', handleEvent);
+
+        return {
+            destroy() {
+                node.removeEventListener('click', handleEvent);
+            }
+        };
+    }
 </script>
 
 <Sidebar position="static" class="h-full">
@@ -141,7 +160,13 @@
                              href={"/management/content/"+space.shortname}
                              class="flex-1 ms-3 whitespace-nowrap">
                     {#snippet icon()}
-                        <CodeForkSolid size="md" class="text-gray-500" style="transform: rotate(180deg);" />
+                        <div use:preventAndStop={space}>
+                        <CodeForkSolid
+                            size="md"
+                            class="text-gray-500"
+                            style="transform: rotate(180deg); position: relative; z-index: 5;"
+                        />
+                        </div>
                     {/snippet}
                     {#snippet subtext()}
                         <div class="flex items-end justify-end w-full">
