@@ -27,7 +27,7 @@
     try {
         isLoginLoading = true;
       await signin(username, password);
-      window.location.href = "/management/content";
+      window.location.reload();
     } catch (error) {
       isError = true;
     }

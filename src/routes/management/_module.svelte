@@ -10,6 +10,7 @@
     import {Spinner} from "flowbite-svelte";
     import {getSpaces} from "@/lib/dmart_services.js";
     import {onMount} from "svelte";
+    import {user} from "@/stores/user.js";
     $goto
 
     const dmartAxios = axios.create({
@@ -19,13 +20,10 @@
 
     });
     dmartAxios.interceptors.response.use((request) => {
-        if(request.status === 401){
-            $goto("/login");
-        }
         return request;
     }, (error) => {
         if(error.code === 'ERR_NETWORK'){
-            debouncedShowToast(Level.warn, "Network error.Please check your connection or the server is down.");
+            debouncedShowToast(Level.warn, "Network error.\nPlease check your connection or the server is down.");
         }
         return Promise.reject(error);
     });
@@ -39,8 +37,12 @@
         <Spinner color="blue" size="16" />
     </div>
 {:then _}
-    <ManagementHeader />
-    <slot />
+    {#if !$user || !$user.signedin}
+        <Login />
+    {:else}
+        <ManagementHeader />
+        <slot />
+    {/if}
 {:catch _}
     <Login />
 {/await}
