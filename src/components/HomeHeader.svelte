@@ -5,12 +5,12 @@
         NavUl,
         Avatar,
         Button,
-        Dropdown,DropdownItem,DropdownDivider,
+        Dropdown,
+        DropdownItem,
+        DropdownDivider,
     } from 'flowbite-svelte';
     import {
-        FolderSolid,
         HomeSolid,
-        ChartMixedOutline,
         ToggleHeaderRowOutline,
         UserSolid,OpenDoorOutline
     } from 'flowbite-svelte-icons';
@@ -18,8 +18,6 @@
     $goto
     import {signout, user} from "@/stores/user";
     import {getAvatar} from "@/lib/dmart_services";
-    import ManagementHeader from "@/components/management/ManagementHeader.svelte";
-    import Login from "@/components/Login.svelte";
 
     function setLanguage(lang: string) {
         currentLang = lang;
@@ -103,5 +101,4 @@
 </Navbar>
 
 <style>
-
 </style>

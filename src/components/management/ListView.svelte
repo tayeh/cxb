@@ -149,7 +149,7 @@
     let _search = $search;
 
     if(subpath==="/") {
-      if($spaces.length === 0){
+      if($spaces === null || $spaces.length === 0){
         await getSpaces();
       }
       const currentSpace = $spaces.find((e) => e.shortname === space_name);
@@ -253,7 +253,6 @@
         "/"
       );
 
-      // Trim leading or traling '/'
       if (_subpath.length > 0 && subpath[0] === "/") {
           _subpath = _subpath.substring(1);
       }
@@ -278,7 +277,6 @@
       type !== QueryType.history &&
       objectDatatable
     ) {
-      // objectDatatable.stringSortBy = "shortname";
       fetchPageRecords(true);
     }
   });
@@ -335,10 +333,10 @@
   }
 
   function handleBulk(event: any) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
       try {
-          event.preventDefault();
-          event.stopPropagation();
-          event.stopImmediatePropagation();
           const { name, checked } = event.target;
           const _shortname = objectDatatable.arrayRawData[name].shortname;
           if (checked) {
@@ -451,19 +449,23 @@
             </TableHead>
             <TableBody>
               {#each objectDatatable.arrayRawData as row, index}
-                <TableBodyRow class="hover:bg-gray-200">
-                  {#if canDelete}
-                    <TableBodyCell class="p-2 border border-gray-300">
-                      <Checkbox class="bg-white" id={row.shortname} onchange={handleBulk} name={index.toString()}
-                                checked={$bulkBucket.some(e => e.shortname === row.shortname)}
-                      />
-                    </TableBodyCell>
-                  {/if}
-                  {#each Object.keys(columns) as col}
-                    <TableBodyCell class="p-2 border border-gray-300 cursor-pointer" onclick={(e) => onListClick(e, row)}>
-                      {value(columns[col].path.split("."), row, columns[col].type)}
-                    </TableBodyCell>
-                  {/each}
+                <TableBodyRow class="hover:bg-gray-200" onclick={(e) => onListClick(e, row)}>
+                  <div style="all: unset;display: contents;">
+                    {#if canDelete}
+                      <TableBodyCell class="p-2 border border-gray-300">
+                        <Checkbox class="bg-white" id={row.shortname} name={index.toString()}
+                                  checked={$bulkBucket.some(e => e.shortname === row.shortname)}
+                                  onchange={handleBulk}
+                                  onclick={(e) => e.stopPropagation()}
+                        />
+                      </TableBodyCell>
+                    {/if}
+                    {#each Object.keys(columns) as col}
+                      <TableBodyCell class="p-2 border border-gray-300 cursor-pointer">
+                        {value(columns[col].path.split("."), row, columns[col].type)}
+                      </TableBodyCell>
+                    {/each}
+                  </div>
                 </TableBodyRow>
               {/each}
             </TableBody>
@@ -482,10 +484,10 @@
               Showing {paginationBottomInfoFrom} to {paginationBottomInfoTo} of {total} entries
             </p>
             <Pagination
-                    bind:propDatatable={objectDatatable}
-                    bind:propNumberOfPages
-                    maxPageDisplay={5}
-                    propSize="default"
+                bind:propDatatable={objectDatatable}
+                bind:propNumberOfPages
+                maxPageDisplay={5}
+                propSize="default"
             />
           </div>
         {/if}
@@ -493,20 +495,3 @@
     {/if}
   </div>
 {/await}
-
-<style>
-  :global(.virtual-list-wrapper) {
-    margin: 0 0;
-    border-radius: 2px;
-    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14),
-      0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 1px 5px 0 rgba(0, 0, 0, 0.12);
-    background: #fafafa;
-    font-family: -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
-    color: #333;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  tr:hover > td {
-    background-color: rgba(128, 128, 128, 0.266);
-  }
-</style>

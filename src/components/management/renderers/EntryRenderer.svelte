@@ -97,18 +97,29 @@
     }
 
     async function deleteCurrentEntry() {
-        if (!confirm(`Are you sure you want to delete this ${resource_type}?`)) {
+        isActionLoading = true;
+        if (!confirm(`Are you sure you want to delete '${entry.shortname}' (${resource_type})?`)) {
             return;
         }
 
+        let targetSubpath: string;
+        if (resource_type === ResourceType.folder) {
+            const arr = subpath.split("/");
+            arr[arr.length - 1] = "";
+            targetSubpath = arr.join("/");
+        } else {
+            targetSubpath = subpath;
+        }
+
         try {
+
             await Dmart.request({
                 space_name: space_name,
                 request_type: RequestType.delete,
                 records: [{
                     resource_type: resource_type,
                     shortname: entry.shortname,
-                    subpath: subpath,
+                    subpath: targetSubpath || '/',
                     attributes: {}
                 }]
             });
@@ -116,9 +127,10 @@
             if(resource_type === ResourceType.space) {
                 $goto(`/management/content`);
             } else if(resource_type === ResourceType.folder) {
-                await getSpaces();
-                $goto(`/management/content/[space_name]`, {
-                    space_name: space_name
+                const _subpath = subpath.split("/").slice(0, -1).join("-") || "";
+                $goto(`/management/content/[space_name]/[subpath]`, {
+                    space_name: space_name,
+                    subpath: _subpath
                 });
             } else {
                 $goto(`/management/content/[space_name]/[subpath]`, {
@@ -129,6 +141,8 @@
         } catch (error) {
             errorMessage = error.message;
             showToast(Level.warn, `Failed to delete the entry!`);
+        } finally {
+            isActionLoading = false;
         }
     }
 
@@ -283,7 +297,7 @@
                             onclick={handleSave}
                             disabled={isActionLoading}
                             style={isActionLoading ? "cursor: not-allowed" : "cursor: pointer"}
-                            title="Delete this entry">
+                            title="Save changes">
                         <div class="flex items-center gap-2">
                             <FloppyDiskOutline size="md" class="text-primary" />
                             <p class="text-primary">Save</p>

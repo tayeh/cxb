@@ -59,7 +59,7 @@
                 Shortname
             </Label>
             <Input required id="shortname" placeholder="Short name" bind:value={formData.shortname} />
-            <p class="text-xs text-gray-500 mt-1">A shortname (1-64 alphanumeric characters)</p>
+            <p class="text-xs text-gray-500 mt-1">A shortname (use 'auto' for auto generated shortname)</p>
         </div>
 
         <div class="mb-4">

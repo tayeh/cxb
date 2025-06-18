@@ -1,5 +1,6 @@
 <script lang="ts">
     import {Button, Label, Modal, Select, Spinner} from "flowbite-svelte";
+    import {CodeOutline, FileCodeOutline} from "flowbite-svelte-icons";
     import {Dmart, QueryType, RequestType, ResourceType} from "@edraj/tsdmart";
     import FolderSchemaEditor from "@/components/management/editors/FolderSchemaEditor.svelte";
     import {onMount, untrack} from "svelte";
@@ -13,6 +14,7 @@
     import ModalMetaRoleForm from "@/components/management/Modals/ModalMetaRoleForm.svelte";
     import ModalMetaPermissionForm from "@/components/management/Modals/ModalMetaPermissionForm.svelte";
     import {Level, showToast} from "@/utils/toast";
+    import SchemaSchemaEditor from "@/components/management/editors/SchemaSchemaEditor.svelte";
 
     let {
         space_name,
@@ -26,6 +28,16 @@
 
     let selectedResourceType = $state(ResourceType.content);
     let allowedResourceTypes = $state();
+    let resourcesWithFormAndJson = [
+        ResourceType.folder,
+        ResourceType.schema,
+    ];
+
+    enum inputMode {
+        form = "form",
+        json = "json"
+    }
+    let selectedInputMode = $state(inputMode.form);
 
     function prepareResourceTypes() {
         if (space_name === "management" ){
@@ -224,10 +236,15 @@
     }
 
     $effect(()=>{
-        if(selectedResourceType === ResourceType.folder){
+        if(selectedResourceType) {
+            if(selectedResourceType === ResourceType.folder)
             untrack(()=>{
                 setFolderSchemaContent();
             });
+            untrack(()=>{
+                selectedSchema = null;
+                content = {json: {}}
+            })
         }
     });
     $effect(()=>{
@@ -286,15 +303,37 @@
                     {/await}
                 </Label>
             {/if}
-            {#if isFolderFormReady}
-                <FolderSchemaEditor bind:content={content.json} />
-            {/if}
-            <div class="my-2">
-                <JSONEditor
+            {#if selectedResourceType === ResourceType.folder && isFolderFormReady}
+                {#if selectedInputMode === inputMode.form}
+                    <FolderSchemaEditor bind:content={content.json} />
+                {:else if selectedInputMode === inputMode.json}
+                    <JSONEditor
                         onRenderMenu={handleRenderMenu}
                         mode={Mode.text}
                         bind:content={content}
-                />
+                    />
+                {/if}
+            {/if}
+            {#if selectedResourceType === ResourceType.schema}
+                {#if selectedInputMode === inputMode.form}
+                    <SchemaSchemaEditor bind:content={content.json} />
+                {:else if selectedInputMode === inputMode.json}
+                    <JSONEditor
+                        onRenderMenu={handleRenderMenu}
+                        mode={Mode.text}
+                        bind:content={content}
+                    />
+                {/if}
+            {/if}
+
+            <div class="my-2">
+                {#if !resourcesWithFormAndJson.includes(selectedResourceType)}
+                    <JSONEditor
+                        onRenderMenu={handleRenderMenu}
+                        mode={Mode.text}
+                        bind:content={content}
+                    />
+                {/if}
             </div>
         {/if}
 
@@ -307,22 +346,34 @@
     </div>
 
     {#snippet footer()}
-        <div class="w-full flex flex-row justify-end">
-            {#if !isHandleCreateEntryLoading}
-                <Button class="text-primary mx-1" outline onclick={() => isOpen = false}>
-                    Close
+        <div class="w-full flex flex-row justify-between">
+            {#if resourcesWithFormAndJson.includes(selectedResourceType)}
+                <Button class="cursor-pointer text-green-700 hover:text-green-500 mx-1" outline
+                        onclick={() => selectedInputMode = selectedInputMode === inputMode.form ? inputMode.json : inputMode.form}>
+                    {#if selectedInputMode === inputMode.form}
+                        <CodeOutline />
+                    {:else }
+                        <FileCodeOutline />
+                    {/if}
+                    {selectedInputMode === inputMode.form ? 'Json' : 'Form'} Mode
                 </Button>
             {/if}
-
-            <Button class="bg-primary mx-1" onclick={handleCreateEntry}>
-                {#if isHandleCreateEntryLoading}
-                    <Spinner class="me-3" size="4" color="blue" />
-                    Creating ...
-                {:else}
-                    Create
+            <div>
+                {#if !isHandleCreateEntryLoading}
+                    <Button class="cursor-pointer text-primary hover:text-primary mx-1" outline onclick={() => isOpen = false}>
+                        Close
+                    </Button>
                 {/if}
-            </Button>
+
+                <Button class="cursor-pointer bg-primary mx-1" onclick={handleCreateEntry}>
+                    {#if isHandleCreateEntryLoading}
+                        <Spinner class="me-3" size="4" color="blue" />
+                        Creating ...
+                    {:else}
+                        Create
+                    {/if}
+                </Button>
+            </div>
         </div>
     {/snippet}
-
 </Modal>

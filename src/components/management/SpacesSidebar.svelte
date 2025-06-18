@@ -80,7 +80,7 @@
             }
         };
     }
-    export function preventAndStop(node: any) {
+    function preventAndStop(node: any) {
         return (node: HTMLElement) => {
             const handleEvent = (event: Event) => {
                 event.preventDefault();
