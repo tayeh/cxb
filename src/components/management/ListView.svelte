@@ -194,29 +194,16 @@
     const schema_shortname = record.attributes?.payload?.schema_shortname;
     let tmp_subpath = record.subpath.replaceAll("/", "-");
 
-    if (schema_shortname) {
-      $goto(
-        "/management/content/[space_name]/[subpath]/[shortname]/[resource_type]/[payload_type]/[schema_name]",
-        {
-          space_name: space_name,
-          subpath: tmp_subpath,
-          shortname: shortname,
-          resource_type: record.resource_type,
-          payload_type: record.attributes?.payload?.content_type,
-          schema_name: schema_shortname,
-        }
-      );
-    } else {
-      $goto(
-        "/management/content/[space_name]/[subpath]/[shortname]/[resource_type]",
-        {
-          space_name: space_name,
-          subpath: tmp_subpath,
-          shortname: shortname,
-          resource_type: record.resource_type,
-        }
-      );
-    }
+    $goto(
+      "/management/content/[space_name]/[subpath]/[shortname]/[resource_type]",
+      {
+        space_name: space_name,
+        subpath: tmp_subpath,
+        shortname: shortname,
+        resource_type: record.resource_type,
+      }
+    );
+
   }
 
   async function onListClick(event: any, record: any) {

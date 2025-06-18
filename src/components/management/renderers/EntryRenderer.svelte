@@ -24,10 +24,13 @@
     import ModalMetaUserForm from "@/components/management/Modals/ModalMetaUserForm.svelte";
     import ModalMetaRoleForm from "@/components/management/Modals/ModalMetaRoleForm.svelte";
     import ModalMetaPermissionForm from "@/components/management/Modals/ModalMetaPermissionForm.svelte";
-    import {untrack} from "svelte";
+    import {onMount, untrack} from "svelte";
     import {goto} from "@roxi/routify";
     import {getSpaces} from "@/lib/dmart_services";
     import HistoryListView from "@/components/management/HistoryListView.svelte";
+    import SchemaSchemaEditor from "@/components/management/editors/SchemaSchemaEditor.svelte";
+    import FolderSchemaEditor from "@/components/management/editors/FolderSchemaEditor.svelte";
+    import {removeEmpty} from "@/utils/renderer/schemaEntryRenderer";
     $goto
 
     enum TabMode {
@@ -58,7 +61,18 @@
     });
 
     let jeContent: any = $state({ json: structuredClone(entry) });
-    let errorMessage = null;
+    let jePayload: any = $state(null);
+    let errorMessage = $state(null);
+
+    onMount(() => {
+        if(entry.payload) {
+            if (entry.payload.content_type === "json") {
+                jePayload = {json: entry.payload.body};
+            } else {
+                jePayload = entry.payload.body;
+            }
+        }
+    })
 
     const canUpdate = checkAccess("update", space_name, subpath, resource_type);
     const canDelete = !(space_name === "management" && subpath === "/")
@@ -72,6 +86,9 @@
     async function handleSave(){
         isActionLoading = true;
         const content = jsonEditorContentParser($state.snapshot(jeContent));
+        if (resource_type === ResourceType.schema) {
+            content.payload.body = removeEmpty(jePayload.json);
+        }
         const shortname = content.shortname;
         delete content.uuid;
         delete content.shortname;
@@ -83,14 +100,14 @@
                 records: [{
                     resource_type: resource_type,
                     shortname: shortname,
-                    subpath: '/',
+                    subpath: subpath,
                     attributes: content
                 }]
             })
             showToast(Level.info, `Entry has been updated successfully!`);
             await refreshEntry();
         } catch (error) {
-            errorMessage = error;
+            errorMessage = error.response.data;
         } finally {
             isActionLoading = false;
         }
@@ -345,7 +362,7 @@
                 <JSONEditor bind:content={jeContent} mode={Mode.text} onRenderMenu={handleRenderMenu} />
             {/if}
             {#if errorMessage}
-                <div class="max-h-60 overflow-auto">
+                <div class="overflow-auto">
                     <Prism code={errorMessage} />
                 </div>
             {/if}
@@ -360,9 +377,17 @@
                 {:else if resource_type === ResourceType.permission}
                     <ModalMetaPermissionForm bind:formData={jeContent.json} bind:validateFn={validateRTForm} />
                 {/if}
+                {#if jePayload}
+                    {#if resource_type === ResourceType.schema}
+                        <SchemaSchemaEditor bind:content={jePayload.json}  />
+                    {:else if resource_type === ResourceType.folder}
+                        <FolderSchemaEditor bind:content={jePayload.json} />
+                    {/if}
+                {/if}
+
             {/if}
             {#if errorMessage}
-                <div class="max-h-60 overflow-auto">
+                <div class="overflow-auto">
                     <Prism code={errorMessage} />
                 </div>
             {/if}

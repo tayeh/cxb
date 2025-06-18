@@ -1,5 +1,4 @@
 export function jsonEditorContentParser(jeContent: any){
-    console.log({jeContent})
     if(jeContent === undefined || jeContent === null){
         return {};
     }

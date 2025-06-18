@@ -1,14 +1,12 @@
 <script lang="ts">
-    import { createEventDispatcher } from "svelte";
-    import { Button, Card, Checkbox, Input, Label, Select, Textarea, Accordion, AccordionItem } from "flowbite-svelte";
-    import { transformToProperBodyRequest, transformFromProperBodyRequest } from "@/utils/editors/schemaEditorUtils";
-    import { JSONEditor, Mode } from "svelte-jsoneditor";
+    import { Button, Card, Checkbox, Input, Label, Select,  Accordion, AccordionItem } from "flowbite-svelte";
+    import { transformFormToJson, transformJsonToForm } from "@/utils/editors/schemaEditorUtils";
     import { jsonEditorContentParser } from "@/utils/jsonEditor";
+    import {untrack} from "svelte";
 
-    const dispatch = createEventDispatcher();
 
     let {
-        content = $bindable({})
+        content = $bindable({}),
     } : {
         content: any
     } = $props();
@@ -23,7 +21,7 @@
     }
 
     // Convert content to form-friendly format
-    let formContent = $state(transformFromProperBodyRequest(
+    let formContent = $state(transformJsonToForm(
         $state.snapshot(content)
     ));
 
@@ -135,33 +133,24 @@
         formContent = { ...formContent };
     }
 
-    // Check if a property is required
     function isRequired(propertyName) {
         return formContent.required && formContent.required.includes(propertyName);
     }
 
-    // Save the schema
-    function saveSchema() {
-        // Convert form content back to proper JSON Schema format
-        const schemaContent = transformToProperBodyRequest(structuredClone(formContent));
+    $effect(() => {
+        console.log({formContent})
+        const schemaContent = transformFormToJson(structuredClone(
+            $state.snapshot(formContent)
+        ));
         content = schemaContent;
-        dispatch('save', content);
-    }
+    });
 
-    function updateFromPreview() {
-        // const parsed = jsonEditorContentParser(previewContent);
-        // content = parsed;
-        // formContent = transformFromProperBodyRequest(structuredClone(parsed));
-        // showPreview = false;
-    }
 </script>
 
 <Card class="p-4 max-w-4xl mx-auto">
     <h2 class="text-xl font-bold mb-4">Schema Editor</h2>
-    
-    <div class="mb-4 flex justify-between">
-        <Button color="blue" onclick={saveSchema}>Save Schema</Button>
-    </div>
+
+    <!-- Save button removed as changes are applied automatically -->
 
     <div class="space-y-6">
         <!-- Schema Metadata -->

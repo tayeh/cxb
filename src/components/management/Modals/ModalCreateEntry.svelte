@@ -160,7 +160,6 @@
                 },
             }
             if(selectedResourceType === ResourceType.schema) {
-                console.log({content})
                 requestCreateUser.attributes = {
                     ...requestCreateUser.attributes,
                     payload: {
@@ -327,7 +326,7 @@
             {/if}
             {#if selectedResourceType === ResourceType.schema}
                 {#if selectedInputMode === inputMode.form}
-                    <SchemaSchemaEditor bind:content={content.json} />
+                    <SchemaSchemaEditor bind:content={content.json}/>
                 {:else if selectedInputMode === inputMode.json}
                     <JSONEditor
                         onRenderMenu={handleRenderMenu}
