@@ -15,6 +15,7 @@
     import ModalMetaPermissionForm from "@/components/management/Modals/ModalMetaPermissionForm.svelte";
     import {Level, showToast} from "@/utils/toast";
     import SchemaSchemaEditor from "@/components/management/editors/SchemaSchemaEditor.svelte";
+    import {removeEmpty} from "@/utils/renderer/schemaEntryRenderer";
 
     let {
         space_name,
@@ -158,8 +159,17 @@
                     ..._metaContent
                 },
             }
-            if(selectedSchema){
-                requestCreateUser.attributes.schema_shortname = selectedSchema;
+            if(selectedResourceType === ResourceType.schema) {
+                console.log({content})
+                requestCreateUser.attributes = {
+                    ...requestCreateUser.attributes,
+                    payload: {
+                        body: removeEmpty(jsonEditorContentParser($state.snapshot(content))),
+                        schema: 'meta_schema',
+                        content_type: "json"
+                    }
+                };
+            } else if(selectedSchema) {
                 requestCreateUser.attributes = {
                     ...requestCreateUser.attributes,
                     payload: {
@@ -169,6 +179,7 @@
                     }
                 };
             }
+
 
             response = await Dmart.request({
                 space_name,

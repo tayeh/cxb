@@ -1,8 +1,9 @@
-
 <script lang="ts">
     import { createEventDispatcher } from "svelte";
-    import { Button, Card, Checkbox, Input, Label, Select, Textarea, } from "flowbite-svelte";
-    import { TrashBinOutline, PlusOutline } from "flowbite-svelte-icons";
+    import { Button, Card, Checkbox, Input, Label, Select, Textarea, Accordion, AccordionItem } from "flowbite-svelte";
+    import { transformToProperBodyRequest, transformFromProperBodyRequest } from "@/utils/editors/schemaEditorUtils";
+    import { JSONEditor, Mode } from "svelte-jsoneditor";
+    import { jsonEditorContentParser } from "@/utils/jsonEditor";
 
     const dispatch = createEventDispatcher();
 
@@ -12,7 +13,7 @@
         content: any
     } = $props();
 
-    // Initialize schema structure
+    // Initialize content with default schema structure if empty
     if (!content || Object.keys(content).length === 0) {
         content = {
             type: "object",
@@ -21,345 +22,361 @@
         };
     }
 
-    // Ensure required properties exist
-    if (!content.properties) content.properties = {};
-    if (!content.required) content.required = [];
+    // Convert content to form-friendly format
+    let formContent = $state(transformFromProperBodyRequest(
+        $state.snapshot(content)
+    ));
 
-    let errors = $state({});
-
-    const fieldTypes = [
-        { value: "string", name: "Text" },
+    // Available JSON Schema types
+    const schemaTypes = [
+        { value: "string", name: "String" },
         { value: "number", name: "Number" },
         { value: "integer", name: "Integer" },
         { value: "boolean", name: "Boolean" },
+        { value: "object", name: "Object" },
         { value: "array", name: "Array" },
-        { value: "object", name: "Object" }
+        { value: "null", name: "Null" }
     ];
 
-    const stringFormats = [
-        { value: "", name: "No format" },
-        { value: "email", name: "Email" },
-        { value: "uri", name: "URL" },
-        { value: "date", name: "Date" },
-        { value: "date-time", name: "Date Time" },
-        { value: "uuid", name: "UUID" }
-    ];
-
-    function validateForm() {
-        errors = {};
-
-        if (!content.properties || Object.keys(content.properties).length === 0) {
-            errors['properties'] = 'At least one property is required';
-        }
-
-        return Object.keys(errors).length === 0;
-    }
-
-    function onSave() {
-        if (validateForm()) {
-            dispatch('save', content);
-        }
-    }
-
-    function addProperty() {
-        const newKey = `property_${Object.keys(content.properties).length + 1}`;
-        content.properties[newKey] = {
+    // Add a new property to the schema
+    function addProperty(parentPath = "") {
+        const newProperty = {
+            id: crypto.randomUUID(),
+            name: "",
             type: "string",
             title: "",
             description: ""
         };
-        content = {...content};
-    }
 
-    function removeProperty(key: string) {
-        delete content.properties[key];
-        content.required = content.required.filter(req => req !== key);
-        content = {...content};
-    }
-
-    function updatePropertyKey(oldKey: string, newKey: string) {
-        if (oldKey === newKey || !newKey.trim()) return;
-
-        const property = content.properties[oldKey];
-        delete content.properties[oldKey];
-        content.properties[newKey] = property;
-
-        // Update required array
-        const requiredIndex = content.required.indexOf(oldKey);
-        if (requiredIndex !== -1) {
-            content.required[requiredIndex] = newKey;
-        }
-
-        content = {...content};
-    }
-
-    function toggleRequired(key: string) {
-        const index = content.required.indexOf(key);
-        if (index === -1) {
-            content.required.push(key);
+        if (parentPath) {
+            // Add to nested object
+            const parent = getPropertyByPath(formContent, parentPath);
+            if (parent && !parent.properties) {
+                parent.properties = [];
+            }
+            if (parent) {
+                parent.properties.push(newProperty);
+            }
         } else {
-            content.required.splice(index, 1);
+            // Add to root
+            if (!formContent.properties) {
+                formContent.properties = [];
+            }
+            formContent.properties.push(newProperty);
         }
-        content = {...content};
+
+        formContent = { ...formContent };
     }
 
-    function addArrayItem(propertyKey: string) {
-        if (!content.properties[propertyKey].items) {
-            content.properties[propertyKey].items = { type: "string" };
+    // Add a new item to an array property
+    function addArrayItem(parentPath) {
+        const parent = getPropertyByPath(formContent, parentPath);
+        if (parent) {
+            if (!parent.items) {
+                parent.items = {
+                    id: crypto.randomUUID(),
+                    type: "string"
+                };
+            }
+
+            // If items is already an object with properties, we don't need to do anything
+            if (parent.items.type === "object" && !parent.items.properties) {
+                parent.items.properties = [];
+            }
+
+            formContent = { ...formContent };
         }
-        content = {...content};
     }
 
-    function addObjectProperty(propertyKey: string) {
-        if (!content.properties[propertyKey].properties) {
-            content.properties[propertyKey].properties = {};
-        }
-        if (!content.properties[propertyKey].required) {
-            content.properties[propertyKey].required = [];
+    // Remove a property from the schema
+    function removeProperty(path, index) {
+        const parts = path.split('.');
+        let current = formContent;
+
+        // Navigate to the parent object
+        for (let i = 0; i < parts.length - 1; i++) {
+            if (!current[parts[i]]) return;
+            current = current[parts[i]];
         }
 
-        const newKey = `nested_${Object.keys(content.properties[propertyKey].properties).length + 1}`;
-        content.properties[propertyKey].properties[newKey] = {
-            type: "string",
-            title: "",
-            description: ""
-        };
-        content = {...content};
+        const lastPart = parts[parts.length - 1];
+        if (!current[lastPart]) return;
+
+        current[lastPart].splice(index, 1);
+        formContent = { ...formContent };
     }
 
-    function removeObjectProperty(parentKey: string, childKey: string) {
-        delete content.properties[parentKey].properties[childKey];
-        if (content.properties[parentKey].required) {
-            content.properties[parentKey].required = content.properties[parentKey].required.filter(req => req !== childKey);
+    // Helper to get a property by path
+    function getPropertyByPath(obj, path) {
+        const parts = path.split('.');
+        let current = obj;
+
+        for (const part of parts) {
+            if (!current[part]) return null;
+            current = current[part];
         }
-        content = {...content};
+
+        return current;
     }
 
-    function toggleObjectRequired(parentKey: string, childKey: string) {
-        if (!content.properties[parentKey].required) {
-            content.properties[parentKey].required = [];
+    // Toggle required status for a property
+    function toggleRequired(propertyName) {
+        if (!formContent.required) {
+            formContent.required = [];
         }
 
-        const index = content.properties[parentKey].required.indexOf(childKey);
+        const index = formContent.required.indexOf(propertyName);
         if (index === -1) {
-            content.properties[parentKey].required.push(childKey);
+            formContent.required.push(propertyName);
         } else {
-            content.properties[parentKey].required.splice(index, 1);
+            formContent.required.splice(index, 1);
         }
-        content = {...content};
+
+        formContent = { ...formContent };
+    }
+
+    // Check if a property is required
+    function isRequired(propertyName) {
+        return formContent.required && formContent.required.includes(propertyName);
+    }
+
+    // Save the schema
+    function saveSchema() {
+        // Convert form content back to proper JSON Schema format
+        const schemaContent = transformToProperBodyRequest(structuredClone(formContent));
+        content = schemaContent;
+        dispatch('save', content);
+    }
+
+    function updateFromPreview() {
+        // const parsed = jsonEditorContentParser(previewContent);
+        // content = parsed;
+        // formContent = transformFromProperBodyRequest(structuredClone(parsed));
+        // showPreview = false;
     }
 </script>
 
-<Card class="p-4 max-w-6xl mx-auto">
-    <h2 class="text-xl font-bold mb-4">JSON Schema Editor</h2>
+<Card class="p-4 max-w-4xl mx-auto">
+    <h2 class="text-xl font-bold mb-4">Schema Editor</h2>
+    
+    <div class="mb-4 flex justify-between">
+        <Button color="blue" onclick={saveSchema}>Save Schema</Button>
+    </div>
 
     <div class="space-y-6">
         <!-- Schema Metadata -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-                <Label for="schema_title">Schema Title</Label>
-                <Input id="schema_title" placeholder="Enter schema title" bind:value={content.title} />
+                <Label for="schema-title">Schema Title</Label>
+                <Input id="schema-title" placeholder="Schema title" bind:value={formContent.title} />
             </div>
             <div>
-                <Label for="schema_description">Schema Description</Label>
-                <Textarea id="schema_description" placeholder="Enter schema description" bind:value={content.description} />
+                <Label for="schema-description">Schema Description</Label>
+                <Input id="schema-description" placeholder="Schema description" bind:value={formContent.description} />
             </div>
         </div>
 
-        <!-- Properties Section -->
+        <!-- Properties -->
         <div class="border p-4 rounded-lg">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="font-semibold">Properties</h3>
-                <Button size="sm" onclick={addProperty}>
-                    <PlusOutline class="w-4 h-4 mr-2" />
-                    Add Property
-                </Button>
+                <Button size="xs" color="blue" onclick={() => addProperty()}>Add Property</Button>
             </div>
 
-            {#if errors['properties']}
-                <p class="text-red-500 text-sm mb-2">{errors['properties']}</p>
-            {/if}
+            {#if formContent.properties && formContent.properties.length > 0}
+                <Accordion flush>
+                    {#each formContent.properties as property, index}
+                        <AccordionItem>
+                            {#snippet header()}
+                                <span class="font-medium">{property.name || 'New Property'}</span>
+                                {#if property.type}
+                                    <span class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">{property.type}</span>
+                                {/if}
+                                {#if isRequired(property.name)}
+                                    <span class="ml-2 text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">Required</span>
+                                {/if}
+                            {/snippet}
 
-            {#if Object.keys(content.properties).length > 0}
-                {#each Object.entries(content.properties) as [key, property], index}
-                    <div class="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                            <!-- Property Key -->
-                            <div>
-                                <Label>Property Key</Label>
-                                <Input
-                                        value={key}
-                                        onblur={(e) => updatePropertyKey(key, e.target.value)}
-                                        placeholder="Property key"
-                                />
-                            </div>
-
-                            <!-- Property Type -->
-                            <div>
-                                <Label>Type</Label>
-                                <Select bind:value={property.type} items={fieldTypes} />
-                            </div>
-
-                            <!-- Required Checkbox -->
-                            <div class="flex items-center space-x-2">
-                                <Checkbox
-                                        checked={content.required.includes(key)}
-                                        onchange={() => toggleRequired(key)}
-                                />
-                                <Label>Required</Label>
-                                <Button size="xs" color="red" onclick={() => removeProperty(key)}>
-                                    <TrashBinOutline class="w-4 h-4" />
-                                </Button>
-                            </div>
-                        </div>
-
-                        <!-- Property Details -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <Label>Title</Label>
-                                <Input bind:value={property.title} placeholder="Display title" />
-                            </div>
-                            <div>
-                                <Label>Description</Label>
-                                <Input bind:value={property.description} placeholder="Field description" />
-                            </div>
-                        </div>
-
-                        <!-- Type-specific configurations -->
-                        {#if property.type === "string"}
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <Label>Format</Label>
-                                    <Select bind:value={property.format} items={stringFormats} />
-                                </div>
-                                <div>
-                                    <Label>Min Length</Label>
-                                    <NumberInput bind:value={property.minLength} placeholder="0" />
-                                </div>
-                                <div>
-                                    <Label>Max Length</Label>
-                                    <NumberInput bind:value={property.maxLength} placeholder="100" />
-                                </div>
-                            </div>
-                            <div class="mt-2">
-                                <Label>Pattern (RegEx)</Label>
-                                <Input bind:value={property.pattern} placeholder="Regular expression pattern" />
-                            </div>
-                        {/if}
-
-                        {#if property.type === "number" || property.type === "integer"}
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <Label>Minimum</Label>
-                                    <NumberInput bind:value={property.minimum} placeholder="Min value" />
-                                </div>
-                                <div>
-                                    <Label>Maximum</Label>
-                                    <NumberInput bind:value={property.maximum} placeholder="Max value" />
-                                </div>
-                            </div>
-                        {/if}
-
-                        {#if property.type === "array"}
-                            <div class="border border-gray-300 rounded p-3 mt-2">
-                                <div class="flex justify-between items-center mb-2">
-                                    <Label class="font-medium">Array Items</Label>
-                                    <Button size="xs" onclick={() => addArrayItem(key)}>Configure Items</Button>
-                                </div>
-
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="p-2 space-y-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <Label>Item Type</Label>
-                                        <Select bind:value={property.items.type} items={fieldTypes} />
+                                        <Label for={`property-name-${index}`}>Property Name</Label>
+                                        <Input id={`property-name-${index}`} placeholder="Property name" bind:value={property.name} />
                                     </div>
                                     <div>
-                                        <Label>Min Items</Label>
-                                        <NumberInput bind:value={property.minItems} placeholder="0" />
+                                        <Label for={`property-type-${index}`}>Property Type</Label>
+                                        <Select id={`property-type-${index}`} bind:value={property.type}>
+                                            {#each schemaTypes as type}
+                                                <option value={type.value}>{type.name}</option>
+                                            {/each}
+                                        </Select>
                                     </div>
                                     <div>
-                                        <Label>Max Items</Label>
-                                        <NumberInput bind:value={property.maxItems} placeholder="10" />
+                                        <Label for={`property-title-${index}`}>Title</Label>
+                                        <Input id={`property-title-${index}`} placeholder="Title" bind:value={property.title} />
+                                    </div>
+                                    <div>
+                                        <Label for={`property-description-${index}`}>Description</Label>
+                                        <Input id={`property-description-${index}`} placeholder="Description" bind:value={property.description} />
                                     </div>
                                 </div>
 
-                                <div class="mt-2">
-                                    <Checkbox bind:checked={property.uniqueItems} />
-                                    <Label class="ml-2">Unique Items</Label>
-                                </div>
-                            </div>
-                        {/if}
+                                <!-- Type-specific options -->
+                                {#if property.type === 'string'}
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <Label for={`property-minLength-${index}`}>Min Length</Label>
+                                            <Input id={`property-minLength-${index}`} type="number" placeholder="Min length" bind:value={property.minLength} />
+                                        </div>
+                                        <div>
+                                            <Label for={`property-maxLength-${index}`}>Max Length</Label>
+                                            <Input id={`property-maxLength-${index}`} type="number" placeholder="Max length" bind:value={property.maxLength} />
+                                        </div>
+                                        <div>
+                                            <Label for={`property-pattern-${index}`}>Pattern (regex)</Label>
+                                            <Input id={`property-pattern-${index}`} placeholder="Pattern" bind:value={property.pattern} />
+                                        </div>
+                                        <div>
+                                            <Label for={`property-format-${index}`}>Format</Label>
+                                            <Select id={`property-format-${index}`} bind:value={property.format}>
+                                                <option value="">None</option>
+                                                <option value="date-time">Date-Time</option>
+                                                <option value="date">Date</option>
+                                                <option value="time">Time</option>
+                                                <option value="email">Email</option>
+                                                <option value="uri">URI</option>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                {:else if property.type === 'number' || property.type === 'integer'}
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <Label for={`property-minimum-${index}`}>Minimum</Label>
+                                            <Input id={`property-minimum-${index}`} type="number" placeholder="Minimum value" bind:value={property.minimum} />
+                                        </div>
+                                        <div>
+                                            <Label for={`property-maximum-${index}`}>Maximum</Label>
+                                            <Input id={`property-maximum-${index}`} type="number" placeholder="Maximum value" bind:value={property.maximum} />
+                                        </div>
+                                        <div>
+                                            <Label for={`property-multipleOf-${index}`}>Multiple Of</Label>
+                                            <Input id={`property-multipleOf-${index}`} type="number" placeholder="Multiple of" bind:value={property.multipleOf} />
+                                        </div>
+                                    </div>
+                                {:else if property.type === 'array'}
+                                    <div class="border p-3 rounded-md bg-gray-50">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="font-medium">Array Items</h4>
+                                            <Button size="xs" color="blue" onclick={() => addArrayItem(`properties.${index}`)}>Configure Items</Button>
+                                        </div>
 
-                        {#if property.type === "object"}
-                            <div class="border border-gray-300 rounded p-3 mt-2">
-                                <div class="flex justify-between items-center mb-2">
-                                    <Label class="font-medium">Object Properties</Label>
-                                    <Button size="xs" onclick={() => addObjectProperty(key)}>
-                                        <PlusOutline class="w-3 h-3 mr-1" />
-                                        Add Property
-                                    </Button>
-                                </div>
+                                        {#if property.items}
+                                            <div class="p-2 space-y-3">
+                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <Label for={`items-type-${index}`}>Items Type</Label>
+                                                        <Select id={`items-type-${index}`} bind:value={property.items.type}>
+                                                            {#each schemaTypes as type}
+                                                                <option value={type.value}>{type.name}</option>
+                                                            {/each}
+                                                        </Select>
+                                                    </div>
 
-                                {#if property.properties && Object.keys(property.properties).length > 0}
-                                    {#each Object.entries(property.properties) as [childKey, childProperty]}
-                                        <div class="border border-gray-200 rounded p-2 mb-2 bg-white">
-                                            <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
-                                                <Input
-                                                        value={childKey}
-                                                        placeholder="Property key"
-                                                        size="sm"
-                                                />
-                                                <Select bind:value={childProperty.type} items={fieldTypes} size="sm" />
-                                                <Input bind:value={childProperty.title} placeholder="Title" size="sm" />
-                                                <div class="flex items-center space-x-2">
-                                                    <Checkbox
-                                                            checked={property.required?.includes(childKey)}
-                                                            onchange={() => toggleObjectRequired(key, childKey)}
-                                                    />
-                                                    <Label class="text-sm">Required</Label>
-                                                    <Button size="xs" color="red" onclick={() => removeObjectProperty(key, childKey)}>
-                                                        <TrashBinOutline class="w-3 h-3" />
-                                                    </Button>
+                                                    {#if property.items.type === 'object' && property.items.properties}
+                                                        <div class="col-span-2">
+                                                            <Label>Object Properties</Label>
+                                                            <div class="border p-2 rounded-md mt-1">
+                                                                <Button size="xs" color="blue" onclick={() => addProperty(`properties.${index}.items`)}>Add Object Property</Button>
+
+                                                                {#if property.items.properties.length > 0}
+                                                                    {#each property.items.properties as itemProperty, itemIndex}
+                                                                        <div class="mt-2 p-2 bg-white rounded border">
+                                                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                                                <div>
+                                                                                    <Label for={`item-property-name-${index}-${itemIndex}`}>Name</Label>
+                                                                                    <Input id={`item-property-name-${index}-${itemIndex}`} placeholder="Property name" bind:value={itemProperty.name} />
+                                                                                </div>
+                                                                                <div>
+                                                                                    <Label for={`item-property-type-${index}-${itemIndex}`}>Type</Label>
+                                                                                    <Select id={`item-property-type-${index}-${itemIndex}`} bind:value={itemProperty.type}>
+                                                                                        {#each schemaTypes as type}
+                                                                                            <option value={type.value}>{type.name}</option>
+                                                                                        {/each}
+                                                                                    </Select>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="mt-2 flex justify-end">
+                                                                                <Button size="xs" color="red" onclick={() => removeProperty(`properties.${index}.items.properties`, itemIndex)}>Remove</Button>
+                                                                            </div>
+                                                                        </div>
+                                                                    {/each}
+                                                                {/if}
+                                                            </div>
+                                                        </div>
+                                                    {/if}
+                                                </div>
+
+                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <Label for={`array-minItems-${index}`}>Min Items</Label>
+                                                        <Input id={`array-minItems-${index}`} type="number" placeholder="Min items" bind:value={property.minItems} />
+                                                    </div>
+                                                    <div>
+                                                        <Label for={`array-maxItems-${index}`}>Max Items</Label>
+                                                        <Input id={`array-maxItems-${index}`} type="number" placeholder="Max items" bind:value={property.maxItems} />
+                                                    </div>
                                                 </div>
                                             </div>
+                                        {/if}
+                                    </div>
+                                {:else if property.type === 'object'}
+                                    <div class="border p-3 rounded-md bg-gray-50">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="font-medium">Object Properties</h4>
+                                            <Button size="xs" color="blue" onclick={() => addProperty(`properties.${index}`)}>Add Object Property</Button>
                                         </div>
-                                    {/each}
+
+                                        {#if property.properties && property.properties.length > 0}
+                                            {#each property.properties as nestedProperty, nestedIndex}
+                                                <div class="mt-2 p-2 bg-white rounded border">
+                                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                        <div>
+                                                            <Label for={`nested-property-name-${index}-${nestedIndex}`}>Name</Label>
+                                                            <Input id={`nested-property-name-${index}-${nestedIndex}`} placeholder="Property name" bind:value={nestedProperty.name} />
+                                                        </div>
+                                                        <div>
+                                                            <Label for={`nested-property-type-${index}-${nestedIndex}`}>Type</Label>
+                                                            <Select id={`nested-property-type-${index}-${nestedIndex}`} bind:value={nestedProperty.type}>
+                                                                {#each schemaTypes as type}
+                                                                    <option value={type.value}>{type.name}</option>
+                                                                {/each}
+                                                            </Select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="mt-2 flex justify-end">
+                                                        <Button size="xs" color="red" onclick={() => removeProperty(`properties.${index}.properties`, nestedIndex)}>Remove</Button>
+                                                    </div>
+                                                </div>
+                                            {/each}
+                                        {/if}
+                                    </div>
                                 {/if}
+
+                                <div class="flex items-center mt-4">
+                                    <Checkbox id={`property-required-${index}`} checked={isRequired(property.name)} onclick={() => toggleRequired(property.name)} />
+                                    <Label for={`property-required-${index}`} class="ml-2">Required</Label>
+                                </div>
+
+                                <div class="flex justify-end mt-2">
+                                    <Button size="xs" color="red" onclick={() => removeProperty('properties', index)}>Remove Property</Button>
+                                </div>
                             </div>
-                        {/if}
-
-                        <!-- Default Value -->
-                        <div class="mt-2">
-                            <Label>Default Value</Label>
-                            {#if property.type === "boolean"}
-                                <Checkbox bind:checked={property.default} />
-                            {:else if property.type === "number" || property.type === "integer"}
-                                <Input type="number" bind:value={property.default} placeholder="Default value" />
-                            {:else}
-                                <Input bind:value={property.default} placeholder="Default value" />
-                            {/if}
-                        </div>
-                    </div>
-                {/each}
+                        </AccordionItem>
+                    {/each}
+                </Accordion>
             {:else}
-                <p class="text-gray-500 text-center py-8">No properties defined. Click "Add Property" to start building your schema.</p>
+                <p class="text-gray-500 text-center py-4">No properties defined. Click "Add Property" to start.</p>
             {/if}
-        </div>
-
-        <!-- Schema Options -->
-        <div class="border p-4 rounded-lg">
-            <h3 class="font-semibold mb-4">Schema Options</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <Checkbox bind:checked={content.additionalProperties} />
-                    <Label class="ml-2">Allow Additional Properties</Label>
-                </div>
-            </div>
-        </div>
-
-        <!-- JSON Preview -->
-        <div class="border p-4 rounded-lg">
-            <h3 class="font-semibold mb-2">JSON Schema Preview</h3>
-            <pre class="bg-gray-100 p-3 rounded text-sm overflow-auto max-h-60">{JSON.stringify(content, null, 2)}</pre>
         </div>
     </div>
 </Card>
