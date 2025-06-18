@@ -1,3 +1,4 @@
+<!-- routify:meta reset -->
 <script>
     import { goto } from '@roxi/routify';
     import {Dmart} from "@edraj/tsdmart";

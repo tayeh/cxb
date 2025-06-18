@@ -15,7 +15,7 @@
         BellOutline,
         UserSolid,OpenDoorOutline
     } from 'flowbite-svelte-icons';
-    import {goto, isActive} from '@roxi/routify';
+    import {goto,} from '@roxi/routify';
     $goto
     import {signout, user} from "@/stores/user";
     import {getAvatar} from "@/lib/dmart_services";
