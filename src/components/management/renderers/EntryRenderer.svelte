@@ -52,7 +52,10 @@
         schema_name?: string | null,
     } = $props();
 
-    currentEntry.set(entry);
+    currentEntry.set({
+        entry,
+        refreshEntry
+    });
 
     let jeContent: any = $state({ json: structuredClone(entry) });
     let errorMessage = null;
@@ -162,7 +165,10 @@
             entry = await Dmart.retrieve_entry(resource_type, space_name, subpath, entry.shortname, true, true);
         }
         jeContent = { json: structuredClone(entry) };
-        currentEntry.set(entry);
+        currentEntry.set({
+            entry,
+            refreshEntry
+        });
     }
 
     $effect(()=>{

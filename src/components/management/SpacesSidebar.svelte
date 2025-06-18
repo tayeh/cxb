@@ -5,26 +5,108 @@
         DropdownItem, Input, ListPlaceholder, Modal,
         Sidebar,
         SidebarGroup,
-        SidebarItem,
-        SidebarWrapper,
-        uiHelpers
+        SidebarItem, Spinner,
     } from "flowbite-svelte";
-    import {CodeForkSolid, DotsHorizontalOutline, EyeSolid, PenSolid, TrashBinSolid} from "flowbite-svelte-icons";
+    import {
+        CodeForkSolid,
+        DotsHorizontalOutline,
+        EyeSolid,
+        PenSolid,
+        TrashBinSolid,
+        ChevronDownOutline,
+        ChevronRightOutline,
+        PlusOutline
+    } from "flowbite-svelte-icons";
     import {spaces} from "@/stores/management/spaces";
     import {JSONEditor, Mode} from "svelte-jsoneditor";
     import Prism from "@/components/Prism.svelte";
     import {Dmart, RequestType, ResourceType} from "@edraj/tsdmart";
     import {Level, showToast} from "@/utils/toast";
-    import {getChildren, getSpaces} from "@/lib/dmart_services";
+    import {getSpaces, getChildren} from "@/lib/dmart_services";
     import {jsonEditorContentParser} from "@/utils/jsonEditor";
+    import SpacesSubpathItemsSidebar from "./SpacesSubpathItemsSidebar.svelte";
 
-    let viewMetaModal = false;
-    let editModal = false;
-    let deleteModal = false;
-    let addSpaceModal = false;
-    let selectedSpace = null;
-    let modelError = null;
-    let newSpaceShortname = "";
+    let spaceChildren = new Map();
+    let expandedSpaces = new Set();
+
+
+    async function loadChildren(spaceName, subpath = "/") {
+        const cacheKey = `${spaceName}:${subpath}`;
+        if (!spaceChildren.has(cacheKey)) {
+            try {
+                const children = await getChildren(spaceName, subpath, 50, 0, [ResourceType.folder]);
+                console.log({children})
+                spaceChildren.set(cacheKey, children.records || []);
+                spaceChildren = spaceChildren; // Trigger reactivity
+            } catch (error) {
+                console.error(`Failed to load children for ${spaceName}${subpath}:`, error);
+                spaceChildren.set(cacheKey, []);
+            }
+        }
+        return spaceChildren.get(cacheKey) || [];
+    }
+
+    async function toggleExpanded(spaceName, subpath = "/") {
+        const key = `${spaceName}:${subpath}`;
+        if (expandedSpaces.has(key)) {
+            expandedSpaces.delete(key);
+        } else {
+            expandedSpaces.add(key);
+            await loadChildren(spaceName, subpath);
+        }
+        expandedSpaces = expandedSpaces; // Trigger reactivity
+    }
+
+    function isExpanded(spaceName, subpath = "/") {
+        return expandedSpaces.has(`${spaceName}:${subpath}`);
+    }
+
+    function getChildrenForSpace(spaceName, subpath = "/") {
+        return spaceChildren.get(`${spaceName}:${subpath}`) || [];
+    }
+
+    export function preventAndToggleExpanded(node: HTMLElement, spaceShortname: string) {
+        const handleEvent = (event: Event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleExpanded(spaceShortname)
+        };
+
+        node.addEventListener('click', handleEvent);
+
+        return {
+            destroy() {
+                node.removeEventListener('click', handleEvent);
+            }
+        };
+    }
+    export function preventAndStop(node: any) {
+        return (node: HTMLElement) => {
+            const handleEvent = (event: Event) => {
+                event.preventDefault();
+                event.stopPropagation();
+            };
+
+            node.addEventListener('click', handleEvent);
+
+            return {
+                destroy() {
+                    node.removeEventListener('click', handleEvent);
+                }
+            };
+        };
+    }
+
+
+    let viewMetaModal = $state(false);
+    let editModal = $state(false);
+    let deleteModal = $state(false);
+    let addSpaceModal = $state(false);
+    let selectedSpace = $state(null);
+    let modelError = $state(null);
+    let newSpaceShortname = $state("");
+
+    let isActionLoading = $state(false);
 
     let jeContent = { json: undefined };
 
@@ -37,6 +119,7 @@
     async function createSpace() {
         if (newSpaceShortname.trim()) {
             try {
+                isActionLoading = true;
                 modelError = null;
                 await Dmart.space({
                     space_name: newSpaceShortname.trim(),
@@ -51,22 +134,30 @@
                     ]
                 });
                 showToast(Level.info, `Space "${newSpaceShortname.trim()}" created successfully!`);
-                addSpaceModal = false;
                 await getSpaces();
+                addSpaceModal = false;
             } catch (error) {
                 modelError = error.response.data;
+            } finally {
+                isActionLoading = false;
             }
         }
     }
 
-    function viewMeta(space) {
+    function viewMeta(event, space) {
+        event.preventDefault();
+        event.stopPropagation();
+
         modelError = null;
         selectedSpace = structuredClone(space);
         jeContent = { json: selectedSpace };
         viewMetaModal = true;
     }
 
-    function editSpace(space) {
+    function editSpace(event, space) {
+        event.preventDefault();
+        event.stopPropagation();
+
         modelError = null;
         selectedSpace = structuredClone(space);
         jeContent = { json: selectedSpace };
@@ -78,6 +169,7 @@
             const record = jsonEditorContentParser(jeContent);
             delete record.uuid;
             try {
+                isActionLoading = true;
                 modelError = null;
                 await Dmart.request({
                     space_name: selectedSpace.shortname,
@@ -96,11 +188,16 @@
                 await getSpaces();
             } catch (error) {
                 modelError = error;
+            } finally {
+                isActionLoading = false;
             }
         }
     }
 
-    function confirmDelete(space) {
+    function confirmDelete(event, space) {
+        event.preventDefault();
+        event.stopPropagation();
+
         modelError = null;
         selectedSpace = space;
         deleteModal = true;
@@ -108,7 +205,9 @@
 
     async function deleteSpace() {
         if (selectedSpace) {
+
             try {
+                isActionLoading = true;
                 modelError = null;
                 await Dmart.request({
                     space_name: selectedSpace.shortname,
@@ -126,27 +225,10 @@
                 await getSpaces();
             } catch (error) {
                 modelError = error;
+            } finally {
+                isActionLoading = false;
             }
         }
-    }
-
-    async function handleClickSpace(space) {
-        await getChildren(space.shortname, '/')
-    }
-
-    export function preventAndStop(node: HTMLElement, space: any) {
-        const handleEvent = (event: Event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            handleClickSpace(space);
-        };
-        node.addEventListener('click', handleEvent);
-
-        return {
-            destroy() {
-                node.removeEventListener('click', handleEvent);
-            }
-        };
     }
 </script>
 
@@ -155,46 +237,90 @@
         {#if $spaces === null}
             <ListPlaceholder />
         {:else}
+            <Button size="md" class="ms-6 bg-primary" style="cursor: pointer" onclick={showAddSpaceModal}>
+                <PlusOutline class="flex justify-center h-5 w-6" />Add new space
+            </Button>
             {#each $spaces as space (space.shortname)}
-                <SidebarItem label={space.attributes?.displayname?.en || space.shortname}
-                             href={"/management/content/"+space.shortname}
-                             class="flex-1 ms-3 whitespace-nowrap">
+                <!-- Main space item -->
+                <SidebarItem
+                        label={space.attributes?.displayname?.en || space.shortname}
+                        href={"/management/content/"+space.shortname}
+                        class="flex-1 ms-3 whitespace-nowrap">
                     {#snippet icon()}
-                        <div use:preventAndStop={space}>
-                        <CodeForkSolid
-                            size="md"
-                            class="text-gray-500"
-                            style="transform: rotate(180deg); position: relative; z-index: 5;"
-                        />
+                        <div class="flex items-center gap-2">
+                            <button
+                                class="p-1 hover:bg-gray-200 rounded"
+                                use:preventAndToggleExpanded={space.shortname}
+                            >
+                                {#if isExpanded(space.shortname)}
+                                    <ChevronDownOutline size="sm" />
+                                {:else}
+                                    <ChevronRightOutline size="sm" />
+                                {/if}
+                            </button>
+
+                            <CodeForkSolid
+                                size="md"
+                                class="text-gray-500"
+                                style="transform: rotate(180deg); position: relative; z-index: 5;"
+                            />
                         </div>
                     {/snippet}
+                    <!--TODO: fix propagation issue-->
                     {#snippet subtext()}
-                        <div class="flex items-end justify-end w-full">
-                            <div class="p-1" style="cursor: pointer; z-index: 10">
-                                <Button class="!p-1" color="light">
-                                    <DotsHorizontalOutline />
-                                    <Dropdown simple>
-                                        <DropdownItem class="w-full" onclick={() => viewMeta(space)}>
-                                            <div class="flex items-center gap-2">
-                                                <EyeSolid size="sm" /> View Meta
-                                            </div>
-                                        </DropdownItem>
-                                        <DropdownItem class="w-full" onclick={() => editSpace(space)}>
-                                            <div class="flex items-center gap-2">
-                                                <PenSolid size="sm" /> Edit
-                                            </div>
-                                        </DropdownItem>
-                                        <DropdownItem class="w-full" onclick={() => confirmDelete(space)}>
-                                            <div class="flex items-center gap-2 text-red-600">
-                                                <TrashBinSolid size="sm" /> Delete
-                                            </div>
-                                        </DropdownItem>
-                                    </Dropdown>
-                                </Button>
-                            </div>
-                        </div>
                     {/snippet}
+                    <!--{#snippet subtext()}-->
+                    <!--    <div class="flex items-end justify-end w-full">-->
+                    <!--        <div class="p-1" style="cursor: pointer; z-index: 10">-->
+                    <!--            <Button class="!p-1" color="light" size="xs" onclick={(e) => e.stopPropagation()}>-->
+                    <!--                <DotsHorizontalOutline />-->
+                    <!--                <Dropdown onclick={(e) => e.stopPropagation()} class="!p-0">-->
+                    <!--                    <DropdownItem class="w-full" onclick={(e) => viewMeta(e,space)}>-->
+                    <!--                        <div class="flex items-center gap-2">-->
+                    <!--                            <EyeSolid size="sm" /> View Meta-->
+                    <!--                        </div>-->
+                    <!--                    </DropdownItem>-->
+
+                    <!--                    <DropdownItem class="w-full" onclick={(e) => editSpace(e,space)}>-->
+                    <!--                        <div class="flex items-center gap-2">-->
+                    <!--                            <PenSolid size="sm" /> Edit-->
+                    <!--                        </div>-->
+                    <!--                    </DropdownItem>-->
+
+                    <!--                    <DropdownItem class="w-full" onclick={(e) => confirmDelete(e,space)}>-->
+                    <!--                        <div class="flex items-center gap-2 text-red-600">-->
+                    <!--                            <TrashBinSolid size="sm" /> Delete-->
+                    <!--                        </div>-->
+                    <!--                    </DropdownItem>-->
+                    <!--                </Dropdown>-->
+                    <!--            </Button>-->
+                    <!--        </div>-->
+                    <!--    </div>-->
+                    <!--{/snippet}-->
                 </SidebarItem>
+
+                {#if isExpanded(space.shortname)}
+                    {#await loadChildren(space.shortname)}
+                        <div class="ml-6">
+                            <ListPlaceholder />
+                        </div>
+                    {:then children}
+                        {#each getChildrenForSpace(space.shortname) as child (child.shortname)}
+                            <SpacesSubpathItemsSidebar
+                                    spaceName={space.shortname}
+                                    parentPath="/"
+                                    item={child}
+                                    depth={1}
+                                    {spaceChildren}
+                                    {expandedSpaces}
+                                    {loadChildren}
+                                    {toggleExpanded}
+                                    {isExpanded}
+                                    {getChildrenForSpace}
+                            />
+                        {/each}
+                    {/await}
+                {/if}
             {/each}
         {/if}
     </SidebarGroup>
@@ -218,7 +344,14 @@
 
     <div class="flex justify-between w-full">
         <Button color="alternative" onclick={() => addSpaceModal = false}>Cancel</Button>
-        <Button class="bg-primary" onclick={createSpace}>Create</Button>
+        <Button class="bg-primary" onclick={createSpace}>
+            {#if isActionLoading}
+                <Spinner class="me-3" size="4" color="blue" />
+                Creating ...
+            {:else}
+                Create
+            {/if}
+        </Button>
     </div>
 </Modal>
 
@@ -247,7 +380,14 @@
     </div>
     <div class="flex justify-between w-full">
         <Button color="alternative" onclick={() => editModal = false}>Cancel</Button>
-        <Button class="bg-primary" onclick={saveChanges}>Save Changes</Button>
+        <Button class="bg-primary" onclick={saveChanges}>
+            {#if isActionLoading}
+                <Spinner class="me-3" size="4" color="blue" />
+                Saving Changes ...
+            {:else}
+                Save Changes
+            {/if}
+        </Button>
     </div>
 </Modal>
 
@@ -270,6 +410,14 @@
 
     <div class="flex justify-between w-full">
         <Button color="alternative" onclick={() => deleteModal = false}>Cancel</Button>
-        <Button color="red" onclick={deleteSpace}>Delete</Button>
+        <Button color="red" onclick={deleteSpace}>
+            {#if isActionLoading}
+                <Spinner class="me-3" size="4" color="blue" />
+                Deleting ...
+            {:else}
+                Delete
+            {/if}
+        </Button>
+
     </div>
 </Modal>

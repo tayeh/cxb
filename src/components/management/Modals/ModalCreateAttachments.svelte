@@ -1,20 +1,24 @@
 <script lang="ts">
     import { Button, Label, Modal, Input, Select, Fileupload, Textarea } from "flowbite-svelte";
-    import { Dmart, QueryType, ResourceAttachmentType, ContentType } from "@edraj/tsdmart";
+    import {Dmart, QueryType, ResourceAttachmentType, ContentType, RequestType, ResourceType} from "@edraj/tsdmart";
     import {JSONEditor, Mode} from "svelte-jsoneditor";
     import HtmlEditor from "@/components/management/editors/HtmlEditor.svelte";
     import MarkdownEditor from "@/components/management/editors/MarkdownEditor.svelte";
+    import {Level, showToast} from "@/utils/toast";
+    import {jsonToFile} from "@/utils/jsonToFile";
+    import {currentEntry} from "@/stores/global";
+    import {jsonEditorContentParser} from "@/utils/jsonEditor";
 
-    // Props
     let {
         meta = $bindable({}),
         payload = $bindable({}),
         isOpen = $bindable(false),
         isUpdateMode = $bindable(false),
         space_name = $bindable(""),
+        subpath = $bindable(""),
+        parent_shortname = $bindable(""),
     } = $props();
 
-    // State variables
     let shortname = $state("");
     let displayname = $state({ en: "", ar: "", ku: "" });
     let description = $state({ en: "", ar: "", ku: "" });
@@ -24,16 +28,126 @@
     let payloadData = $state("");
     let payloadContent: any = $state();
     let selectedSchema = $state("");
+    let isModalInUpdateMode = false;
 
-    // Methods
     function toggleModal() {
         isOpen = !isOpen;
     }
 
-    function upload() {
-        // Implement your upload logic here
-        console.log("Upload called");
-        isOpen = false;
+    async function upload() {
+        let response;
+        if (resourceType == ResourceAttachmentType.comment) {
+            const request_dict = {
+                space_name,
+                request_type: isModalInUpdateMode
+                    ? RequestType.update
+                    : RequestType.create,
+                records: [
+                    {
+                        resource_type: ResourceType.comment,
+                        shortname: shortname,
+                        subpath: `${subpath}/${parent_shortname}`.replaceAll("//", "/"),
+                        attributes: {
+                            displayname: displayname,
+                            description: description,
+                            is_active: true,
+                            state: "commented",
+                            body: payloadData,
+                        },
+                    },
+                ],
+            };
+            response = await Dmart.request(request_dict);
+        }
+        else if (
+            [
+                ResourceAttachmentType.csv,
+                ResourceAttachmentType.jsonl,
+                ResourceAttachmentType.sqlite,
+                ResourceAttachmentType.parquet,
+            ].includes(resourceType)
+        ) {
+            response = await Dmart.upload_with_payload(
+                space_name,
+                subpath + "/" + parent_shortname,
+                shortname,
+                ResourceType[resourceType],
+                ResourceType[resourceType] === ResourceType.json
+                    ? jsonToFile(payloadContent)
+                    : payloadFiles[0],
+                ContentType[resourceType],
+                selectedSchema
+            );
+        }
+        else if (
+            [
+                ContentType.image,
+                ContentType.pdf,
+                ContentType.audio,
+                ContentType.video,
+            ].includes(contentType)
+        ) {
+            response = await Dmart.upload_with_payload(
+                space_name,
+                subpath + "/" + parent_shortname,
+                shortname,
+                ResourceType[resourceType],
+                ResourceType[resourceType] === ResourceType.json
+                    ? jsonToFile(payloadContent)
+                    : payloadFiles[0],
+                contentType,
+                null
+            );
+        }
+        else if (
+            [
+                ContentType.json,
+                ContentType.text,
+                ContentType.html,
+                ContentType.markdown,
+                ContentType,
+            ].includes(contentType)
+        ) {
+            let _payloadContent = jsonEditorContentParser(payloadContent);
+            let request_dict = {
+                space_name,
+                request_type: isModalInUpdateMode
+                    ? RequestType.update
+                    : RequestType.create,
+                records: [
+                    {
+                        resource_type: ResourceType[resourceType],
+                        shortname: shortname,
+                        subpath: `${subpath}/${parent_shortname}`,
+                        attributes: {
+                            displayname: displayname,
+                            description: description,
+                            is_active: true,
+                            payload: {
+                                content_type: contentType,
+                                schema_shortname:
+                                    resourceType == ResourceAttachmentType.json && selectedSchema
+                                        ? selectedSchema
+                                        : null,
+                                body:
+                                    resourceType == ResourceAttachmentType.json
+                                        ? _payloadContent
+                                        : payloadData,
+                            },
+                        },
+                    },
+                ],
+            };
+            response = await Dmart.request(request_dict);
+        }
+
+        if (response.status === "success") {
+            showToast(Level.info);
+            isOpen = false;
+            $currentEntry.refreshEntry();
+        } else {
+            showToast(Level.warn);
+        }
     }
 
     function handleRenderMenu(menuItems) {
@@ -60,9 +174,9 @@
             <div>
                 <Label for="shortname">Attachment shortname</Label>
                 <Input
-                        id="shortname"
-                        bind:value={shortname}
-                        disabled={isUpdateMode}
+                    id="shortname"
+                    bind:value={shortname}
+                    disabled={isUpdateMode}
                 />
             </div>
 
@@ -71,23 +185,23 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <Input
-                                type="text"
-                                bind:value={displayname.en}
-                                placeholder="English..."
+                            type="text"
+                            bind:value={displayname.en}
+                            placeholder="English..."
                         />
                     </div>
                     <div>
                         <Input
-                                type="text"
-                                bind:value={displayname.ar}
-                                placeholder="Arabic..."
+                            type="text"
+                            bind:value={displayname.ar}
+                            placeholder="Arabic..."
                         />
                     </div>
                     <div>
                         <Input
-                                type="text"
-                                bind:value={displayname.ku}
-                                placeholder="Kurdish..."
+                            type="text"
+                            bind:value={displayname.ku}
+                            placeholder="Kurdish..."
                         />
                     </div>
                 </div>
@@ -98,23 +212,23 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <Input
-                                type="text"
-                                bind:value={description.en}
-                                placeholder="English..."
+                            type="text"
+                            bind:value={description.en}
+                            placeholder="English..."
                         />
                     </div>
                     <div>
                         <Input
-                                type="text"
-                                bind:value={description.ar}
-                                placeholder="Arabic..."
+                            type="text"
+                            bind:value={description.ar}
+                            placeholder="Arabic..."
                         />
                     </div>
                     <div>
                         <Input
-                                type="text"
-                                bind:value={description.ku}
-                                placeholder="Kurdish..."
+                            type="text"
+                            bind:value={description.ku}
+                            placeholder="Kurdish..."
                         />
                     </div>
                 </div>

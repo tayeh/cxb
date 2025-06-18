@@ -631,6 +631,8 @@
 <ModalCreateAttachments
   isOpen={openCreateAttachmentModal}
   space_name={space_name}
+  subpath={subpath}
+  parent_shortname={parent_shortname}
   meta={createMetaContent}
   payload={createPayloadContent}
 />
