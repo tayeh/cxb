@@ -1,8 +1,6 @@
 <script lang="ts">
     import { Button, Card, Checkbox, Input, Label, Select,  Accordion, AccordionItem } from "flowbite-svelte";
     import { transformFormToJson, transformJsonToForm } from "@/utils/editors/schemaEditorUtils";
-    import { jsonEditorContentParser } from "@/utils/jsonEditor";
-    import {untrack} from "svelte";
 
 
     let {
@@ -11,7 +9,6 @@
         content: any
     } = $props();
 
-    // Initialize content with default schema structure if empty
     if (!content || Object.keys(content).length === 0) {
         content = {
             type: "object",
@@ -20,12 +17,10 @@
         };
     }
 
-    // Convert content to form-friendly format
     let formContent = $state(transformJsonToForm(
         $state.snapshot(content)
     ));
 
-    // Available JSON Schema types
     const schemaTypes = [
         { value: "string", name: "String" },
         { value: "number", name: "Number" },
@@ -36,7 +31,6 @@
         { value: "null", name: "Null" }
     ];
 
-    // Add a new property to the schema
     function addProperty(parentPath = "") {
         const newProperty = {
             id: crypto.randomUUID(),
@@ -47,7 +41,6 @@
         };
 
         if (parentPath) {
-            // Add to nested object
             const parent = getPropertyByPath(formContent, parentPath);
             if (parent && !parent.properties) {
                 parent.properties = [];
@@ -56,7 +49,6 @@
                 parent.properties.push(newProperty);
             }
         } else {
-            // Add to root
             if (!formContent.properties) {
                 formContent.properties = [];
             }
@@ -66,7 +58,6 @@
         formContent = { ...formContent };
     }
 
-    // Add a new item to an array property
     function addArrayItem(parentPath) {
         const parent = getPropertyByPath(formContent, parentPath);
         if (parent) {
@@ -77,7 +68,6 @@
                 };
             }
 
-            // If items is already an object with properties, we don't need to do anything
             if (parent.items.type === "object" && !parent.items.properties) {
                 parent.items.properties = [];
             }
@@ -86,12 +76,10 @@
         }
     }
 
-    // Remove a property from the schema
     function removeProperty(path, index) {
         const parts = path.split('.');
         let current = formContent;
 
-        // Navigate to the parent object
         for (let i = 0; i < parts.length - 1; i++) {
             if (!current[parts[i]]) return;
             current = current[parts[i]];
@@ -104,7 +92,6 @@
         formContent = { ...formContent };
     }
 
-    // Helper to get a property by path
     function getPropertyByPath(obj, path) {
         const parts = path.split('.');
         let current = obj;
@@ -117,7 +104,6 @@
         return current;
     }
 
-    // Toggle required status for a property
     function toggleRequired(propertyName) {
         if (!formContent.required) {
             formContent.required = [];
@@ -138,7 +124,6 @@
     }
 
     $effect(() => {
-        console.log({formContent})
         const schemaContent = transformFormToJson(structuredClone(
             $state.snapshot(formContent)
         ));

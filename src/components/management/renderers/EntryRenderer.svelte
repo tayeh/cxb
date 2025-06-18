@@ -20,17 +20,19 @@
     import Attachments from "@/components/management/renderers/Attachments.svelte";
     import BreadCrumbLite from "@/components/management/BreadCrumbLite.svelte";
     import {currentEntry} from "@/stores/global";
-    import ModalMetaForm from "@/components/management/Modals/ModalMetaForm.svelte";
-    import ModalMetaUserForm from "@/components/management/Modals/ModalMetaUserForm.svelte";
-    import ModalMetaRoleForm from "@/components/management/Modals/ModalMetaRoleForm.svelte";
-    import ModalMetaPermissionForm from "@/components/management/Modals/ModalMetaPermissionForm.svelte";
+    import MetaForm from "@/components/management/forms/MetaForm.svelte";
+    import MetaUserForm from "@/components/management/forms/MetaUserForm.svelte";
+    import MetaRoleForm from "@/components/management/forms/MetaRoleForm.svelte";
+    import MetaPermissionForm from "@/components/management/forms/MetaPermissionForm.svelte";
     import {onMount, untrack} from "svelte";
     import {goto} from "@roxi/routify";
     import {getSpaces} from "@/lib/dmart_services";
     import HistoryListView from "@/components/management/HistoryListView.svelte";
-    import SchemaSchemaEditor from "@/components/management/editors/SchemaSchemaEditor.svelte";
-    import FolderSchemaEditor from "@/components/management/editors/FolderSchemaEditor.svelte";
+    import SchemaForm from "@/components/management/forms/SchemaForm.svelte";
+    import FolderForm from "@/components/management/forms/FolderForm.svelte";
     import {removeEmpty} from "@/utils/renderer/schemaEntryRenderer";
+    import WorkflowForm from "@/components/management/forms/WorkflowForm.svelte";
+    import MetaTicketForm from "@/components/management/forms/MetaTicketForm.svelte";
     $goto
 
     enum TabMode {
@@ -86,12 +88,20 @@
     async function handleSave(){
         isActionLoading = true;
         const content = jsonEditorContentParser($state.snapshot(jeContent));
-        if (resource_type === ResourceType.schema) {
-            content.payload.body = removeEmpty(jePayload.json);
-        }
+
         const shortname = content.shortname;
         delete content.uuid;
         delete content.shortname;
+
+        if (resource_type === ResourceType.schema) {
+            content.payload.body = removeEmpty(jePayload.json);
+        } else if(resource_type === ResourceType.content && subpath === "workflows") {
+            content.payload = {
+                body: removeEmpty(jsonEditorContentParser($state.snapshot(jePayload))),
+                schema: 'workflow',
+                content_type: "json"
+            };
+        }
         try {
             errorMessage = null;
             await Dmart.request({
@@ -195,7 +205,7 @@
         } else {
             entry = await Dmart.retrieve_entry(resource_type, space_name, subpath, entry.shortname, true, true);
         }
-        jeContent = { json: structuredClone(entry) };
+        jeContent = { json: $state.snapshot(entry) };
         currentEntry.set({
             entry,
             refreshEntry
@@ -369,19 +379,23 @@
         </div>
         <div class={activeTab === TabMode.form ? '' : 'hidden'} role="tabpanel">
             {#if jeContent.json}
-                <ModalMetaForm bind:formData={jeContent.json} bind:validateFn={validateMetaForm} />
+                <MetaForm bind:formData={jeContent.json} bind:validateFn={validateMetaForm} />
                 {#if resource_type === ResourceType.user}
-                    <ModalMetaUserForm bind:formData={jeContent.json} bind:validateFn={validateRTForm}/>
+                    <MetaUserForm bind:formData={jeContent.json} bind:validateFn={validateRTForm}/>
                 {:else if resource_type === ResourceType.role}
-                    <ModalMetaRoleForm bind:formData={jeContent.json} bind:validateFn={validateRTForm} />
+                    <MetaRoleForm bind:formData={jeContent.json} bind:validateFn={validateRTForm} />
                 {:else if resource_type === ResourceType.permission}
-                    <ModalMetaPermissionForm bind:formData={jeContent.json} bind:validateFn={validateRTForm} />
+                    <MetaPermissionForm bind:formData={jeContent.json} bind:validateFn={validateRTForm} />
+                {:else if resource_type === ResourceType.ticket}
+                    <MetaTicketForm bind:formData={jeContent.json} bind:validateFn={validateRTForm} />
                 {/if}
                 {#if jePayload}
                     {#if resource_type === ResourceType.schema}
-                        <SchemaSchemaEditor bind:content={jePayload.json}  />
+                        <SchemaForm bind:content={jePayload.json}  />
                     {:else if resource_type === ResourceType.folder}
-                        <FolderSchemaEditor bind:content={jePayload.json} />
+                        <FolderForm bind:content={jePayload.json} />
+                    {:else if resource_type === ResourceType.content && subpath === "workflows"}
+                        <WorkflowForm bind:content={jePayload.json} />
                     {/if}
                 {/if}
 

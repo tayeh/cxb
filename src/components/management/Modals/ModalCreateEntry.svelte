@@ -2,20 +2,21 @@
     import {Button, Label, Modal, Select, Spinner} from "flowbite-svelte";
     import {CodeOutline, FileCodeOutline} from "flowbite-svelte-icons";
     import {Dmart, QueryType, RequestType, ResourceType} from "@edraj/tsdmart";
-    import FolderSchemaEditor from "@/components/management/editors/FolderSchemaEditor.svelte";
+    import FolderForm from "@/components/management/forms/FolderForm.svelte";
     import {onMount, untrack} from "svelte";
     import {generateObjectFromSchema, scrollToElById} from "@/utils/renderer/rendererUtils";
     import Prism from "@/components/Prism.svelte";
-    import ModalMetaForm from "@/components/management/Modals/ModalMetaForm.svelte";
-    import ModalMetaUserForm from "@/components/management/Modals/ModalMetaUserForm.svelte";
+    import MetaForm from "@/components/management/forms/MetaForm.svelte";
+    import MetaUserForm from "@/components/management/forms/MetaUserForm.svelte";
     import {jsonEditorContentParser} from "@/utils/jsonEditor";
     import {JSONEditor, Mode} from "svelte-jsoneditor";
     import {currentListView, resourceTypeWithNoPayload} from "@/stores/global";
-    import ModalMetaRoleForm from "@/components/management/Modals/ModalMetaRoleForm.svelte";
-    import ModalMetaPermissionForm from "@/components/management/Modals/ModalMetaPermissionForm.svelte";
+    import MetaRoleForm from "@/components/management/forms/MetaRoleForm.svelte";
+    import MetaPermissionForm from "@/components/management/forms/MetaPermissionForm.svelte";
     import {Level, showToast} from "@/utils/toast";
-    import SchemaSchemaEditor from "@/components/management/editors/SchemaSchemaEditor.svelte";
+    import SchemaForm from "@/components/management/forms/SchemaForm.svelte";
     import {removeEmpty} from "@/utils/renderer/schemaEntryRenderer";
+    import WorkflowForm from "@/components/management/forms/WorkflowForm.svelte";
 
     let {
         space_name,
@@ -73,16 +74,24 @@
                 }
             ];
         }
-        else {
+        else if (subpath === "workflows") {
             allowedResourceTypes = [
-                {
-                    name: ResourceType.folder.toString(),
-                    value: ResourceType.folder,
-                },
                 {
                     name: ResourceType.content.toString(),
                     value: ResourceType.content,
                 }
+            ];
+        }
+        else {
+            allowedResourceTypes = [
+                {
+                    name: ResourceType.content.toString(),
+                    value: ResourceType.content,
+                },
+                {
+                    name: ResourceType.folder.toString(),
+                    value: ResourceType.folder,
+                },
             ];
         }
         selectedResourceType = allowedResourceTypes[0].value;
@@ -151,7 +160,7 @@
             const shortname = _metaContent.shortname;
             delete _metaContent.shortname;
 
-            const requestCreateUser = {
+            const requestCreate = {
                 "resource_type": selectedResourceType,
                 "shortname": shortname,
                 "subpath": subpath,
@@ -160,17 +169,27 @@
                 },
             }
             if(selectedResourceType === ResourceType.schema) {
-                requestCreateUser.attributes = {
-                    ...requestCreateUser.attributes,
+                requestCreate.attributes = {
+                    ...requestCreate.attributes,
                     payload: {
                         body: removeEmpty(jsonEditorContentParser($state.snapshot(content))),
                         schema: 'meta_schema',
                         content_type: "json"
                     }
                 };
-            } else if(selectedSchema) {
-                requestCreateUser.attributes = {
-                    ...requestCreateUser.attributes,
+            } if(selectedResourceType === ResourceType.content && subpath === "workflows") {
+                requestCreate.attributes = {
+                    ...requestCreate.attributes,
+                    payload: {
+                        body: removeEmpty(jsonEditorContentParser($state.snapshot(content))),
+                        schema: 'workflow',
+                        content_type: "json"
+                    }
+                };
+            }
+            else if(selectedSchema) {
+                requestCreate.attributes = {
+                    ...requestCreate.attributes,
                     payload: {
                         body: jsonEditorContentParser($state.snapshot(content)),
                         schema: selectedSchema,
@@ -179,7 +198,6 @@
                 };
             }
 
-
             response = await Dmart.request({
                 space_name,
                 request_type: RequestType.create,
@@ -187,7 +205,7 @@
                     resource_type: selectedResourceType,
                     subpath: subpath,
                     shortname: metaContent.shortname,
-                    attributes: requestCreateUser.attributes
+                    attributes: requestCreate.attributes
                 }]
             });
 
@@ -199,7 +217,6 @@
             await $currentListView.fetchPageRecords();
             isOpen = false;
         } catch (e) {
-            console.log(e)
             scrollToElById("#error-content");
             errorContent = e.response.data;
         }
@@ -283,14 +300,14 @@
             <Select class="my-2" items={allowedResourceTypes} bind:value={selectedResourceType} />
         </Label>
 
-        <ModalMetaForm bind:formData={metaContent} bind:validateFn={validateMetaForm} />
+        <MetaForm bind:formData={metaContent} bind:validateFn={validateMetaForm} />
 
         {#if selectedResourceType === ResourceType.user}
-            <ModalMetaUserForm bind:formData={metaContent} bind:validateFn={validateRTForm}/>
+            <MetaUserForm bind:formData={metaContent} bind:validateFn={validateRTForm}/>
         {:else if selectedResourceType === ResourceType.role}
-            <ModalMetaRoleForm bind:formData={metaContent} bind:validateFn={validateRTForm} />
+            <MetaRoleForm bind:formData={metaContent} bind:validateFn={validateRTForm} />
         {:else if selectedResourceType === ResourceType.permission}
-            <ModalMetaPermissionForm bind:formData={metaContent} bind:validateFn={validateRTForm} />
+            <MetaPermissionForm bind:formData={metaContent} bind:validateFn={validateRTForm} />
         {/if}
 
         {#if !resourceTypeWithNoPayload.includes(selectedResourceType)}
@@ -315,7 +332,7 @@
             {/if}
             {#if selectedResourceType === ResourceType.folder && isFolderFormReady}
                 {#if selectedInputMode === inputMode.form}
-                    <FolderSchemaEditor bind:content={content.json} />
+                    <FolderForm bind:content={content.json} />
                 {:else if selectedInputMode === inputMode.json}
                     <JSONEditor
                         onRenderMenu={handleRenderMenu}
@@ -326,7 +343,7 @@
             {/if}
             {#if selectedResourceType === ResourceType.schema}
                 {#if selectedInputMode === inputMode.form}
-                    <SchemaSchemaEditor bind:content={content.json}/>
+                    <SchemaForm bind:content={content.json}/>
                 {:else if selectedInputMode === inputMode.json}
                     <JSONEditor
                         onRenderMenu={handleRenderMenu}
@@ -336,8 +353,20 @@
                 {/if}
             {/if}
 
+            {#if subpath === "workflows"}
+                {#if selectedInputMode === inputMode.form}
+                    <WorkflowForm bind:content={content.json}/>
+                {:else if selectedInputMode === inputMode.json}
+                    <JSONEditor
+                            onRenderMenu={handleRenderMenu}
+                            mode={Mode.text}
+                            bind:content={content}
+                    />
+                {/if}
+            {/if}
+
             <div class="my-2">
-                {#if !resourcesWithFormAndJson.includes(selectedResourceType)}
+                {#if !resourcesWithFormAndJson.includes(selectedResourceType) && subpath !== "workflows"}
                     <JSONEditor
                         onRenderMenu={handleRenderMenu}
                         mode={Mode.text}
@@ -357,7 +386,7 @@
 
     {#snippet footer()}
         <div class="w-full flex flex-row justify-between">
-            {#if resourcesWithFormAndJson.includes(selectedResourceType)}
+            {#if resourcesWithFormAndJson.includes(selectedResourceType) || subpath === "workflows"}
                 <Button class="cursor-pointer text-green-700 hover:text-green-500 mx-1" outline
                         onclick={() => selectedInputMode = selectedInputMode === inputMode.form ? inputMode.json : inputMode.form}>
                     {#if selectedInputMode === inputMode.form}
@@ -367,6 +396,8 @@
                     {/if}
                     {selectedInputMode === inputMode.form ? 'Json' : 'Form'} Mode
                 </Button>
+            {:else}
+                <div></div>
             {/if}
             <div>
                 {#if !isHandleCreateEntryLoading}
