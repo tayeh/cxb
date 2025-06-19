@@ -60,7 +60,7 @@
     }
 
     function addRole(item: any) {
-        item.roles = [...item.roles, ''];
+        item.roles = [...(item.roles || []), ''];
     }
 
     function removeRole(item: any, roleIndex: number) {

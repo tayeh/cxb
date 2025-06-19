@@ -30,6 +30,7 @@
 
     let selectedResourceType = $state(ResourceType.content);
     let allowedResourceTypes = $state();
+
     let resourcesWithFormAndJson = [
         ResourceType.folder,
         ResourceType.schema,
@@ -87,6 +88,10 @@
                 {
                     name: ResourceType.content.toString(),
                     value: ResourceType.content,
+                },
+                {
+                    name: ResourceType.ticket.toString(),
+                    value: ResourceType.ticket,
                 },
                 {
                     name: ResourceType.folder.toString(),
@@ -160,13 +165,16 @@
             const shortname = _metaContent.shortname;
             delete _metaContent.shortname;
 
-            const requestCreate = {
+            const requestCreate: any = {
                 "resource_type": selectedResourceType,
                 "shortname": shortname,
                 "subpath": subpath,
                 "attributes": {
                     ..._metaContent
                 },
+            }
+            if(selectedResourceType === ResourceType.ticket) {
+                requestCreate.attributes.workflow_shortname = selectedWorkflow;
             }
             if(selectedResourceType === ResourceType.schema) {
                 requestCreate.attributes = {
@@ -262,16 +270,32 @@
         ]);
     }
 
+    let selectedWorkflow = $state(null);
+    async function fetchWorkflows(){
+        try {
+            const result = await Dmart.query({
+                search: '',
+                type: QueryType.search,
+                space_name,
+                subpath: '/workflows'
+            });
+            return result.records || [];
+        } catch (e) {
+            showToast(Level.warn, "Failed to fetch workflows");
+        }
+    }
+
     $effect(()=>{
         if(selectedResourceType) {
-            if(selectedResourceType === ResourceType.folder)
-            untrack(()=>{
-                setFolderSchemaContent();
-            });
             untrack(()=>{
                 selectedSchema = null;
                 content = {json: {}}
             })
+            if(selectedResourceType === ResourceType.folder) {
+                untrack(() => {
+                    setFolderSchemaContent();
+                });
+            }
         }
     });
     $effect(()=>{
@@ -341,6 +365,23 @@
                     />
                 {/if}
             {/if}
+
+            {#if selectedResourceType === ResourceType.ticket}
+                <Label class="mt-3">
+                    Workflow shortname
+                    {#await fetchWorkflows()}
+                        <div role="status" class="max-w-sm animate-pulse">
+                            <div class="h-3 bg-gray-200 rounded-full dark:bg-gray-700 mx-2 my-2.5"></div>
+                        </div>
+                    {:then workflows}
+                        <Select class="mt-2" items={workflows.map(w => ({name: w.shortname, value: w.shortname}))}
+                                bind:value={selectedWorkflow}
+                                placeholder="Select Workflow" />
+                    {/await}
+                </Label>
+
+            {/if}
+
             {#if selectedResourceType === ResourceType.schema}
                 {#if selectedInputMode === inputMode.form}
                     <SchemaForm bind:content={content.json}/>

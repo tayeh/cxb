@@ -26,7 +26,6 @@
     import MetaPermissionForm from "@/components/management/forms/MetaPermissionForm.svelte";
     import {onMount, untrack} from "svelte";
     import {goto} from "@roxi/routify";
-    import {getSpaces} from "@/lib/dmart_services";
     import HistoryListView from "@/components/management/HistoryListView.svelte";
     import SchemaForm from "@/components/management/forms/SchemaForm.svelte";
     import FolderForm from "@/components/management/forms/FolderForm.svelte";
@@ -64,6 +63,11 @@
 
     let jeContent: any = $state({ json: structuredClone(entry) });
     let jePayload: any = $state(null);
+    let ticketData: any = $state({
+        action: null,
+        resolution: null,
+        comment: null,
+    });
     let errorMessage = $state(null);
 
     onMount(() => {
@@ -89,19 +93,42 @@
         isActionLoading = true;
         const content = jsonEditorContentParser($state.snapshot(jeContent));
 
+        if(resource_type === ResourceType.ticket && ticketData.action !== null) {
+            try {
+                await Dmart.progress_ticket(
+                    space_name,
+                    subpath,
+                    entry.shortname,
+                    ticketData.action,
+                    ticketData.resolution,
+                    ticketData.comment,
+                );
+                ticketData = {
+                    action: null,
+                    resolution: null,
+                    comment: null,
+                }
+                showToast(Level.info, `Ticket has been updated successfully!`);
+            } catch (error) {
+                showToast(Level.warn, `Failed to update the ticket!`);
+            }
+        }
+
         const shortname = content.shortname;
         delete content.uuid;
         delete content.shortname;
 
         if (resource_type === ResourceType.schema) {
             content.payload.body = removeEmpty(jePayload.json);
-        } else if(resource_type === ResourceType.content && subpath === "workflows") {
+        }
+        else if(resource_type === ResourceType.content && subpath === "workflows") {
             content.payload = {
                 body: removeEmpty(jsonEditorContentParser($state.snapshot(jePayload))),
                 schema: 'workflow',
                 content_type: "json"
             };
         }
+
         try {
             errorMessage = null;
             await Dmart.request({
@@ -116,9 +143,11 @@
             })
             showToast(Level.info, `Entry has been updated successfully!`);
             await refreshEntry();
-        } catch (error) {
+        }
+        catch (error) {
             errorMessage = error.response.data;
-        } finally {
+        }
+        finally {
             isActionLoading = false;
         }
     }
@@ -387,7 +416,9 @@
                 {:else if resource_type === ResourceType.permission}
                     <MetaPermissionForm bind:formData={jeContent.json} bind:validateFn={validateRTForm} />
                 {:else if resource_type === ResourceType.ticket}
-                    <MetaTicketForm bind:formData={jeContent.json} bind:validateFn={validateRTForm} />
+                    <MetaTicketForm {space_name}
+                                    meta={jeContent.json}
+                                    bind:formData={ticketData} />
                 {/if}
                 {#if jePayload}
                     {#if resource_type === ResourceType.schema}
