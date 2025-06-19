@@ -23,6 +23,7 @@
     import {jsonEditorContentParser} from "@/utils/jsonEditor";
     import SpacesSubpathItemsSidebar from "./SpacesSubpathItemsSidebar.svelte";
     import {url} from "@roxi/routify";
+    import MetaForm from "./forms/MetaForm.svelte";
     $url
 
     let spaceChildren = $state(new Map());
@@ -103,7 +104,23 @@
     let addSpaceModal = $state(false);
     let selectedSpace = $state(null);
     let modelError = $state(null);
-    let newSpaceShortname = $state("");
+
+    let spaceFormData = $state({
+        shortname: "",
+        is_active: true,
+        slug: "",
+        displayname: {
+            en: "",
+            ar: "",
+            ku: ""
+        },
+        description: {
+            en: "",
+            ar: "",
+            ku: ""
+        }
+    });
+    let validateSpaceForm = $state(() => true);
 
     let isActionLoading = $state(false);
 
@@ -111,28 +128,51 @@
 
     function showAddSpaceModal() {
         modelError = null;
-        newSpaceShortname = "";
+        spaceFormData = {
+            shortname: "",
+            is_active: true,
+            slug: "",
+            displayname: {
+                en: "",
+                ar: "",
+                ku: ""
+            },
+            description: {
+                en: "",
+                ar: "",
+                ku: ""
+            }
+        };
         addSpaceModal = true;
     }
 
     async function createSpace() {
-        if (newSpaceShortname.trim()) {
+        if (!validateSpaceForm()) {
+            return;
+        }
+
+        if (spaceFormData.shortname.trim()) {
             try {
                 isActionLoading = true;
                 modelError = null;
                 await Dmart.space({
-                    space_name: newSpaceShortname.trim(),
+                    space_name: spaceFormData.shortname.trim(),
                     request_type: RequestType.create,
                     records: [
                         {
                             resource_type: ResourceType.space,
-                            shortname: newSpaceShortname.trim(),
+                            shortname: spaceFormData.shortname.trim(),
                             subpath: '/',
-                            attributes: {}
+                            attributes: {
+                                is_active: spaceFormData.is_active,
+                                slug: spaceFormData.slug,
+                                displayname: spaceFormData.displayname,
+                                description: spaceFormData.description
+                            }
                         }
                     ]
                 });
-                showToast(Level.info, `Space "${newSpaceShortname.trim()}" created successfully!`);
+                showToast(Level.info, `Space "${spaceFormData.shortname.trim()}" created successfully!`);
                 await getSpaces();
                 addSpaceModal = false;
             } catch (error) {
@@ -334,10 +374,9 @@
 </Sidebar>
 
 
-<Modal bind:open={addSpaceModal} size="md" title="Add New Space">
+<Modal bind:open={addSpaceModal} size="xl" title="Add New Space">
     <div class="space-y-4">
-        <label class="block text-sm font-medium text-gray-700">Shortname</label>
-        <Input type="text" placeholder="Enter space shortname" bind:value={newSpaceShortname} />
+        <MetaForm bind:formData={spaceFormData} bind:validateFn={validateSpaceForm} />
 
         {#if modelError}
             <div class="mt-4">
@@ -349,7 +388,7 @@
         {/if}
     </div>
 
-    <div class="flex justify-between w-full">
+    <div class="flex justify-between w-full mt-4">
         <Button color="alternative" onclick={() => addSpaceModal = false}>Cancel</Button>
         <Button class="bg-primary" onclick={createSpace}>
             {#if isActionLoading}
