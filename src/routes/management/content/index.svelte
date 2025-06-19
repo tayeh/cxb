@@ -1,6 +1,6 @@
 <script>
     import { spaces } from "@/stores/management/spaces";
-    import { Input, Modal, Card, Dropdown, DropdownItem, Button, Spinner } from "flowbite-svelte";
+    import { Modal, Card, Dropdown, DropdownItem, Button, Spinner } from "flowbite-svelte";
     import { DotsHorizontalOutline, EyeSolid, PenSolid, TrashBinSolid, PlusOutline } from "flowbite-svelte-icons";
     import {JSONEditor, Mode} from "svelte-jsoneditor";
     import {jsonEditorContentParser} from "@/utils/jsonEditor";
@@ -18,7 +18,7 @@
     let addSpaceModal = $state(false);
     let selectedSpace = $state(null);
     let modelError = $state(null);
-    let newSpaceShortname = $state("");
+
     let spaceFormData = $state({
         shortname: "",
         is_active: true,
@@ -328,6 +328,5 @@
                 Delete
             {/if}
         </Button>
-
     </div>
 </Modal>

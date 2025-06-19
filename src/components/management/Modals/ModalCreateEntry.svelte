@@ -10,13 +10,14 @@
     import MetaUserForm from "@/components/management/forms/MetaUserForm.svelte";
     import {jsonEditorContentParser} from "@/utils/jsonEditor";
     import {JSONEditor, Mode} from "svelte-jsoneditor";
-    import {currentListView, resourceTypeWithNoPayload} from "@/stores/global";
+    import {currentEntry, currentListView, resourceTypeWithNoPayload} from "@/stores/global";
     import MetaRoleForm from "@/components/management/forms/MetaRoleForm.svelte";
     import MetaPermissionForm from "@/components/management/forms/MetaPermissionForm.svelte";
     import {Level, showToast} from "@/utils/toast";
     import SchemaForm from "@/components/management/forms/SchemaForm.svelte";
     import {removeEmpty} from "@/utils/renderer/schemaEntryRenderer";
     import WorkflowForm from "@/components/management/forms/WorkflowForm.svelte";
+    import {checkAccess} from "@/utils/checkAccess";
 
     let {
         space_name,
@@ -28,8 +29,10 @@
         isOpen:boolean,
     } = $props();
 
+    const folderPreference = $currentEntry?.entry?.payload?.body;
+
     let selectedResourceType = $state(ResourceType.content);
-    let allowedResourceTypes = $state();
+    let allowedResourceTypes = $state([]);
 
     let resourcesWithFormAndJson = [
         ResourceType.folder,
@@ -45,59 +48,97 @@
     function prepareResourceTypes() {
         if (space_name === "management" ){
             if (subpath === "users") {
-                allowedResourceTypes = [
-                    {
-                        name: ResourceType.user.toString(),
-                        value: ResourceType.user,
-                    }
-                ]
-            } else if (subpath === "roles") {
-                allowedResourceTypes = [
-                    {
-                        name: ResourceType.role.toString(),
-                        value: ResourceType.role,
-                    }
-                ]
-            } else if (subpath === "permissions") {
-                allowedResourceTypes = [
-                    {
-                        name: ResourceType.permission.toString(),
-                        value: ResourceType.permission,
-                    }
-                ]
+                if(checkAccess('create', "management", "users", ResourceType.user)) {
+                    allowedResourceTypes = [
+                        {
+                            name: ResourceType.user.toString(),
+                            value: ResourceType.user,
+                        }
+                    ];
+                } else {
+                    allowedResourceTypes = [];
+                }
+            }
+            else if (subpath === "roles") {
+                if(checkAccess('create', "management", "roles", ResourceType.role)) {
+                    allowedResourceTypes = [
+                        {
+                            name: ResourceType.role.toString(),
+                            value: ResourceType.role,
+                        }
+                    ];
+                } else {
+                    allowedResourceTypes = [];
+                }
+            }
+            else if (subpath === "permissions") {
+                if(checkAccess('create', "management", "permissions", ResourceType.permission)) {
+                    allowedResourceTypes = [
+                        {
+                            name: ResourceType.permission.toString(),
+                            value: ResourceType.permission,
+                        }
+                    ];
+                } else {
+                    allowedResourceTypes = [];
+                }
             }
         }
         else if (subpath === "schema") {
-            allowedResourceTypes = [
-                {
-                    name: ResourceType.schema.toString(),
-                    value: ResourceType.schema,
-                }
-            ];
+            if(checkAccess('create', space_name, "schema", ResourceType.schema)) {
+                allowedResourceTypes = [
+                    {
+                        name: ResourceType.schema.toString(),
+                        value: ResourceType.schema,
+                    }
+                ];
+            } else {
+                allowedResourceTypes = [];
+            }
         }
         else if (subpath === "workflows") {
-            allowedResourceTypes = [
-                {
-                    name: ResourceType.content.toString(),
-                    value: ResourceType.content,
-                }
-            ];
+            if(checkAccess('create', space_name, "workflows", ResourceType.content)) {
+                allowedResourceTypes = [
+                    {
+                        name: ResourceType.content.toString(),
+                        value: ResourceType.content,
+                    }
+                ];
+            } else {
+                allowedResourceTypes = [];
+            }
         }
         else {
-            allowedResourceTypes = [
-                {
-                    name: ResourceType.content.toString(),
-                    value: ResourceType.content,
-                },
-                {
-                    name: ResourceType.ticket.toString(),
-                    value: ResourceType.ticket,
-                },
-                {
-                    name: ResourceType.folder.toString(),
-                    value: ResourceType.folder,
-                },
-            ];
+            if(checkAccess('create', space_name, subpath, ResourceType.content)) {
+                allowedResourceTypes = [
+                    ...allowedResourceTypes,
+                    {
+                        name: ResourceType.content.toString(),
+                        value: ResourceType.content,
+                    }
+                ];
+            }
+            if(checkAccess('create', space_name, subpath, ResourceType.ticket)) {
+                allowedResourceTypes = [
+                    ...allowedResourceTypes,
+                    {
+                        name: ResourceType.ticket.toString(),
+                        value: ResourceType.ticket,
+                    }
+                ];
+            }
+            if(checkAccess('create', space_name, subpath, ResourceType.folder)) {
+                allowedResourceTypes = [
+                    ...allowedResourceTypes,
+                    {
+                        name: ResourceType.folder.toString(),
+                        value: ResourceType.folder,
+                    }
+                ];
+            }
+        }
+        if(folderPreference && folderPreference.content_resource_types.length) {
+            allowedResourceTypes = allowedResourceTypes.filter(rt => folderPreference.content_resource_types.includes(rt.value));
         }
         selectedResourceType = allowedResourceTypes[0].value;
     }
@@ -126,10 +167,15 @@
                 (e: any) => !["meta_schema", "folder_rendering"].includes(e)
             );
         }
-        const r = result.map((e: any) => ({
+        let r = result.map((e: any) => ({
             name: e,
             value: e
         }));
+
+        if(folderPreference && folderPreference.content_schema_shortnames.length) {
+            r.filter(s => folderPreference.content_schema_shortnames.includes(s.value));
+        }
+
         r.unshift({
             name: "None",
             value: null

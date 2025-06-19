@@ -6,7 +6,7 @@
 </script>
 
 {#if $params.space_name}
-    {#await Dmart.retrieve_entry(ResourceType.space, $params.space_name, "__root__", $params.space_name, false, false)}
+    {#await Dmart.retrieve_entry(ResourceType.space, $params.space_name, "__root__", $params.space_name, true, true)}
         <div class="flex flex-col w-full">
             <ListPlaceholder class="m-5" size="lg" style="width: 100vw"/>
         </div>

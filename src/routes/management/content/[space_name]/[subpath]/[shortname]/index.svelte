@@ -6,7 +6,7 @@
 </script>
 
 {#if $params.space_name}
-    {#await Dmart.retrieve_entry(ResourceType.space, $params.space_name, $params.subpath, $params.shortname, false, false)}
+    {#await Dmart.retrieve_entry(ResourceType.space, $params.space_name, $params.subpath, $params.shortname, true, true)}
         <div class="flex flex-col w-full">
             <TextPlaceholder class="m-5" size="lg" style="width: 100vw"/>
             <TextPlaceholder class="m-5" size="lg" style="width: 100vw"/>
