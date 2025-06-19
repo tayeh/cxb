@@ -36,11 +36,11 @@
         ResourceType.schema,
     ];
 
-    enum inputMode {
+    enum InputModa {
         form = "form",
         json = "json"
     }
-    let selectedInputMode = $state(inputMode.form);
+    let selectedInputMode = $state(InputModa.form);
 
     function prepareResourceTypes() {
         if (space_name === "management" ){
@@ -246,10 +246,11 @@
             content = {
                 json: _schemaContent && generateObjectFromSchema(_schemaContent.payload.body)
             }
-            isFolderFormReady = true;
         } catch (e) {
             errorContent = e.response.data;
             isFolderFormReady = false;
+        } finally {
+            isFolderFormReady = true;
         }
     }
 
@@ -287,14 +288,16 @@
 
     $effect(()=>{
         if(selectedResourceType) {
-            untrack(()=>{
-                selectedSchema = null;
-                content = {json: {}}
-            })
+            isFolderFormReady = false;
             if(selectedResourceType === ResourceType.folder) {
                 untrack(() => {
                     setFolderSchemaContent();
                 });
+            } else {
+                untrack(()=>{
+                    selectedSchema = null;
+                    content = {json: {}}
+                })
             }
         }
     });
@@ -355,9 +358,9 @@
                 </Label>
             {/if}
             {#if selectedResourceType === ResourceType.folder && isFolderFormReady}
-                {#if selectedInputMode === inputMode.form}
+                {#if selectedInputMode === InputModa.form}
                     <FolderForm bind:content={content.json} />
-                {:else if selectedInputMode === inputMode.json}
+                {:else if selectedInputMode === InputModa.json}
                     <JSONEditor
                         onRenderMenu={handleRenderMenu}
                         mode={Mode.text}
@@ -383,9 +386,9 @@
             {/if}
 
             {#if selectedResourceType === ResourceType.schema}
-                {#if selectedInputMode === inputMode.form}
+                {#if selectedInputMode === InputModa.form}
                     <SchemaForm bind:content={content.json}/>
-                {:else if selectedInputMode === inputMode.json}
+                {:else if selectedInputMode === InputModa.json}
                     <JSONEditor
                         onRenderMenu={handleRenderMenu}
                         mode={Mode.text}
@@ -395,9 +398,9 @@
             {/if}
 
             {#if subpath === "workflows"}
-                {#if selectedInputMode === inputMode.form}
+                {#if selectedInputMode === InputModa.form}
                     <WorkflowForm bind:content={content.json}/>
-                {:else if selectedInputMode === inputMode.json}
+                {:else if selectedInputMode === InputModa.json}
                     <JSONEditor
                             onRenderMenu={handleRenderMenu}
                             mode={Mode.text}
@@ -429,13 +432,13 @@
         <div class="w-full flex flex-row justify-between">
             {#if resourcesWithFormAndJson.includes(selectedResourceType) || subpath === "workflows"}
                 <Button class="cursor-pointer text-green-700 hover:text-green-500 mx-1" outline
-                        onclick={() => selectedInputMode = selectedInputMode === inputMode.form ? inputMode.json : inputMode.form}>
-                    {#if selectedInputMode === inputMode.form}
+                        onclick={() => selectedInputMode = selectedInputMode === InputModa.form ? InputModa.json : InputModa.form}>
+                    {#if selectedInputMode === InputModa.form}
                         <CodeOutline />
                     {:else }
                         <FileCodeOutline />
                     {/if}
-                    {selectedInputMode === inputMode.form ? 'Json' : 'Form'} Mode
+                    {selectedInputMode === InputModa.form ? 'Json' : 'Form'} Mode
                 </Button>
             {:else}
                 <div></div>
