@@ -8,8 +8,8 @@ export const resourceTypeWithNoPayload = [
     ResourceType.permission,
 ];
 export const subpathInManagementNoAction = [
-    "/users",
-    "/roles",
-    "/permissions",
-    "/groups",
+    "users",
+    "roles",
+    "permissions",
+    "groups",
 ];

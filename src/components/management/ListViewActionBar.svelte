@@ -25,7 +25,9 @@ onMount(() => {
     }
     if (space_name === "management"){
         if(subpathInManagementNoAction.includes(subpath)) {
-            canCreate = checkAccess("create", space_name, subpath, subpath.slice(1));
+            canCreate = checkAccess("create", space_name, subpath, subpath.slice(0,-1));
+        } else {
+            canCreate = checkAccess("create", space_name, subpath, "content");
         }
     } else {
         canCreate = checkAccess("create", space_name, subpath, "content") || checkAccess("create", space_name, subpath, "folder");
