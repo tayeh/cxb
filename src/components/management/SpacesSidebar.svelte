@@ -22,7 +22,8 @@
     import {getSpaces, getChildren} from "@/lib/dmart_services";
     import {jsonEditorContentParser} from "@/utils/jsonEditor";
     import SpacesSubpathItemsSidebar from "./SpacesSubpathItemsSidebar.svelte";
-    import {website} from "@/config";
+    import {url} from "@roxi/routify";
+    $url
 
     let spaceChildren = $state(new Map());
     let expandedSpaces = $state(new Set());
@@ -230,7 +231,7 @@
     }
     function isCurrentSpace(shortname) {
         const currentPath = window.location.pathname || '';
-        return currentPath.includes(`/management/content/${shortname}`);
+        return currentPath.endsWith(`/management/content/${shortname}`);
     }
 </script>
 

@@ -11,6 +11,7 @@
         PaperClipOutline,
         RectangleListOutline,
         TrashBinOutline,
+        DrawSquareSolid
     } from "flowbite-svelte-icons";
     import {JSONEditor, Mode} from "svelte-jsoneditor";
     import {jsonEditorContentParser} from "@/utils/jsonEditor";
@@ -32,6 +33,8 @@
     import {removeEmpty} from "@/utils/renderer/schemaEntryRenderer";
     import WorkflowForm from "@/components/management/forms/WorkflowForm.svelte";
     import MetaTicketForm from "@/components/management/forms/MetaTicketForm.svelte";
+    import WorkflowDiagram from "@/components/management/diagram/WorkflowDiagram.svelte";
+    import SchemaDiagram from "@/components/management/diagram/SchemaDiagram.svelte";
     $goto
 
     enum TabMode {
@@ -39,7 +42,8 @@
         entry = 1,
         form = 2,
         attachments = 3,
-        history = 4
+        history = 4,
+        diagram = 5,
     }
 
     let {
@@ -317,6 +321,22 @@
                     </div>
                 </button>
             </li>
+            {#if resource_type === ResourceType.schema || subpath === "workflows"}
+                <li class="mr-2" role="presentation">
+                    <button
+                        class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === TabMode.diagram ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === TabMode.diagram}
+                        onclick={() => activeTab = TabMode.diagram}
+                    >
+                        <div class="flex items-center gap-2">
+                            <DrawSquareSolid size="md" />
+                            <p>Diagram</p>
+                        </div>
+                    </button>
+                </li>
+            {/if}
             <li class="mr-2" role="presentation">
                 <button
                         class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === TabMode.attachments ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
@@ -437,6 +457,19 @@
                 </div>
             {/if}
         </div>
+
+        {#if resource_type === ResourceType.schema}
+            <SchemaDiagram
+                shortname={entry.shortname}
+                properties={entry.payload.body.properties}
+            />
+        {/if}
+        {#if subpath === "workflows"}
+            <div class={activeTab === TabMode.diagram ? '' : 'hidden'} role="tabpanel">
+                <WorkflowDiagram  shortname={entry.shortname} workflowContent={entry?.payload?.body} />
+            </div>
+        {/if}
+
 
         <div class={activeTab === TabMode.attachments ? '' : 'hidden'} role="tabpanel">
             <Attachments {resource_type}
