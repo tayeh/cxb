@@ -54,12 +54,17 @@
             }
         };
     }
+
+    function isCurrentPath() {
+        const currentPath = window.location.pathname || '';
+        return currentPath.includes(`/management/content/${spaceName}${getCurrentPath()}`);
+    }
 </script>
 
 <SidebarItem
         label={item.attributes?.displayname?.en || item.shortname}
         href={`/management/content/${spaceName}${getCurrentPath()}`}
-        class="flex-1 whitespace-nowrap"
+        class="flex-1 whitespace-nowrap {isCurrentPath() ? 'bg-gray-300 text-white' : ''}"
         style="margin-left: {depth * 20}px;">
     {#snippet icon()}
         <div class="flex items-center gap-2">

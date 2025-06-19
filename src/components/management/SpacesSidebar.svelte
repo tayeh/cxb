@@ -1,18 +1,15 @@
 <script lang="ts">
     import {
         Button,
-        Dropdown,
-        DropdownItem, Input, ListPlaceholder, Modal,
+        Input,
+        ListPlaceholder,
+        Modal,
         Sidebar,
         SidebarGroup,
         SidebarItem, Spinner,
     } from "flowbite-svelte";
     import {
         CodeForkSolid,
-        DotsHorizontalOutline,
-        EyeSolid,
-        PenSolid,
-        TrashBinSolid,
         ChevronDownOutline,
         ChevronRightOutline,
         PlusOutline
@@ -25,9 +22,10 @@
     import {getSpaces, getChildren} from "@/lib/dmart_services";
     import {jsonEditorContentParser} from "@/utils/jsonEditor";
     import SpacesSubpathItemsSidebar from "./SpacesSubpathItemsSidebar.svelte";
+    import {website} from "@/config";
 
-    let spaceChildren = new Map();
-    let expandedSpaces = new Set();
+    let spaceChildren = $state(new Map());
+    let expandedSpaces = $state(new Set());
 
 
     async function loadChildren(spaceName, subpath = "/") {
@@ -35,7 +33,7 @@
         if (!spaceChildren.has(cacheKey)) {
             try {
                 const children = await getChildren(spaceName, subpath, 50, 0, [ResourceType.folder]);
-                console.log({children})
+
                 spaceChildren.set(cacheKey, children.records || []);
                 spaceChildren = spaceChildren; // Trigger reactivity
             } catch (error) {
@@ -54,7 +52,7 @@
             expandedSpaces.add(key);
             await loadChildren(spaceName, subpath);
         }
-        expandedSpaces = expandedSpaces; // Trigger reactivity
+        expandedSpaces = $state.snapshot(expandedSpaces);
     }
 
     function isExpanded(spaceName, subpath = "/") {
@@ -230,6 +228,10 @@
             }
         }
     }
+    function isCurrentSpace(shortname) {
+        const currentPath = window.location.pathname || '';
+        return currentPath.includes(`/management/content/${shortname}`);
+    }
 </script>
 
 <Sidebar position="static" class="h-full">
@@ -245,18 +247,20 @@
                 <SidebarItem
                         label={space.attributes?.displayname?.en || space.shortname}
                         href={"/management/content/"+space.shortname}
-                        class="flex-1 ms-3 whitespace-nowrap">
+                        class="flex-1 ms-3 whitespace-nowrap {isCurrentSpace(space.shortname) ? 'bg-gray-300 text-white' : ''}">
                     {#snippet icon()}
                         <div class="flex items-center gap-2">
                             <button
                                 class="p-1 hover:bg-gray-200 rounded"
                                 use:preventAndToggleExpanded={space.shortname}
                             >
-                                {#if isExpanded(space.shortname)}
-                                    <ChevronDownOutline size="sm" />
-                                {:else}
-                                    <ChevronRightOutline size="sm" />
-                                {/if}
+                                {#key expandedSpaces}
+                                    {#if isExpanded(space.shortname)}
+                                        <ChevronDownOutline size="sm" />
+                                    {:else}
+                                        <ChevronRightOutline size="sm" />
+                                    {/if}
+                                {/key}
                             </button>
 
                             <CodeForkSolid
@@ -299,28 +303,30 @@
                     <!--{/snippet}-->
                 </SidebarItem>
 
-                {#if isExpanded(space.shortname)}
-                    {#await loadChildren(space.shortname)}
-                        <div class="ml-6">
-                            <ListPlaceholder />
-                        </div>
-                    {:then children}
-                        {#each getChildrenForSpace(space.shortname) as child (child.shortname)}
-                            <SpacesSubpathItemsSidebar
-                                    spaceName={space.shortname}
-                                    parentPath="/"
-                                    item={child}
-                                    depth={1}
-                                    {spaceChildren}
-                                    {expandedSpaces}
-                                    {loadChildren}
-                                    {toggleExpanded}
-                                    {isExpanded}
-                                    {getChildrenForSpace}
-                            />
-                        {/each}
-                    {/await}
-                {/if}
+                {#key expandedSpaces}
+                    {#if isExpanded(space.shortname)}
+                        {#await loadChildren(space.shortname)}
+                            <div class="ml-6">
+                                <ListPlaceholder />
+                            </div>
+                        {:then children}
+                            {#each getChildrenForSpace(space.shortname) as child (child.shortname)}
+                                <SpacesSubpathItemsSidebar
+                                        spaceName={space.shortname}
+                                        parentPath="/"
+                                        item={child}
+                                        depth={1}
+                                        {spaceChildren}
+                                        {expandedSpaces}
+                                        {loadChildren}
+                                        {toggleExpanded}
+                                        {isExpanded}
+                                        {getChildrenForSpace}
+                                />
+                            {/each}
+                        {/await}
+                    {/if}
+                {/key}
             {/each}
         {/if}
     </SidebarGroup>
