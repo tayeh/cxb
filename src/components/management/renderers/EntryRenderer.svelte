@@ -465,10 +465,6 @@
                                 <DynamicSchemaBasedForms
                                     schema={schema.payload.body}
                                     bind:content={jePayload.json}
-                                    on:contentUpdate={(event) => {
-                                        // Ensure two-way binding by explicitly updating the jePayload
-                                        jePayload = { json: event.detail };
-                                    }}
                                 />
                             {/await}
                         {/if}
