@@ -266,7 +266,6 @@
         shortname={entry.shortname}
     />
 
-    <!-- Tab navigation -->
     <div class="border-b border-gray-200">
         <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" role="tablist">
             <li class="mr-2" role="presentation">

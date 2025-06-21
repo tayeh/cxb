@@ -53,13 +53,13 @@
         </NavLi>
 <!--        TODO-->
 
-<!--        <NavLi class="flex items-center gap-1 relative" href="/management/tools">-->
-<!--            <UserSettingsSolid size="md"/>-->
-<!--            <span>Tools</span>-->
-<!--            {#if window.location.pathname.includes('/management/tools')}-->
-<!--                <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary"></div>-->
-<!--            {/if}-->
-<!--        </NavLi>-->
+        <NavLi class="flex items-center gap-1 relative" href="/management/tools">
+            <UserSettingsSolid size="md"/>
+            <span>Tools</span>
+            {#if window.location.pathname.includes('/management/tools')}
+                <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary"></div>
+            {/if}
+        </NavLi>
 <!--        <NavLi class="flex items-center gap-1 relative" href="/management/analytics">-->
 <!--            <ChartMixedOutline size="md"/>-->
 <!--            <span>Analytics</span>-->
