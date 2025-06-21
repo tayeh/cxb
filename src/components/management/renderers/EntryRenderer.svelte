@@ -61,7 +61,7 @@
         resource_type: ResourceType,
         schema_name?: string | null,
     } = $props();
-    console.log({entry})
+    
     currentEntry.set({
         entry,
         refreshEntry
@@ -70,7 +70,7 @@
     let coinTriggerRefresh = $state(false);
 
     let jeContent: any = $state({ json: structuredClone(entry) });
-    let jePayload: any = $state(null);
+
     let payloadSchemaContent: any = $state(null);
     let ticketData: any = $state({
         action: null,
@@ -78,16 +78,6 @@
         comment: null,
     });
     let errorMessage = $state(null);
-
-    onMount(() => {
-        if(entry.payload) {
-            if (entry.payload.content_type === "json") {
-                jePayload = {json: entry.payload.body};
-            } else {
-                jePayload = entry.payload.body;
-            }
-        }
-    })
 
     const canUpdate = checkAccess("update", space_name, subpath, resource_type);
     const canDelete = !(space_name === "management" && subpath === "/")
@@ -128,11 +118,11 @@
         delete content.shortname;
 
         if (resource_type === ResourceType.schema) {
-            content.payload.body = removeEmpty(jePayload.json);
+            content.payload.body = removeEmpty(content.payload.body);
         }
         else if(resource_type === ResourceType.content && subpath === "workflows") {
             content.payload = {
-                body: removeEmpty(jsonEditorContentParser($state.snapshot(jePayload))),
+                body: removeEmpty(jsonEditorContentParser($state.snapshot(content.payload.body))),
                 schema: 'workflow',
                 content_type: "json"
             };
@@ -263,10 +253,6 @@
             });
         }
     });
-
-    $effect(()=>{
-        console.log({jePayload})
-    })
 </script>
 
 
@@ -450,13 +436,13 @@
                                         meta={jeContent.json}
                                         bind:formData={ticketData} />
                     {/if}
-                    {#if jePayload}
+                    {#if jeContent?.json?.payload?.body}
                         {#if resource_type === ResourceType.schema}
-                            <SchemaForm bind:content={jePayload.json}  />
+                            <SchemaForm bind:content={jeContent.json.payload.body}  />
                         {:else if resource_type === ResourceType.folder}
-                            <FolderForm bind:content={jePayload.json} />
+                            <FolderForm bind:content={jeContent.json.payload.body} />
                         {:else if resource_type === ResourceType.content && subpath === "workflows"}
-                            <WorkflowForm bind:content={jePayload.json} />
+                            <WorkflowForm bind:content={jeContent.json.payload.body} />
                         {/if}
                         {#if jeContent.json.payload.schema_shortname}
                             {#await Dmart.retrieve_entry(ResourceType.schema,space_name,"schema",jeContent.json.payload.schema_shortname,true,false)}
@@ -464,7 +450,7 @@
                             {:then schema}
                                 <DynamicSchemaBasedForms
                                     schema={schema.payload.body}
-                                    bind:content={jePayload.json}
+                                    bind:content={jeContent.json.payload.body}
                                 />
                             {/await}
                         {/if}

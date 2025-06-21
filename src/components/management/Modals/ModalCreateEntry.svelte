@@ -18,6 +18,7 @@
     import {removeEmpty} from "@/utils/renderer/schemaEntryRenderer";
     import WorkflowForm from "@/components/management/forms/WorkflowForm.svelte";
     import {checkAccess} from "@/utils/checkAccess";
+    import DynamicSchemaBasedForms from "@/components/management/forms/DynamicSchemaBasedForms.svelte";
 
     let {
         space_name,
@@ -34,16 +35,18 @@
     let selectedResourceType = $state(ResourceType.content);
     let allowedResourceTypes = $state([]);
 
-    let resourcesWithFormAndJson = [
+    const resourcesWithFormAndJson = [
+        ResourceType.user,
+        ResourceType.content,
         ResourceType.folder,
         ResourceType.schema,
     ];
 
-    enum InputModa {
+    enum InputMode {
         form = "form",
         json = "json"
     }
-    let selectedInputMode = $state(InputModa.form);
+    let selectedInputMode = $state(InputMode.form);
 
     function prepareResourceTypes() {
         if (space_name === "management" ){
@@ -251,6 +254,15 @@
                         content_type: "json"
                     }
                 };
+            } else {
+                requestCreate.attributes = {
+                    ...requestCreate.attributes,
+                    payload: {
+                        body: jsonEditorContentParser($state.snapshot(content)),
+                        schema_shortname: null,
+                        content_type: "json"
+                    }
+                };
             }
 
             response = await Dmart.request({
@@ -348,13 +360,29 @@
             }
         }
     });
+    let selectedSchemaContent = $state(null);
     $effect(()=>{
         if(selectedSchema){
             untrack(()=>{
                 const _schemaContent = tmpSchemas.find(t => t.shortname === selectedSchema);
+                selectedSchemaContent = _schemaContent.attributes.payload.body;
                 content = {
                     json: _schemaContent && generateObjectFromSchema(_schemaContent.attributes.payload.body)
                 }
+            });
+        }
+    });
+
+    $effect(()=>{
+        if(selectedInputMode === InputMode.json){
+            untrack(()=>{
+                const _jeContent = jsonEditorContentParser($state.snapshot(content));
+                content = { text: JSON.stringify(_jeContent, null, 2) };
+            });
+        } else if(selectedInputMode === InputMode.form){
+            untrack(()=>{
+                const _jeContent = jsonEditorContentParser($state.snapshot(content));
+                content = { json: _jeContent };
             });
         }
     });
@@ -405,9 +433,9 @@
                 </Label>
             {/if}
             {#if selectedResourceType === ResourceType.folder && isFolderFormReady}
-                {#if selectedInputMode === InputModa.form}
+                {#if selectedInputMode === InputMode.form}
                     <FolderForm bind:content={content.json} />
-                {:else if selectedInputMode === InputModa.json}
+                {:else if selectedInputMode === InputMode.json}
                     <JSONEditor
                         onRenderMenu={handleRenderMenu}
                         mode={Mode.text}
@@ -433,9 +461,9 @@
             {/if}
 
             {#if selectedResourceType === ResourceType.schema}
-                {#if selectedInputMode === InputModa.form}
+                {#if selectedInputMode === InputMode.form}
                     <SchemaForm bind:content={content.json}/>
-                {:else if selectedInputMode === InputModa.json}
+                {:else if selectedInputMode === InputMode.json}
                     <JSONEditor
                         onRenderMenu={handleRenderMenu}
                         mode={Mode.text}
@@ -445,9 +473,9 @@
             {/if}
 
             {#if subpath === "workflows"}
-                {#if selectedInputMode === InputModa.form}
+                {#if selectedInputMode === InputMode.form}
                     <WorkflowForm bind:content={content.json}/>
-                {:else if selectedInputMode === InputModa.json}
+                {:else if selectedInputMode === InputMode.json}
                     <JSONEditor
                             onRenderMenu={handleRenderMenu}
                             mode={Mode.text}
@@ -457,12 +485,22 @@
             {/if}
 
             <div class="my-2">
-                {#if !resourcesWithFormAndJson.includes(selectedResourceType) && subpath !== "workflows"}
-                    <JSONEditor
-                        onRenderMenu={handleRenderMenu}
-                        mode={Mode.text}
-                        bind:content={content}
-                    />
+                {#if resourcesWithFormAndJson.includes(selectedResourceType) || subpath === "workflows"}
+                    {#if selectedInputMode === InputMode.form}
+                        {#if selectedSchemaContent}
+                            {#if content.json}
+                                <DynamicSchemaBasedForms schema={selectedSchemaContent} bind:content={content.json} />
+                            {/if}
+                        {:else}
+                            <p class="content-center">Nothing to render.</p>
+                        {/if}
+                    {:else if selectedInputMode === InputMode.json}
+                        <JSONEditor
+                            onRenderMenu={handleRenderMenu}
+                            mode={Mode.text}
+                            bind:content={content}
+                        />
+                    {/if}
                 {/if}
             </div>
         {/if}
@@ -479,13 +517,13 @@
         <div class="w-full flex flex-row justify-between">
             {#if resourcesWithFormAndJson.includes(selectedResourceType) || subpath === "workflows"}
                 <Button class="cursor-pointer text-green-700 hover:text-green-500 mx-1" outline
-                        onclick={() => selectedInputMode = selectedInputMode === InputModa.form ? InputModa.json : InputModa.form}>
-                    {#if selectedInputMode === InputModa.form}
+                        onclick={() => selectedInputMode = selectedInputMode === InputMode.form ? InputMode.json : InputMode.form}>
+                    {#if selectedInputMode === InputMode.form}
                         <CodeOutline />
                     {:else }
                         <FileCodeOutline />
                     {/if}
-                    {selectedInputMode === InputModa.form ? 'Json' : 'Form'} Mode
+                    {selectedInputMode === InputMode.form ? 'Json' : 'Form'} Mode
                 </Button>
             {:else}
                 <div></div>
