@@ -458,15 +458,17 @@
             {/if}
         </div>
 
-        {#if resource_type === ResourceType.schema}
-            <SchemaDiagram
-                shortname={entry.shortname}
-                properties={entry.payload.body.properties}
-            />
-        {/if}
-        {#if subpath === "workflows"}
+        {#if resource_type === ResourceType.schema || subpath === "workflows"}
             <div class={activeTab === TabMode.diagram ? '' : 'hidden'} role="tabpanel">
-                <WorkflowDiagram  shortname={entry.shortname} workflowContent={entry?.payload?.body} />
+                {#if resource_type === ResourceType.schema}
+                    <SchemaDiagram
+                            shortname={entry.shortname}
+                            properties={entry.payload.body.properties}
+                    />
+                {/if}
+                {#if subpath === "workflows"}
+                    <WorkflowDiagram  shortname={entry.shortname} workflowContent={entry?.payload?.body} />
+                {/if}
             </div>
         {/if}
 
