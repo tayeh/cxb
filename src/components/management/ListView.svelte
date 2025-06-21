@@ -3,7 +3,7 @@
   import {Engine, functionCreateDatatable, Pagination, RowsPerPage, Sort,} from "svelte-datatables-net";
   import {Dmart, QueryType, SortyType} from "@edraj/tsdmart";
   import cols from "@/utils/jsons/list_cols.json";
-  import {search} from "@/stores/management/triggers";
+  import {searchListView} from "@/stores/management/triggers";
   import Prism from "@/components/Prism.svelte";
   import {goto, params} from "@roxi/routify";
   import {fade} from "svelte/transition";
@@ -146,7 +146,7 @@
 
   let old_search = "";
   async function fetchPageRecords(isSetPage = true, requestExtra = {}) {
-    let _search = $search;
+    let _search = $searchListView;
 
     if(subpath==="/") {
       if($spaces === null || $spaces.length === 0){
@@ -154,7 +154,10 @@
       }
       const currentSpace = $spaces.find((e) => e.shortname === space_name);
       const hideFolders = currentSpace.attributes.hide_folders;
-      _search += ` -@shortname:${hideFolders.join('|')}`;
+
+      if(hideFolders.length){
+        _search += ` -@shortname:${hideFolders.join('|')}`;
+      }
     }
 
     const resp = await Dmart.query({
@@ -174,7 +177,7 @@
       retrieve_json_payload: true
     }, scope);
 
-    old_search = $search;
+    old_search = $searchListView;
     total = resp.attributes.total;
     objectDatatable.arrayRawData = resp.records;
     if (isSetPage) {
@@ -260,7 +263,7 @@
 
   $effect(() => {
     if (
-      old_search !== $search &&
+      old_search !== $searchListView &&
       type !== QueryType.history &&
       objectDatatable
     ) {

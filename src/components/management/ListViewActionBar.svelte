@@ -1,6 +1,6 @@
 <script lang="ts">
-import {FileCirclePlusOutline,UploadOutline, DownloadOutline,TrashBinOutline} from "flowbite-svelte-icons";
-import {Button, Input} from "flowbite-svelte";
+import {FileCirclePlusOutline,UploadOutline, DownloadOutline,TrashBinOutline,SearchOutline} from "flowbite-svelte-icons";
+import {Button, Input,ButtonGroup,InputAddon} from "flowbite-svelte";
 import ModalCreateEntry from "@/components/management/Modals/ModalCreateEntry.svelte";
 import {onMount} from "svelte";
 import {checkAccess} from "@/utils/checkAccess";
@@ -8,6 +8,7 @@ import {currentListView, subpathInManagementNoAction} from "@/stores/global";
 import {bulkBucket} from "@/stores/management/bulk_bucket";
 import {Dmart,RequestType} from "@edraj/tsdmart";
 import {Level, showToast} from "@/utils/toast";
+import {searchListView} from "@/stores/management/triggers";
 
 let {space_name,subpath}:{space_name:string,subpath:string} = $props();
 
@@ -72,11 +73,22 @@ async function handleBulkDelete() {
         bulkBucket.set([]);
     }
 }
+
+let searchInput = "";
+async function handleSearch(e){
+    searchListView.set(searchInput);
+    await $currentListView.fetchPageRecords()
+}
 </script>
 
 <div class="flex flex-col md:flex-row justify-between items-center my-2 mx-3">
-    <div>
-        <Input placeholder="Search..."/>
+    <div class="w-1/2">
+            <ButtonGroup class="w-full">
+                <Input id="website-admin" placeholder="Search..." bind:value={searchInput} />
+                <InputAddon class="cursor-pointer" onclick={handleSearch}>
+                    <SearchOutline class="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                </InputAddon>
+            </ButtonGroup>
     </div>
     <div>
         {#if canCreate}
