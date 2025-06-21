@@ -222,21 +222,22 @@
             if(selectedResourceType === ResourceType.ticket) {
                 requestCreate.attributes.workflow_shortname = selectedWorkflow;
             }
-            if(selectedResourceType === ResourceType.schema) {
+            else if(selectedResourceType === ResourceType.schema) {
                 requestCreate.attributes = {
                     ...requestCreate.attributes,
                     payload: {
                         body: removeEmpty(jsonEditorContentParser($state.snapshot(content))),
-                        schema: 'meta_schema',
+                        schema_shortname: 'meta_schema',
                         content_type: "json"
                     }
                 };
-            } if(selectedResourceType === ResourceType.content && subpath === "workflows") {
+            }
+            else if(selectedResourceType === ResourceType.content && subpath === "workflows") {
                 requestCreate.attributes = {
                     ...requestCreate.attributes,
                     payload: {
                         body: removeEmpty(jsonEditorContentParser($state.snapshot(content))),
-                        schema: 'workflow',
+                        schema_shortname: 'workflow',
                         content_type: "json"
                     }
                 };
@@ -246,7 +247,7 @@
                     ...requestCreate.attributes,
                     payload: {
                         body: jsonEditorContentParser($state.snapshot(content)),
-                        schema: selectedSchema,
+                        schema_shortname: selectedSchema,
                         content_type: "json"
                     }
                 };
