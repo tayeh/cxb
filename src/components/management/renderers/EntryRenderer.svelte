@@ -35,6 +35,8 @@
     import MetaTicketForm from "@/components/management/forms/MetaTicketForm.svelte";
     import WorkflowDiagram from "@/components/management/diagram/WorkflowDiagram.svelte";
     import SchemaDiagram from "@/components/management/diagram/SchemaDiagram.svelte";
+    import {CardPlaceholder} from "flowbite-svelte";
+    import DynamicSchemaBasedForms from "@/components/management/forms/DynamicSchemaBasedForms.svelte";
     $goto
 
     enum TabMode {
@@ -59,14 +61,17 @@
         resource_type: ResourceType,
         schema_name?: string | null,
     } = $props();
-
+    console.log({entry})
     currentEntry.set({
         entry,
         refreshEntry
     });
 
+    let coinTriggerRefresh = $state(false);
+
     let jeContent: any = $state({ json: structuredClone(entry) });
     let jePayload: any = $state(null);
+    let payloadSchemaContent: any = $state(null);
     let ticketData: any = $state({
         action: null,
         resolution: null,
@@ -172,7 +177,6 @@
         }
 
         try {
-
             await Dmart.request({
                 space_name: space_name,
                 request_type: RequestType.delete,
@@ -206,28 +210,28 @@
         }
     }
 
-    function handleRenderMenu(
-        items: any,
-        context: { mode: "tree" | "text" | "table"; modal: boolean }
-    ) {
-        return items.concat([
-            {
-                onClick: handleSave,
-                icon: {
-                    prefix: 'prefix',
-                    iconName: 'iconName',
-                    icon: [
-                        448,
-                        512,
-                        [128190,128426,"save"],
-                        'f0c7',
-                        'M64 32C28.7 32 0 60.7 0 96L0 416c0 35.3 28.7 64 64 64l320 0c35.3 0 64-28.7 64-64l0-242.7c0-17-6.7-33.3-18.7-45.3L352 50.7C340 38.7 323.7 32 306.7 32L64 32zm0 96c0-17.7 14.3-32 32-32l192 0c17.7 0 32 14.3 32 32l0 64c0 17.7-14.3 32-32 32L96 224c-17.7 0-32-14.3-32-32l0-64zM224 288a64 64 0 1 1 0 128 64 64 0 1 1 0-128z'
-                    ]
-                },
-                title: "Save",
-            }
-        ]);
-    }
+    // function handleRenderMenu(
+    //     items: any,
+    //     context: { mode: "tree" | "text" | "table"; modal: boolean }
+    // ) {
+    //     return items.concat([
+    //         {
+    //             onClick: handleSave,
+    //             icon: {
+    //                 prefix: 'prefix',
+    //                 iconName: 'iconName',
+    //                 icon: [
+    //                     448,
+    //                     512,
+    //                     [128190,128426,"save"],
+    //                     'f0c7',
+    //                     'M64 32C28.7 32 0 60.7 0 96L0 416c0 35.3 28.7 64 64 64l320 0c35.3 0 64-28.7 64-64l0-242.7c0-17-6.7-33.3-18.7-45.3L352 50.7C340 38.7 323.7 32 306.7 32L64 32zm0 96c0-17.7 14.3-32 32-32l192 0c17.7 0 32 14.3 32 32l0 64c0 17.7-14.3 32-32 32L96 224c-17.7 0-32-14.3-32-32l0-64zM224 288a64 64 0 1 1 0 128 64 64 0 1 1 0-128z'
+    //                 ]
+    //             },
+    //             title: "Save",
+    //         }
+    //     ]);
+    // }
 
     async function refreshEntry() {
         if (resource_type === ResourceType.folder) {
@@ -243,6 +247,7 @@
             entry,
             refreshEntry
         });
+        coinTriggerRefresh = !coinTriggerRefresh;
     }
 
     $effect(()=>{
@@ -258,6 +263,10 @@
             });
         }
     });
+
+    $effect(()=>{
+        console.log({jePayload})
+    })
 </script>
 
 
@@ -417,8 +426,8 @@
         </div>
 
         <div class={activeTab === TabMode.entry ? '' : 'hidden'} role="tabpanel">
-            {#if jeContent.text}
-                <JSONEditor bind:content={jeContent} mode={Mode.text} onRenderMenu={handleRenderMenu} />
+            {#if jeContent.text || jeContent.json}
+                <JSONEditor bind:content={jeContent} mode={Mode.text} />
             {/if}
             {#if errorMessage}
                 <div class="overflow-auto">
@@ -427,35 +436,50 @@
             {/if}
         </div>
         <div class={activeTab === TabMode.form ? '' : 'hidden'} role="tabpanel">
-            {#if jeContent.json}
-                <MetaForm bind:formData={jeContent.json} bind:validateFn={validateMetaForm} />
-                {#if resource_type === ResourceType.user}
-                    <MetaUserForm bind:formData={jeContent.json} bind:validateFn={validateRTForm}/>
-                {:else if resource_type === ResourceType.role}
-                    <MetaRoleForm bind:formData={jeContent.json} bind:validateFn={validateRTForm} />
-                {:else if resource_type === ResourceType.permission}
-                    <MetaPermissionForm bind:formData={jeContent.json} bind:validateFn={validateRTForm} />
-                {:else if resource_type === ResourceType.ticket}
-                    <MetaTicketForm {space_name}
-                                    meta={jeContent.json}
-                                    bind:formData={ticketData} />
-                {/if}
-                {#if jePayload}
-                    {#if resource_type === ResourceType.schema}
-                        <SchemaForm bind:content={jePayload.json}  />
-                    {:else if resource_type === ResourceType.folder}
-                        <FolderForm bind:content={jePayload.json} />
-                    {:else if resource_type === ResourceType.content && subpath === "workflows"}
-                        <WorkflowForm bind:content={jePayload.json} />
+            {#key coinTriggerRefresh}
+                {#if jeContent.json}
+                    <MetaForm bind:formData={jeContent.json} bind:validateFn={validateMetaForm} />
+                    {#if resource_type === ResourceType.user}
+                        <MetaUserForm bind:formData={jeContent.json} bind:validateFn={validateRTForm}/>
+                    {:else if resource_type === ResourceType.role}
+                        <MetaRoleForm bind:formData={jeContent.json} bind:validateFn={validateRTForm} />
+                    {:else if resource_type === ResourceType.permission}
+                        <MetaPermissionForm bind:formData={jeContent.json} bind:validateFn={validateRTForm} />
+                    {:else if resource_type === ResourceType.ticket}
+                        <MetaTicketForm {space_name}
+                                        meta={jeContent.json}
+                                        bind:formData={ticketData} />
+                    {/if}
+                    {#if jePayload}
+                        {#if resource_type === ResourceType.schema}
+                            <SchemaForm bind:content={jePayload.json}  />
+                        {:else if resource_type === ResourceType.folder}
+                            <FolderForm bind:content={jePayload.json} />
+                        {:else if resource_type === ResourceType.content && subpath === "workflows"}
+                            <WorkflowForm bind:content={jePayload.json} />
+                        {/if}
+                        {#if jeContent.json.payload.schema_shortname}
+                            {#await Dmart.retrieve_entry(ResourceType.schema,space_name,"schema",jeContent.json.payload.schema_shortname,true,false)}
+                                <CardPlaceholder size="md" class="mt-8" />
+                            {:then schema}
+                                <DynamicSchemaBasedForms
+                                    schema={schema.payload.body}
+                                    bind:content={jePayload.json}
+                                    on:contentUpdate={(event) => {
+                                        // Ensure two-way binding by explicitly updating the jePayload
+                                        jePayload = { json: event.detail };
+                                    }}
+                                />
+                            {/await}
+                        {/if}
                     {/if}
                 {/if}
-
-            {/if}
-            {#if errorMessage}
-                <div class="overflow-auto">
-                    <Prism code={errorMessage} />
-                </div>
-            {/if}
+                {#if errorMessage}
+                    <div class="overflow-auto">
+                        <Prism code={errorMessage} />
+                    </div>
+                {/if}
+            {/key}
         </div>
 
         {#if resource_type === ResourceType.schema || subpath === "workflows"}
