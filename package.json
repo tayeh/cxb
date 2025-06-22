@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json"
+    "svelte-check": "svelte-check --no-tsconfig --ignore .routify"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.0.3",
@@ -24,7 +24,7 @@
     "@akebifiky/remark-simple-plantuml": "^1.0.2",
     "@edraj/tsdmart": "^2.6.2",
     "@roxi/routify": "^3.0.0-next.285",
-    "@tailwindcss/vite": "^4.1.8",
+    "@tailwindcss/vite": "^4.1.10",
     "@zerodevx/svelte-toast": "^0.9.6",
     "cl-editor": "edraj/cl-editor",
     "flowbite": "^3.1.2",

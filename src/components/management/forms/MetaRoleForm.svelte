@@ -26,7 +26,7 @@
         permissions: formData.permissions || []
     };
 
-    onMount(async () => {
+    async function getPermissions() {
         try {
             const response: any = await Dmart.query({
                 space_name: 'management',
@@ -44,8 +44,11 @@
         } finally {
             loading = false;
         }
+    }
 
-        // Add click outside listener
+    onMount(() => {
+        getPermissions()
+
         const handleClickOutside = (event) => {
             if (dropdownWrapperRef && !dropdownWrapperRef.contains(event.target)) {
                 showDropdown = false;

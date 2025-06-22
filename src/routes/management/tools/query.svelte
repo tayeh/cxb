@@ -149,7 +149,7 @@
                     <button
                             type="button"
                             class="text-blue-600 hover:text-blue-800 cursor-pointer"
-                            on:click={() => (isDisplayFilter = !isDisplayFilter)}
+                            onclick={() => (isDisplayFilter = !isDisplayFilter)}
                             aria-label="Toggle filter options"
                     >
                         {#if isDisplayFilter}

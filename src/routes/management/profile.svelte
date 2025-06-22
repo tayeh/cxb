@@ -37,14 +37,23 @@
         <Card class="bg-white shadow-lg rounded-lg p-6 min-w-full">
             <!-- Header with Avatar and basic info -->
             <div class="flex flex-col sm:flex-row items-center gap-5 mb-6">
-                <Avatar
-                    size="xl"
-                    rounded
-                    class="w-24 h-24"
-                    src={getAvatar(profile.shortname)}
-                >
-                    {profile.shortname?.charAt(0).toUpperCase() || "U"}
-                </Avatar>
+                {#await getAvatar(profile.shortname)}
+                    <Avatar
+                        size="xl"
+                        class="w-24 h-24 rounded"
+                    >
+                        {profile.shortname?.charAt(0).toUpperCase() || "U"}
+                    </Avatar>
+                {:then url}
+                    <Avatar
+                        size="xl"
+                        class="w-24 h-24 rounded"
+                        src={url}
+                    >
+                        {profile.shortname?.charAt(0).toUpperCase() || "U"}
+                    </Avatar>
+                {/await}
+
 
                 <div class="flex flex-col items-center sm:items-start">
                     <div class="flex flex-row">
@@ -132,10 +141,10 @@
                 <Hr class="my-4" />
 
                 <div>
-                    <Heading tag="h3" customSize="text-xl font-semibold mb-3">Groups</Heading>
+                    <Heading tag="h3" class="text-xl font-semibold mb-3">Groups</Heading>
                     <div class="flex flex-wrap gap-2">
                         {#each profile.attributes.groups as group}
-                            <Badge color="dark">{group}</Badge>
+                            <Badge color="gray">{group}</Badge>
                         {/each}
                     </div>
                 </div>

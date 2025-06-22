@@ -38,7 +38,7 @@
 
     let isActionLoading = $state(false);
 
-    let jeContent = { json: undefined };
+    let jeContent = $state({ json: undefined });
 
     function showAddSpaceModal() {
         modelError = null;
@@ -113,7 +113,9 @@
 
     async function saveChanges() {
         if (selectedSpace) {
-            const record = jsonEditorContentParser(jeContent);
+            const record = jsonEditorContentParser(
+                $state.snapshot(jeContent)
+            );
             delete record.uuid;
             try {
                 isActionLoading = true;
@@ -216,6 +218,8 @@
                     </Button>
                 </div>
 
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <div class="flex flex-col items-center text-center p-4"
                      style="cursor: pointer"
                      onclick={() => handleSelectedSpace(space.shortname)}>

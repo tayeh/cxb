@@ -35,7 +35,7 @@
     let filteredGroups = $state([]);
     let groupsSearchTerm = $state('');
     let showGroupsDropdown = $state(false);
-    let groupsDropdownRef;
+    let groupsDropdownRef = $state(null);
 
     formData = {
         ...formData,
@@ -58,7 +58,7 @@
     const userTypeOptions = ["bot", "mobile", "web", "admin", "api"]
         .map(type => ({ name: type.charAt(0).toUpperCase() + type.slice(1), value: type }));
 
-    onMount(async () => {
+    async function getRoles() {
         try {
             const rolesResponse: any = await Dmart.query({
                 space_name: 'management',
@@ -76,9 +76,10 @@
         } finally {
             loadingRoles = false;
         }
+    }
 
+    async function getGroups() {
         try {
-            // Fetch groups
             const groupsResponse: any = await Dmart.query({
                 space_name: 'management',
                 subpath: '/groups',
@@ -95,8 +96,12 @@
         } finally {
             loadingGroups = false;
         }
+    }
 
-        // Add click outside listeners
+    onMount(() => {
+        getRoles();
+        getGroups();
+
         const handleClickOutside = (event) => {
             if (rolesDropdownRef && !rolesDropdownRef.contains(event.target)) {
                 showRolesDropdown = false;
@@ -111,7 +116,6 @@
         };
     });
 
-    // Role functions
     function updateFilteredRoles() {
         filteredRoles = availableRoles
             .filter(role => role.shortname.toLowerCase().includes(rolesSearchTerm.toLowerCase()))
@@ -132,7 +136,6 @@
         formData.roles = formData.roles.filter(r => r !== role);
     }
 
-    // Group functions
     function updateFilteredGroups() {
         filteredGroups = availableGroups
             .filter(group => group.shortname.toLowerCase().includes(groupsSearchTerm.toLowerCase()))

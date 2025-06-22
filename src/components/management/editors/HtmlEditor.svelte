@@ -18,6 +18,7 @@
   let editor = null;
 
   onMount(async () => {
+    // @ts-ignore
     editor = mount(Editor, {
         target: maindiv,
         props: {

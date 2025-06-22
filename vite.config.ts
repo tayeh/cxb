@@ -27,18 +27,6 @@ export default defineConfig({
     svelteMd(),
     viteStaticCopy({
       targets: [
-        {
-          src: path.resolve(__dirname, './assets') + '/[!.]*',
-          dest: 'assets'
-        },
-        {
-          src: path.resolve(__dirname, './node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff'),
-          dest: 'assets/fonts'
-        },
-        {
-          src: path.resolve(__dirname, './node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff2'),
-          dest: 'assets/fonts'
-        }
       ]
     }),
     routify({

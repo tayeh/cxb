@@ -90,7 +90,7 @@
           <div class="flex-grow">
             <Input type="text" bind:value={aggregation_data[currentSection][index]} />
           </div>
-          <Button color="red" size="sm" on:lick={(e) => deleteInput(e, index)} class="flex-shrink-0">
+          <Button color="red" size="sm" onclick={(e) => deleteInput(e, index)} class="flex-shrink-0">
             <MinusOutline />
           </Button>
         </div>

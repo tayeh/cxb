@@ -11,6 +11,7 @@
         settings = "settings",
         manifest = "manifest",
     }
+
     let activeTab: TabMode = $state(TabMode.settings);
     let settings = $state({});
     let manifest = $state({});

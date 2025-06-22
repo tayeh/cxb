@@ -20,6 +20,9 @@
     let {
         formData = $bindable(),
         validateFn = $bindable()
+    }: {
+        formData: any,
+        validateFn: () => boolean
     } = $props();
 
     let form;
@@ -33,7 +36,6 @@
         restricted_fields: formData.restricted_fields || [],
         allowed_fields_values: formData.allowed_fields_values || {}
     };
-
 
     const resourceTypeOptions = Object.keys(ResourceType).map(key => ({
         name: key,
@@ -225,6 +227,8 @@
             loadSubpaths(selectedSpace);
         }
     });
+
+    let subpathEntries: any = $derived(Object.entries(formData.subpaths));
 </script>
 
 <Card class="w-full max-w-4xl mx-auto p-4">
@@ -352,7 +356,7 @@
 
                     {#if Object.keys(formData.subpaths).length > 0}
                         <div class="mt-4 border rounded-lg p-4 bg-gray-50">
-                            {#each Object.entries(formData.subpaths) as [space, paths]}
+                            {#each subpathEntries as [space, paths]}
                                 <div class="mb-4">
                                     <div class="font-medium text-gray-700 mb-2">{space}</div>
                                     <div class="flex flex-wrap gap-2">
