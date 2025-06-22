@@ -1,7 +1,6 @@
 <script lang="ts">
     import {
         Button,
-        Input,
         ListPlaceholder,
         Modal,
         Sidebar,
@@ -22,9 +21,8 @@
     import {getSpaces, getChildren} from "@/lib/dmart_services";
     import {jsonEditorContentParser} from "@/utils/jsonEditor";
     import SpacesSubpathItemsSidebar from "./SpacesSubpathItemsSidebar.svelte";
-    import {url} from "@roxi/routify";
+    import {activeRoute} from "@roxi/routify";
     import MetaForm from "./forms/MetaForm.svelte";
-    $url
 
     let spaceChildren = $state(new Map());
     let expandedSpaces = $state(new Set());
@@ -270,8 +268,7 @@
         }
     }
     function isCurrentSpace(shortname) {
-        const currentPath = window.location.pathname || '';
-        return currentPath.endsWith(`/management/content/${shortname}`);
+        return $activeRoute.params.space_name === shortname;
     }
 </script>
 

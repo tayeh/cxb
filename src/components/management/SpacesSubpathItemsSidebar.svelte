@@ -9,6 +9,7 @@
         FolderOutline
     } from "flowbite-svelte-icons";
     import SpacesSubpathItemsSidebar from "./SpacesSubpathItemsSidebar.svelte";
+    import {activeRoute} from "@roxi/routify";
 
     let {
         spaceName,
@@ -56,8 +57,7 @@
     }
 
     function isCurrentPath() {
-        const currentPath = window.location.pathname || '';
-        return currentPath.includes(`/management/content/${spaceName}${getCurrentPath()}`);
+        return `/${$activeRoute.params.subpath}` === getCurrentPath();
     }
 </script>
 
