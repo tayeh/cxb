@@ -1,7 +1,8 @@
 <script lang="ts">
   import { Dmart, QueryType } from "@edraj/tsdmart";
-  import { ListPlaceholder, Pagination, Button, Card, Table } from "flowbite-svelte";
+  import { ListPlaceholder, Pagination, Button, Modal, Table } from "flowbite-svelte";
   import { onMount } from "svelte";
+  import Prism from "../Prism.svelte";
 
   let { space_name, subpath, shortname }: { space_name:string, subpath:string, shortname:string } = $props();
 
@@ -10,6 +11,8 @@
   let limit = $state(10);
   let offset = $state(0);
   let totalItems = $state(0);
+  let showModal = $state(false);
+  let modalData: any = $state(null);
 
   async function fetchHistory() {
     loading = true;
@@ -50,6 +53,15 @@
             part.charAt(0).toUpperCase() + part.slice(1)
     ).join(' > ');
   }
+
+  function handleModalDetails(value) {
+    modalData = value;
+    showModal = true;
+  }
+  function closeModal() {
+    showModal = false;
+    modalData = null;
+  }
 </script>
 
 {#if loading}
@@ -58,7 +70,7 @@
   <div class="p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 w-full">
   {#each records as record, i}
 
-      <div class="flex justify-between mb-4">
+      <div class="flex justify-between mt-4 mb-2">
         <p class="text-lg">
           <strong>By: </strong> {record.attributes?.owner_shortname || 'Unknown'}
         </p>
@@ -82,11 +94,11 @@
               {@const typedChange = change as {old?: any, new?: any}}
               <tr class="border-b hover:bg-gray-50">
                 <td class="px-4 py-2 font-medium">{formatKey(key)}</td>
-                <td class="px-4 py-2 bg-red-50 whitespace-normal">
-                  <span class="text-red-600 font-bold block break-words">{typedChange?.old || ''}</span>
+                <td class="px-4 py-2 bg-red-50 whitespace-normal cursor-pointer" onclick={() => handleModalDetails(typedChange?.old)}>
+                  <span class="text-red-600 font-bold block break-words">{JSON.stringify(typedChange?.old) || ''}</span>
                 </td>
-                <td class="px-4 py-2 bg-green-50 whitespace-normal">
-                  <span class="text-green-600 font-bold block break-words">{typedChange?.new || ''}</span>
+                <td class="px-4 py-2 bg-green-50 whitespace-normal cursor-pointer" onclick={() => handleModalDetails(typedChange?.new)}>
+                  <span class="text-green-600 font-bold block break-words">{JSON.stringify(typedChange?.new) || ''}</span>
                 </td>
               </tr>
             {/each}
@@ -163,5 +175,8 @@
     <div class="text-center py-8 text-gray-500">No history records found</div>
   {/if}
 
+    <Modal bind:open={showModal} class="pt-8">
+        <Prism language="json" code={modalData} />
+    </Modal>
 
 {/if}
