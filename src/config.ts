@@ -7,10 +7,11 @@ export const website = {
   languages: { ar: "العربية", en: "English" },
   default_language: "ar",
 
+  backend: "https://nova.imx.sh/dmart",
   // backend: "https://api.dmart.cc",
   // websocket: "wss://api.dmart.cc/ws",
 
-  backend: "http://localhost:8282",
+  // backend: "http://localhost:8282",
   // backend: "https://evd-uat.iq.zain.com/dmart",
   // websocket: "ws://0.0.0.0:8484/ws",
 };
