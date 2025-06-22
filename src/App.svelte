@@ -2,6 +2,7 @@
   import { Router, createRouter } from "@roxi/routify";
   import routes from "../.routify/routes.default";
   import {SvelteToast, type SvelteToastOptions} from "@zerodevx/svelte-toast";
+  import './app.css'
 
   const prefix="sysadmin"; // ""
 
@@ -129,10 +130,6 @@
   setupI18n();
   $effect(() => { document.dir = $dir; refresh_spaces.refresh(); });
 </script>
-
-<svelte:head>
-  <link rel="stylesheet" media="screen" href="{new URL('./app.css', import.meta.url).href}">
-</svelte:head>
 
 <div id="routify-app">
   <SvelteToast {options} />

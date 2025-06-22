@@ -9,7 +9,7 @@ import {viteStaticCopy} from "vite-plugin-static-copy";
 import * as path from "path";
 import plantuml from "@akebifiky/remark-simple-plantuml";
 import svelteMd from "vite-plugin-svelte-md";
-import tailwindcss from '@tailwindcss/vite';
+import tailwindcss from "@tailwindcss/vite"
 
 const production = process.env.NODE_ENV === "production";
 
