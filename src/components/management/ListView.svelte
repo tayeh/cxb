@@ -365,6 +365,29 @@
           }
       });
   }
+
+  function handleSortRendered(node) {
+    setTimeout(() => {
+      const spanButton = node.querySelector('span[role="button"][style*="cursor:pointer"][style*="white-space: nowrap"]');
+      if (spanButton) {
+        spanButton.style.cssText = "cursor:pointer;display: flex;white-space: nowrap;";
+
+        const children = Array.from(spanButton.childNodes);
+        spanButton.innerHTML = '';
+
+        children.reverse().forEach(child => {
+          if (child.nodeName === 'svg') {
+            child.classList.add('mr-2');
+          }
+          spanButton.appendChild(child);
+        });
+      }
+    }, 0);
+
+    return {
+      destroy() {}
+    };
+  }
 </script>
 
 {#key open}
@@ -431,9 +454,11 @@
               {/if}
               {#each Object.keys(columns) as col}
                 <TableHeadCell class="border border-gray-300">
+                  <div use:handleSortRendered>
                   <Sort bind:propDatatable={objectDatatable} propColumn={col}>
                     {columns[col].title}
                   </Sort>
+                  </div>
                 </TableHeadCell>
               {/each}
             </TableHead>
