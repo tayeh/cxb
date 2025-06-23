@@ -25,7 +25,14 @@
     } = $props();
 
     function getCurrentPath() {
-        return `${parentPath}/${item.shortname}`.replace(/\/+/g, '/');
+        let urll = `${parentPath}-${item.shortname}`.replace('/', '-').replace('--', '-');
+        if (urll.startsWith('-')) {
+            urll = urll.substring(1);
+        }
+        if (urll.endsWith('-')) {
+            urll = urll.substring(0, urll.length - 1);
+        }
+        return `/${urll}`;
     }
 
     async function handleToggleExpanded() {
@@ -68,11 +75,7 @@
         style="margin-left: {depth * 20}px;">
     {#snippet icon()}
         <div class="flex items-center gap-2">
-            <!-- Expand/collapse button for nested items -->
-            <button
-                class="p-1 hover:bg-gray-200 rounded"
-                use:preventAndHandleToggleExpanded
-            >
+            <button class="p-1  rounded" use:preventAndHandleToggleExpanded>
                 {#if getIsExpanded()}
                     <ChevronDownOutline size="sm" />
                 {:else}
@@ -91,7 +94,6 @@
     {/snippet}
 </SidebarItem>
 
-<!-- Render nested children if expanded -->
 {#if getIsExpanded()}
     {#await loadChildren(spaceName, getCurrentPath())}
         <div style="margin-left: {(depth + 1) * 20}px;">
@@ -100,16 +102,16 @@
     {:then children}
         {#each getCurrentChildren() as child (child.shortname)}
             <SpacesSubpathItemsSidebar
-                    {spaceName}
-                    parentPath={getCurrentPath()}
-                    item={child}
-                    depth={depth + 1}
-                    {spaceChildren}
-                    {expandedSpaces}
-                    {loadChildren}
-                    {toggleExpanded}
-                    {isExpanded}
-                    {getChildrenForSpace}
+                {spaceName}
+                parentPath={getCurrentPath()}
+                item={child}
+                depth={depth + 1}
+                {spaceChildren}
+                {expandedSpaces}
+                {loadChildren}
+                {toggleExpanded}
+                {isExpanded}
+                {getChildrenForSpace}
             />
         {/each}
     {/await}

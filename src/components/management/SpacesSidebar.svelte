@@ -5,13 +5,14 @@
         Modal,
         Sidebar,
         SidebarGroup,
-        SidebarItem, Spinner,
+        SidebarItem,
+        Spinner,
     } from "flowbite-svelte";
     import {
         CodeForkSolid,
         ChevronDownOutline,
         ChevronRightOutline,
-        PlusOutline
+        PlusOutline,
     } from "flowbite-svelte-icons";
     import {spaces} from "@/stores/management/spaces";
     import {JSONEditor, Mode} from "svelte-jsoneditor";
@@ -78,23 +79,6 @@
             }
         };
     }
-    function preventAndStop(node: any) {
-        return (node: HTMLElement) => {
-            const handleEvent = (event: Event) => {
-                event.preventDefault();
-                event.stopPropagation();
-            };
-
-            node.addEventListener('click', handleEvent);
-
-            return {
-                destroy() {
-                    node.removeEventListener('click', handleEvent);
-                }
-            };
-        };
-    }
-
 
     let viewMetaModal = $state(false);
     let editModal = $state(false);
@@ -281,17 +265,13 @@
                 <PlusOutline class="flex justify-center h-5 w-6" />Add new space
             </Button>
             {#each $spaces as space (space.shortname)}
-                <!-- Main space item -->
                 <SidebarItem
                         label={space.attributes?.displayname?.en || space.shortname}
                         href={"/management/content/"+space.shortname}
-                        class="flex-1 ms-3 whitespace-nowrap {isCurrentSpace(space.shortname) ? 'bg-gray-300 text-white' : ''}">
+                        class="flex-1 ms-3 whitespace-nowrap hover:n {isCurrentSpace(space.shortname) ? 'bg-gray-300 text-white' : ''}">
                     {#snippet icon()}
                         <div class="flex items-center gap-2">
-                            <button
-                                class="p-1 hover:bg-gray-200 rounded"
-                                use:preventAndToggleExpanded={space.shortname}
-                            >
+                            <button class="p-1 rounded" use:preventAndToggleExpanded={space.shortname}>
                                 {#key expandedSpaces}
                                     {#if isExpanded(space.shortname)}
                                         <ChevronDownOutline size="sm" />
@@ -308,37 +288,6 @@
                             />
                         </div>
                     {/snippet}
-                    <!--TODO: fix propagation issue-->
-                    {#snippet subtext()}
-                    {/snippet}
-                    <!--{#snippet subtext()}-->
-                    <!--    <div class="flex items-end justify-end w-full">-->
-                    <!--        <div class="p-1" style="cursor: pointer; z-index: 10">-->
-                    <!--            <Button class="!p-1" color="light" size="xs" onclick={(e) => e.stopPropagation()}>-->
-                    <!--                <DotsHorizontalOutline />-->
-                    <!--                <Dropdown onclick={(e) => e.stopPropagation()} class="!p-0">-->
-                    <!--                    <DropdownItem class="w-full" onclick={(e) => viewMeta(e,space)}>-->
-                    <!--                        <div class="flex items-center gap-2">-->
-                    <!--                            <EyeSolid size="sm" /> View Meta-->
-                    <!--                        </div>-->
-                    <!--                    </DropdownItem>-->
-
-                    <!--                    <DropdownItem class="w-full" onclick={(e) => editSpace(e,space)}>-->
-                    <!--                        <div class="flex items-center gap-2">-->
-                    <!--                            <PenSolid size="sm" /> Edit-->
-                    <!--                        </div>-->
-                    <!--                    </DropdownItem>-->
-
-                    <!--                    <DropdownItem class="w-full" onclick={(e) => confirmDelete(e,space)}>-->
-                    <!--                        <div class="flex items-center gap-2 text-red-600">-->
-                    <!--                            <TrashBinSolid size="sm" /> Delete-->
-                    <!--                        </div>-->
-                    <!--                    </DropdownItem>-->
-                    <!--                </Dropdown>-->
-                    <!--            </Button>-->
-                    <!--        </div>-->
-                    <!--    </div>-->
-                    <!--{/snippet}-->
                 </SidebarItem>
 
                 {#key expandedSpaces}
