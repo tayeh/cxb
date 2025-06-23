@@ -103,7 +103,7 @@
     }
 </script>
 
-<Card class="p-4 max-w-4xl mx-auto">
+<Card class="p-4 max-w-4xl mx-auto my-2">
     <h2 class="text-xl font-bold mb-4">Folder Schema Editor</h2>
 
     <div class="space-y-6">

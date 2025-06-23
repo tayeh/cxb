@@ -69,7 +69,7 @@
 </script>
 
 
-<Card class="p-4 max-w-4xl mx-auto">
+<Card class="p-4 max-w-4xl mx-auto my-2">
         <h1 class="text-2xl font-bold mb-4">Workflow Form</h1>
 
         <div>

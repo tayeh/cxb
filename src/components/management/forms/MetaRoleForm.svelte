@@ -98,7 +98,7 @@
     });
 </script>
 
-<Card class="w-full max-w-4xl mx-auto p-4">
+<Card class="w-full max-w-4xl mx-auto p-4 my-2">
     <h2 class="text-2xl font-bold mb-4">Role Permissions</h2>
 
     <div class="mb-4">

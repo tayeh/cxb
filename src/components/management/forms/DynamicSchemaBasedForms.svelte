@@ -144,7 +144,7 @@
     })
 </script>
 
-<Card class="p-4 max-w-4xl mx-auto">
+<Card class="p-4 max-w-4xl mx-auto my-2">
     {#if schema && schema.properties}
         <h2 class="text-xl font-bold mb-4">{schema.title || 'Form'}</h2>
         {#if schema.description}
