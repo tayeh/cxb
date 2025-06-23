@@ -83,12 +83,14 @@ async function handleSearch(e){
 
 <div class="flex flex-col md:flex-row justify-between items-center my-2 mx-3">
     <div class="w-1/2">
+        <form on:submit|preventDefault={handleSearch}>
             <ButtonGroup class="w-full">
                 <Input id="website-admin" placeholder="Search..." bind:value={searchInput} />
                 <InputAddon class="cursor-pointer" onclick={handleSearch}>
                     <SearchOutline class="h-4 w-4 text-gray-500 dark:text-gray-400" />
                 </InputAddon>
             </ButtonGroup>
+        </form>
     </div>
     <div>
         {#if canCreate}
