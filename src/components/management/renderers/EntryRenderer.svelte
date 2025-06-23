@@ -80,8 +80,15 @@
     let errorMessage = $state(null);
 
     const canUpdate = checkAccess("update", space_name, subpath, resource_type);
-    const canDelete = !(space_name === "management" && subpath === "/")
-        && checkAccess("delete", space_name, subpath, resource_type);
+    const canDelete = (()=>{
+        if(space_name=== "management"){
+            if(resource_type === ResourceType.space || resource_type === ResourceType.folder) {
+                return false;
+            }
+        }
+        return checkAccess("delete", space_name, subpath, resource_type);
+    })();
+
     let allowedResourceTypes = $state([ResourceType.content]);
 
     let activeTab: TabMode = $state(TabMode.list);
@@ -420,6 +427,7 @@
                 </div>
             {/if}
         </div>
+
         <div class={activeTab === TabMode.form ? '' : 'hidden'} role="tabpanel">
             {#key coinTriggerRefresh}
                 {#if jeContent.json}
@@ -476,7 +484,6 @@
                 {/if}
             </div>
         {/if}
-
 
         <div class={activeTab === TabMode.attachments ? '' : 'hidden'} role="tabpanel">
             <Attachments {resource_type}
