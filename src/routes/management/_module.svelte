@@ -41,8 +41,12 @@
     {#if !$user || !$user.signedin}
         <Login />
     {:else}
-        <ManagementHeader />
-        <slot />
+        <div class="flex flex-col h-screen">
+            <ManagementHeader />
+            <div class="flex-grow overflow-auto">
+                <slot />
+            </div>
+        </div>
     {/if}
 {:catch _}
     <Login />

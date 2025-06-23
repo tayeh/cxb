@@ -3,8 +3,9 @@
     import SpaceSubpathItemsSidebar from "@/components/management/SpaceSubpathItemsSidebar.svelte";
 </script>
 
-<div class="h-svh flex gap-1">
+<div class="flex h-full">
     <div class="w-64 border-r border-gray-200">
+        <!--        <SpacesSidebar />-->
         <SpaceSubpathItemsSidebar />
     </div>
 
