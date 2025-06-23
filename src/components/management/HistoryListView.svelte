@@ -19,6 +19,7 @@
     try {
       const response = await Dmart.query({
         type: QueryType.history,
+        filter_shortnames: shortname ? [shortname] : [],
         space_name,
         subpath,
         search: '',
