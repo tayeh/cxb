@@ -117,6 +117,8 @@
                 showToast(Level.info, `Ticket has been updated successfully!`);
             } catch (error) {
                 showToast(Level.warn, `Failed to update the ticket!`);
+                isActionLoading = false;
+                return;
             }
         }
 
@@ -439,9 +441,11 @@
                     {:else if resource_type === ResourceType.permission}
                         <MetaPermissionForm bind:formData={jeContent.json} bind:validateFn={validateRTForm} />
                     {:else if resource_type === ResourceType.ticket}
-                        <MetaTicketForm {space_name}
-                                        meta={jeContent.json}
-                                        bind:formData={ticketData} />
+                        {#if entry.is_open}
+                            <MetaTicketForm {space_name}
+                                meta={jeContent.json}
+                                bind:formData={ticketData} />
+                        {/if}
                     {/if}
                     {#if jeContent?.json?.payload?.body}
                         {#if resource_type === ResourceType.schema}

@@ -264,8 +264,7 @@
                     }
                 };
             }
-
-            response = await Dmart.request({
+            const request = {
                 space_name,
                 request_type: RequestType.create,
                 records: [{
@@ -274,7 +273,8 @@
                     shortname: metaContent.shortname,
                     attributes: requestCreate.attributes
                 }]
-            });
+            }
+            response = await Dmart.request(removeEmpty(request));
 
             if (response.attributes && response.attributes.error) {
                 isHandleCreateEntryLoading = false;
