@@ -370,6 +370,9 @@
                     json: _schemaContent && generateObjectFromSchema(_schemaContent.attributes.payload.body)
                 }
             });
+        } else {
+            selectedSchemaContent = null;
+            content = { json: {} };
         }
     });
 
