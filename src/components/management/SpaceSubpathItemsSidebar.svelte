@@ -1,71 +1,40 @@
 <script lang="ts">
     import {
+        Button,
         ListPlaceholder,
-        SidebarItem
+        Modal,
+        Sidebar,
+        SidebarGroup,
+        SidebarItem,
+        Spinner,
     } from "flowbite-svelte";
     import {
+        CodeForkSolid,
         ChevronDownOutline,
         ChevronRightOutline,
-        FolderOutline,
-        CodeForkSolid
+        PlusOutline,
     } from "flowbite-svelte-icons";
-    import SpacesSubpathItemsSidebar from "./SpacesSubpathItemsSidebar.svelte";
-    import {activeRoute} from "@roxi/routify";
-    import {params} from "@roxi/routify";
-    import {getChildren, getSpaces} from "@/lib/dmart_services";
-    import {ResourceType} from "@edraj/tsdmart";
     import {spaces} from "@/stores/management/spaces";
+    import {JSONEditor, Mode} from "svelte-jsoneditor";
+    import Prism from "@/components/Prism.svelte";
+    import {Dmart, RequestType, ResourceType} from "@edraj/tsdmart";
+    import {Level, showToast} from "@/utils/toast";
+    import {getSpaces, getChildren} from "@/lib/dmart_services";
+    import {jsonEditorContentParser} from "@/utils/jsonEditor";
+    import SpacesSubpathItemsSidebar from "./SpacesSubpathItemsSidebar.svelte";
+    import {activeRoute, params} from "@roxi/routify";
+    import MetaForm from "./forms/MetaForm.svelte";
 
-    let {
-        spaceName,
-    } = $props();
-
-    let spaceDisplayName = $state("");
-
-    // Get space display name
-    $effect(() => {
-        if (spaceName && $spaces) {
-            const space = $spaces.find(space => space.shortname === spaceName);
-            if (space && space.attributes?.displayname?.en) {
-                spaceDisplayName = space.attributes.displayname.en;
-            }
-        }
-    });
-
-    // Initialize spaces if not already loaded
-    $effect(() => {
-        if (!$spaces || $spaces.length === 0) {
-            getSpaces();
-        }
-    });
-
-    // State management
     let spaceChildren = $state(new Map());
     let expandedSpaces = $state(new Set());
 
-    // Initialize with root path expanded
-    $effect(() => {
-        if (spaceName) {
-            // Expand root path
-            expandedSpaces.add(`${spaceName}:/`);
-            loadChildren(spaceName, "/").then(() => {
-                // Auto-expand first level subpaths
-                const rootChildren = getChildrenForSpace(spaceName, "/");
-                rootChildren.forEach(child => {
-                    const childPath = `/${child.shortname}`;
-                    expandedSpaces.add(`${spaceName}:${childPath}`);
-                    loadChildren(spaceName, childPath);
-                });
-                expandedSpaces = $state.snapshot(expandedSpaces);
-            });
-        }
-    });
 
     async function loadChildren(spaceName, subpath = "/") {
         const cacheKey = `${spaceName}:${subpath}`;
         if (!spaceChildren.has(cacheKey)) {
             try {
                 const children = await getChildren(spaceName, subpath, 50, 0, [ResourceType.folder]);
+
                 spaceChildren.set(cacheKey, children.records || []);
                 spaceChildren = spaceChildren; // Trigger reactivity
             } catch (error) {
@@ -95,11 +64,11 @@
         return spaceChildren.get(`${spaceName}:${subpath}`) || [];
     }
 
-    function preventAndHandleToggleExpanded(node, path) {
-        const handleEvent = (event) => {
+    export function preventAndToggleExpanded(node: HTMLElement, spaceShortname: string) {
+        const handleEvent = (event: Event) => {
             event.preventDefault();
             event.stopPropagation();
-            toggleExpanded(spaceName, path);
+            toggleExpanded(spaceShortname)
         };
 
         node.addEventListener('click', handleEvent);
@@ -111,89 +80,311 @@
         };
     }
 
-    function isCurrentPath(path) {
-        return `/${$activeRoute.params.subpath}` === path;
+    let viewMetaModal = $state(false);
+    let editModal = $state(false);
+    let deleteModal = $state(false);
+    let addSpaceModal = $state(false);
+    let selectedSpace = $state(null);
+    let modelError = $state(null);
+
+    let spaceFormData = $state({
+        shortname: "",
+        is_active: true,
+        slug: "",
+        displayname: {
+            en: "",
+            ar: "",
+            ku: ""
+        },
+        description: {
+            en: "",
+            ar: "",
+            ku: ""
+        }
+    });
+    let validateSpaceForm = $state(() => true);
+
+    let isActionLoading = $state(false);
+
+    let jeContent = { json: undefined };
+
+    function showAddSpaceModal() {
+        modelError = null;
+        spaceFormData = {
+            shortname: "",
+            is_active: true,
+            slug: "",
+            displayname: {
+                en: "",
+                ar: "",
+                ku: ""
+            },
+            description: {
+                en: "",
+                ar: "",
+                ku: ""
+            }
+        };
+        addSpaceModal = true;
     }
 
-    function isCurrentSpace() {
-        return $activeRoute.params.space_name === spaceName;
+    async function createSpace() {
+        if (!validateSpaceForm()) {
+            return;
+        }
+
+        if (spaceFormData.shortname.trim()) {
+            try {
+                isActionLoading = true;
+                modelError = null;
+                await Dmart.space({
+                    space_name: spaceFormData.shortname.trim(),
+                    request_type: RequestType.create,
+                    records: [
+                        {
+                            resource_type: ResourceType.space,
+                            shortname: spaceFormData.shortname.trim(),
+                            subpath: '/',
+                            attributes: {
+                                is_active: spaceFormData.is_active,
+                                slug: spaceFormData.slug,
+                                displayname: spaceFormData.displayname,
+                                description: spaceFormData.description
+                            }
+                        }
+                    ]
+                });
+                showToast(Level.info, `Space "${spaceFormData.shortname.trim()}" created successfully!`);
+                await getSpaces();
+                addSpaceModal = false;
+            } catch (error) {
+                modelError = error.response.data;
+            } finally {
+                isActionLoading = false;
+            }
+        }
     }
+
+    function viewMeta(event, space) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        modelError = null;
+        selectedSpace = structuredClone(space);
+        jeContent = { json: selectedSpace };
+        viewMetaModal = true;
+    }
+
+    function editSpace(event, space) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        modelError = null;
+        selectedSpace = structuredClone(space);
+        jeContent = { json: selectedSpace };
+        editModal = true;
+    }
+
+    async function saveChanges() {
+        if (selectedSpace) {
+            const record = jsonEditorContentParser(jeContent);
+            delete record.uuid;
+            try {
+                isActionLoading = true;
+                modelError = null;
+                await Dmart.request({
+                    space_name: selectedSpace.shortname,
+                    request_type: RequestType.replace,
+                    records: [
+                        {
+                            resource_type: ResourceType.space,
+                            shortname: selectedSpace.shortname,
+                            subpath: '/',
+                            attributes: record.attributes
+                        }
+                    ]
+                })
+                editModal = false;
+                showToast(Level.info, `Space "${selectedSpace.shortname}" updated successfully!`);
+                await getSpaces();
+            } catch (error) {
+                modelError = error;
+            } finally {
+                isActionLoading = false;
+            }
+        }
+    }
+
+    function confirmDelete(event, space) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        modelError = null;
+        selectedSpace = space;
+        deleteModal = true;
+    }
+
+    async function deleteSpace() {
+        if (selectedSpace) {
+
+            try {
+                isActionLoading = true;
+                modelError = null;
+                await Dmart.request({
+                    space_name: selectedSpace.shortname,
+                    request_type: RequestType.delete,
+                    records: [{
+                        resource_type: ResourceType.space,
+                        shortname: selectedSpace.shortname,
+                        subpath: '/',
+                        attributes: {}
+                    }]
+                })
+                showToast(Level.info, `Space "${selectedSpace.shortname}" has been deleted successfully!`);
+                deleteModal = false;
+                selectedSpace = null;
+                await getSpaces();
+            } catch (error) {
+                modelError = error;
+            } finally {
+                isActionLoading = false;
+            }
+        }
+    }
+    function isCurrentSpace(shortname) {
+        return $activeRoute.params.space_name === shortname;
+    }
+    $params
 </script>
 
-<div class="sidebar-container">
-    <!-- Space name as first item -->
-    <SidebarItem
-        label={spaceDisplayName || spaceName}
-        href={`/management/content/${spaceName}`}
-        class="flex-1 whitespace-nowrap {isCurrentSpace() ? 'bg-gray-300 text-white' : ''}"
-        style="margin-left: 0px;">
-        {#snippet icon()}
-            <div class="flex items-center gap-2">
-                <CodeForkSolid
-                    size="md"
-                    class="text-gray-500"
-                    style="transform: rotate(180deg); position: relative; z-index: 5;"
-                />
+<Sidebar position="static" class="h-full">
+
+    <SidebarGroup>
+        <SidebarItem label={$params.space_name} href={"/management/content/"+$params.space_name}>
+            {#snippet icon()}
+                <div class="flex items-center gap-2">
+                    <CodeForkSolid
+                            size="md"
+                            class="text-gray-500"
+                            style="transform: rotate(180deg); position: relative; z-index: 5;"
+                    />
+                </div>
+            {/snippet}
+        </SidebarItem>
+        {#await loadChildren($params.space_name)}
+            <div class="ml-6">
+                <ListPlaceholder />
             </div>
-        {/snippet}
-    </SidebarItem>
+        {:then children}
+            {#each getChildrenForSpace($params.space_name) as child (child.shortname)}
+                <SpacesSubpathItemsSidebar
+                        spaceName={$params.space_name}
+                        parentPath="/"
+                        item={child}
+                        depth={1}
+                        {spaceChildren}
+                        {expandedSpaces}
+                        {loadChildren}
+                        {toggleExpanded}
+                        {isExpanded}
+                        {getChildrenForSpace}
+                />
+            {/each}
+        {/await}
+    </SidebarGroup>
+</Sidebar>
 
-    <!-- Root level subpaths (always expanded) -->
-    {#await loadChildren(spaceName, "/")}
-        <div style="margin-left: 20px;">
-            <ListPlaceholder />
-        </div>
-    {:then children}
-        {#each getChildrenForSpace(spaceName, "/") as child (child.shortname)}
-            <SidebarItem
-                label={child.attributes?.displayname?.en || child.shortname}
-                href={`/management/content/${spaceName}/${child.shortname}`}
-                class="flex-1 whitespace-nowrap {isCurrentPath(`/${child.shortname}`) ? 'bg-gray-300 text-white' : ''}"
-                style="margin-left: 20px;">
-                {#snippet icon()}
-                    <div class="flex items-center gap-2">
-                        <button class="p-1 rounded" use:preventAndHandleToggleExpanded={`/${child.shortname}`}>
-                            {#if isExpanded(spaceName, `/${child.shortname}`)}
-                                <ChevronDownOutline size="sm" />
-                            {:else}
-                                <ChevronRightOutline size="sm" />
-                            {/if}
-                        </button>
 
-                        <div>
-                            <FolderOutline
-                                size="md"
-                                class="text-gray-500"
-                                style="transform: rotate(180deg); position: relative; z-index: 5;"
-                            />
-                        </div>
-                    </div>
-                {/snippet}
-            </SidebarItem>
+<Modal bind:open={addSpaceModal} size="xl" title="Add New Space">
+    <div class="space-y-4">
+        <MetaForm bind:formData={spaceFormData} bind:validateFn={validateSpaceForm} />
 
-            <!-- Subsubpaths (expandable/collapsible) -->
-            {#if isExpanded(spaceName, `/${child.shortname}`)}
-                {#await loadChildren(spaceName, `/${child.shortname}`)}
-                    <div style="margin-left: 40px;">
-                        <ListPlaceholder />
-                    </div>
-                {:then subchildren}
-                    {#each getChildrenForSpace(spaceName, `/${child.shortname}`) as subchild (subchild.shortname)}
-                        <SpacesSubpathItemsSidebar
-                            {spaceName}
-                            parentPath={`/${child.shortname}`}
-                            item={subchild}
-                            depth={2}
-                            {spaceChildren}
-                            {expandedSpaces}
-                            {loadChildren}
-                            {toggleExpanded}
-                            {isExpanded}
-                            {getChildrenForSpace}
-                        />
-                    {/each}
-                {/await}
+        {#if modelError}
+            <div class="mt-4">
+                <p class="text-red-600 font-medium mb-2">Error:</p>
+                <div class="max-h-60 overflow-auto">
+                    <Prism code={modelError} />
+                </div>
+            </div>
+        {/if}
+    </div>
+
+    <div class="flex justify-between w-full mt-4">
+        <Button color="alternative" onclick={() => addSpaceModal = false}>Cancel</Button>
+        <Button class="bg-primary" onclick={createSpace}>
+            {#if isActionLoading}
+                <Spinner class="me-3" size="4" color="blue" />
+                Creating ...
+            {:else}
+                Create
             {/if}
-        {/each}
-    {/await}
-</div>
+        </Button>
+    </div>
+</Modal>
+
+<Modal bind:open={viewMetaModal} size="xl" title="Space Metadata" autoclose>
+    <div>
+        {#if selectedSpace}
+            <JSONEditor content={jeContent} readOnly={true} />
+        {/if}
+    </div>
+</Modal>
+
+<Modal bind:open={editModal} size="xl" title="Edit Space">
+    <div>
+        {#if selectedSpace}
+            <JSONEditor bind:content={jeContent} readOnly={false} mode={Mode.text} />
+        {/if}
+
+        {#if modelError}
+            <div class="mt-4">
+                <p class="text-red-600 font-medium mb-2">Error:</p>
+                <div class="max-h-60 overflow-auto">
+                    <Prism code={modelError} />
+                </div>
+            </div>
+        {/if}
+    </div>
+    <div class="flex justify-between w-full">
+        <Button color="alternative" onclick={() => editModal = false}>Cancel</Button>
+        <Button class="bg-primary" onclick={saveChanges}>
+            {#if isActionLoading}
+                <Spinner class="me-3" size="4" color="blue" />
+                Saving Changes ...
+            {:else}
+                Save Changes
+            {/if}
+        </Button>
+    </div>
+</Modal>
+
+<Modal bind:open={deleteModal} size="md" title="Confirm Deletion">
+    {#if selectedSpace}
+        <p class="text-center mb-6">
+            Are you sure you want to delete the space <span class="font-bold">{selectedSpace.shortname}</span>?<br>
+            This action cannot be undone.
+        </p>
+    {/if}
+
+    {#if modelError}
+        <div class="mt-4">
+            <p class="text-red-600 font-medium mb-2">Error:</p>
+            <div class="max-h-60 overflow-auto">
+                <Prism code={modelError} />
+            </div>
+        </div>
+    {/if}
+
+    <div class="flex justify-between w-full">
+        <Button color="alternative" onclick={() => deleteModal = false}>Cancel</Button>
+        <Button color="red" onclick={deleteSpace}>
+            {#if isActionLoading}
+                <Spinner class="me-3" size="4" color="blue" />
+                Deleting ...
+            {:else}
+                Delete
+            {/if}
+        </Button>
+
+    </div>
+</Modal>

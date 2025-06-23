@@ -1,8 +1,5 @@
 <script lang="ts">
     import {
-        Navbar,
-        NavLi,
-        NavUl,
         Avatar,
         Button,
         Dropdown,
@@ -23,9 +20,7 @@
         currentLang = lang;
     }
 
-
     let currentLang = "EN";
-
 
     function goToProfile(e: Event) {
         e.preventDefault();
@@ -38,30 +33,32 @@
         e.stopPropagation();
         signout();
     }
-
 </script>
 
-<Navbar class="border-b border-gray-200" style="padding: 0!important;" >
-    <NavUl class="flex flex-row mr-auto">
-        <NavLi class="flex items-center" style="padding: 0!important;" href="/">
-            <HomeSolid size="lg"/>
-            <span> Dmart</span>
-        </NavLi>
-    </NavUl>
+<div class="flex items-center justify-between border-b border-gray-200 px-5">
+    <ul class="flex flex-row mr-auto">
+        <li>
+            <a href="/" class="flex items-center p-0 my-3">
+                <HomeSolid size="lg"/>
+                <span> Dmart</span>
+            </a>
+        </li>
+    </ul>
 
     <div class="flex items-center gap-4">
-        <div class="flex rounded-full bg-gray-100 p-1">
-            <button class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium transition-all
-                    {currentLang === 'EN' ? 'bg-white border-2 border-primary shadow-sm' : 'text-gray-600 hover:color-primary'}"
-                    onclick={() => setLanguage('EN')}>
-                EN
-            </button>
-            <button class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium transition-all
-                    {currentLang === 'AR' ? 'bg-white border-2 border-primary shadow-sm' : 'text-gray-600 hover:color-primary'}"
-                    onclick={() => setLanguage('AR')}>
-                AR
-            </button>
-        </div>
+<!--        TODO-->
+<!--        <div class="flex rounded-full bg-gray-100 p-1">-->
+<!--            <button class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium transition-all-->
+<!--                    {currentLang === 'EN' ? 'bg-white border-2 border-primary shadow-sm' : 'text-gray-600 hover:color-primary'}"-->
+<!--                    onclick={() => setLanguage('EN')}>-->
+<!--                EN-->
+<!--            </button>-->
+<!--            <button class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium transition-all-->
+<!--                    {currentLang === 'AR' ? 'bg-white border-2 border-primary shadow-sm' : 'text-gray-600 hover:color-primary'}"-->
+<!--                    onclick={() => setLanguage('AR')}>-->
+<!--                AR-->
+<!--            </button>-->
+<!--        </div>-->
         {#if !$user || !$user.signedin}
             <Button class="bg-primary" onclick={()=>$goto('/management')} >Login</Button>
         {:else}
@@ -96,9 +93,5 @@
                 </Dropdown>
             </Button>
         {/if}
-
     </div>
-</Navbar>
-
-<style>
-</style>
+</div>

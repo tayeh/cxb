@@ -15,7 +15,7 @@
         BellOutline,
         UserSolid,OpenDoorOutline
     } from 'flowbite-svelte-icons';
-    import {goto,} from '@roxi/routify';
+    import {activeRoute, goto,} from '@roxi/routify';
     $goto
     import {signout, user} from "@/stores/user";
     import {getAvatar} from "@/lib/dmart_services";
@@ -39,34 +39,44 @@
         e.stopPropagation();
         signout();
     }
-
 </script>
 
-<Navbar fluid="true" class="px-1 border-b border-gray-200 mx-1" style="padding: 0px!important;">
-    <NavUl class="flex flex-row gap-8 mr-auto">
-        <NavLi class="flex items-center gap-1 relative" href="/management/content">
+<div class="flex items-center justify-between border-b border-gray-200 px-5">
+    <ul class="flex flex-row gap-8 mr-auto">
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <li class="flex items-center gap-1 relative cursor-pointer" onclick={()=>$goto('/management/content')}>
             <div>
-                <div></div>
-                <div>
+                <div class="flex flex-row my-3">
                     <FolderSolid size="md"/>
-                    <span>Content</span>
+                    <span class="mx-1">Content</span>
                 </div>
                 <div>
-                    {#if window.location.pathname.includes('/management/content')}
+                    {#if $activeRoute.url === '/management/content'}
                         <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary"></div>
                     {/if}
                 </div>
             </div>
-        </NavLi>
-<!--        TODO-->
+        </li>
 
-        <NavLi class="flex items-center gap-1 relative" href="/management/tools">
-            <UserSettingsSolid size="md"/>
-            <span>Tools</span>
-            {#if window.location.pathname.includes('/management/tools')}
-                <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary"></div>
-            {/if}
-        </NavLi>
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <li class="flex items-center gap-1 relative cursor-pointer" onclick={()=>$goto('/management/tools')}>
+            <div>
+                <div class="flex flex-row my-2">
+                    <UserSettingsSolid size="md"/>
+                    <span>Tools</span>
+                </div>
+                <div>
+                    {#if $activeRoute.url === '/management/tools'}
+                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary"></div>
+                    {/if}
+                </div>
+            </div>
+        </li>
+        <!--        TODO-->
 <!--        <NavLi class="flex items-center gap-1 relative" href="/management/analytics">-->
 <!--            <ChartMixedOutline size="md"/>-->
 <!--            <span>Analytics</span>-->
@@ -74,7 +84,7 @@
 <!--                <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary"></div>-->
 <!--            {/if}-->
 <!--        </NavLi>-->
-    </NavUl>
+    </ul>
 
     <div class="flex items-center gap-4">
         <div class="flex rounded-full bg-gray-100 p-1">
@@ -130,4 +140,4 @@
 <!--            <Badge color="red" class="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center">?</Badge>-->
 <!--        </Button>-->
     </div>
-</Navbar>
+</div>
