@@ -42,14 +42,21 @@
 
 </script>
 
-<Navbar class="px-1 border-b border-gray-200">
+<Navbar fluid="true" class="px-1 border-b border-gray-200 mx-1" style="padding: 0px!important;">
     <NavUl class="flex flex-row gap-8 mr-auto">
         <NavLi class="flex items-center gap-1 relative" href="/management/content">
-            <FolderSolid size="md"/>
-            <span>Content</span>
-            {#if window.location.pathname.includes('/management/content')}
-                <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary"></div>
-            {/if}
+            <div>
+                <div></div>
+                <div>
+                    <FolderSolid size="md"/>
+                    <span>Content</span>
+                </div>
+                <div>
+                    {#if window.location.pathname.includes('/management/content')}
+                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary"></div>
+                    {/if}
+                </div>
+            </div>
         </NavLi>
 <!--        TODO-->
 
@@ -124,7 +131,3 @@
 <!--        </Button>-->
     </div>
 </Navbar>
-
-<style>
-
-</style>
