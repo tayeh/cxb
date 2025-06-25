@@ -31,7 +31,7 @@
   import {
     DotsHorizontalOutline, EyeSolid, PenSolid, TrashBinSolid,
     FileImageOutline, FileCsvOutline,FileOutline, ListOutline, FileLinesOutline,
-    UploadOutline, FileLinesSolid
+    UploadOutline, FileLinesSolid, FileVideoSolid, FileMusicSolid
   } from "flowbite-svelte-icons";
   import {getSpaces} from "@/lib/dmart_services";
   import {jsonEditorContentParser} from "@/utils/jsonEditor";
@@ -581,10 +581,16 @@
             onclick={() => handleViewContentModal(attachment)}
           >
             {#if attachment.resource_type === ResourceType.media}
-              {#if attachment.attributes?.payload.content_type === "image"}
+              {#if attachment.attributes?.payload.content_type === ContentType.image}
                 <FileImageOutline size="xl" class="text-white" />
-              {:else if ["text","markdown"].includes(attachment.attributes?.payload.content_type)}
+              {:else if attachment.attributes?.payload.content_type === ContentType.audio}
+                <FileMusicSolid size="xl" class="text-white" />
+              {:else if attachment.attributes?.payload.content_type === ContentType.video}
+                <FileVideoSolid size="xl" class="text-white" />
+              {:else if [ContentType.text,ContentType.markdown, ContentType.html].includes(attachment.attributes?.payload.content_type)}
                 <FileLinesSolid size="xl" class="text-white" />
+              {:else}
+                <FileOutline size="xl" class="text-white" />
               {/if}
             {:else if attachment.resource_type === ResourceType.csv}
               <FileCsvOutline size="xl" class="text-white"/>
