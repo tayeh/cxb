@@ -357,7 +357,7 @@
                 >
                     <div class="flex items-center gap-2">
                         <PaperClipOutline size="md" />
-                        <p>Attachments</p>
+                        <p>Attachments {Object.values(entry.attachments).flat(1).length ? `(${Object.values(entry.attachments).flat(1).length})` : ""}</p>
                     </div>
                 </button>
             </li>
