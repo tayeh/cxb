@@ -52,9 +52,13 @@
     >
       <p>For some reason PDF is not rendered here properly.</p>
     </object>
-{:else if ["markdown", "html", "text"].includes(content_type)}
+{:else if content_type === "markdown"}
   <div class="w-full h-full">
     <iframe class="h-full w-full p-3 prose font-mono" srcdoc={marked(body)}></iframe>
+  </div>
+{:else if ["html", "text"].includes(content_type)}
+  <div class="w-full h-full">
+    {@html body}
   </div>
 {:else}
   <a href={url} title={displayname}
