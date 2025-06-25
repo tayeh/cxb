@@ -50,10 +50,10 @@
             <div>
                 <div class="flex flex-row my-3">
                     <FolderSolid size="md"/>
-                    <span class="mx-1">Content</span>
+                    <span class="mx-1">Spaces</span>
                 </div>
                 <div>
-                    {#if $activeRoute.url === '/management/content'}
+                    {#if $activeRoute.url.includes('/management/content')}
                         <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary"></div>
                     {/if}
                 </div>
@@ -70,7 +70,7 @@
                     <span>Tools</span>
                 </div>
                 <div>
-                    {#if $activeRoute.url === '/management/tools'}
+                    {#if $activeRoute.url.includes('/management/tools')}
                         <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary"></div>
                     {/if}
                 </div>

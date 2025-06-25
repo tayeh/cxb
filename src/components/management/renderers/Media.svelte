@@ -53,8 +53,8 @@
       <p>For some reason PDF is not rendered here properly.</p>
     </object>
 {:else if ["markdown", "html", "text"].includes(content_type)}
-  <div>
-    {@html marked(body)}
+  <div class="w-full h-full">
+    <iframe class="h-full w-full p-3 prose font-mono" srcdoc={marked(body)}></iframe>
   </div>
 {:else}
   <a href={url} title={displayname}

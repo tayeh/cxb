@@ -14,7 +14,8 @@ let {
 </script>
 
 <Modal
-    bodyClass="h-s75vh justify-center"
+    class="h-full"
+    bodyClass="h-full justify-center"
     bind:open={openViewContentModal}
     size="lg"
 >
@@ -27,7 +28,7 @@ let {
     </div>
 
     {#if selectedAttachment}
-        <div class="flex justify-center align-center h-full w-full">
+        <div class="flex justify-center align-center h-full w-full border-2 rounded-2xl">
             <Media
             resource_type={ResourceType[selectedAttachment.resource_type]}
             attributes={selectedAttachment.attributes}

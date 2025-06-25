@@ -154,7 +154,9 @@
       </div>
     </TabItem>
     <TabItem title="Preview">
+      <div class="w-full">
         <iframe class="h-full w-full p-3 prose font-mono" srcdoc={marked(content)}></iframe>
+      </div>
     </TabItem>
   </Tabs>
 </Card>
