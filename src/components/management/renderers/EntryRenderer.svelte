@@ -97,32 +97,33 @@
     let isActionLoading = $state(false);
     let validateMetaForm;
     let validateRTForm;
+
+    async function progressTicket(){
+        try {
+            await Dmart.progress_ticket(
+                space_name,
+                subpath,
+                entry.shortname,
+                ticketData.action,
+                ticketData.resolution,
+                ticketData.comment,
+            );
+            ticketData = {
+                action: null,
+                resolution: null,
+                comment: null,
+            }
+            showToast(Level.info, `Ticket has been updated successfully!`);
+        } catch (error) {
+            showToast(Level.warn, `Failed to update the ticket!`);
+            isActionLoading = false;
+            return;
+        }
+    }
+
     async function handleSave(){
         isActionLoading = true;
         const content = jsonEditorContentParser($state.snapshot(jeContent));
-
-        if(resource_type === ResourceType.ticket && ticketData.action !== null) {
-            try {
-                await Dmart.progress_ticket(
-                    space_name,
-                    subpath,
-                    entry.shortname,
-                    ticketData.action,
-                    ticketData.resolution,
-                    ticketData.comment,
-                );
-                ticketData = {
-                    action: null,
-                    resolution: null,
-                    comment: null,
-                }
-                showToast(Level.info, `Ticket has been updated successfully!`);
-            } catch (error) {
-                showToast(Level.warn, `Failed to update the ticket!`);
-                isActionLoading = false;
-                return;
-            }
-        }
 
         const shortname = content.shortname;
         delete content.uuid;
@@ -450,9 +451,7 @@
                         <MetaPermissionForm bind:formData={jeContent.json} bind:validateFn={validateRTForm} />
                     {:else if resource_type === ResourceType.ticket}
                         {#if entry.is_open}
-                            <MetaTicketForm {space_name}
-                                meta={jeContent.json}
-                                bind:formData={ticketData} />
+                            <MetaTicketForm {space_name} meta={jeContent.json} bind:formData={ticketData} {progressTicket} />
                         {/if}
                     {/if}
                     {#if jeContent?.json?.payload?.body}

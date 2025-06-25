@@ -1,11 +1,12 @@
 <script lang="ts">
-    import { Card, Select, Input, Label, TextPlaceholder } from "flowbite-svelte";
+    import { Card, Select, Input, Label, TextPlaceholder, Button } from "flowbite-svelte";
     import { Dmart, ResourceType } from "@edraj/tsdmart";
 
     let {
         space_name,
         meta,
         formData = $bindable(),
+        progressTicket,
     } = $props();
 
     const userRoles = JSON.parse(localStorage.getItem("roles"));
@@ -20,6 +21,7 @@
     let ticketPayload = $state(null);
     let ticketStates = $state([]);
     let ticketResolutions = $state([]);
+
 
     async function get_ticket_payload() {
         ticketPayload = await Dmart.retrieve_entry(ResourceType.content, space_name, "workflows", meta.workflow_shortname, true);
@@ -60,7 +62,7 @@
 <Card class="p-4 max-w-4xl mx-auto my-2">
     <h1 class="text-2xl font-bold mb-4">Ticket Form</h1>
 
-    <form class="flex flex-col space-y-4">
+    <form class="flex flex-col space-y-4" onsubmit={progressTicket}>
         {#await get_ticket_payload()}
             <TextPlaceholder class="m-5" size="lg" style="width: 100%"/>
             <TextPlaceholder class="m-5" size="lg" style="width: 100%"/>
@@ -105,6 +107,12 @@
                     <Input id="comment" type="text" placeholder="Comment..." bind:value={comment} />
                 </div>
             {/if}
+
+            <div class="mb-4 justify-end flex">
+                <Button type="submit" class="bg-primary text-white hover:bg-primary-700">
+                    Submit
+                </Button>
+            </div>
 
 <!--            <div class="mb-4">-->
 <!--                <Label for="transfer" class="block mb-2">Transfer</Label>-->
