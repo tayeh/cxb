@@ -19,6 +19,8 @@
     import WorkflowForm from "@/components/management/forms/WorkflowForm.svelte";
     import {checkAccess} from "@/utils/checkAccess";
     import DynamicSchemaBasedForms from "@/components/management/forms/DynamicSchemaBasedForms.svelte";
+    import TranslationForm from "@/components/management/forms/TranslationForm.svelte";
+    import ConfigForm from "@/components/management/forms/ConfigForm.svelte";
 
     let {
         space_name,
@@ -363,13 +365,22 @@
     let selectedSchemaContent = $state(null);
     $effect(()=>{
         if(selectedSchema){
-            untrack(()=>{
-                const _schemaContent = tmpSchemas.find(t => t.shortname === selectedSchema);
-                selectedSchemaContent = _schemaContent.attributes.payload.body;
-                content = {
-                    json: _schemaContent && generateObjectFromSchema(_schemaContent.attributes.payload.body)
+            const _schemaContent = tmpSchemas.find(t => t.shortname === selectedSchema);
+            selectedSchemaContent = _schemaContent.attributes.payload.body;
+
+            untrack(() => {
+                if(selectedResourceType === ResourceType.content && selectedSchema === "translation"){
+                    content = {
+                        json: []
+                    }
+                } else {
+                    content = {
+                        json: _schemaContent && generateObjectFromSchema(_schemaContent.attributes.payload.body)
+                    }
                 }
+
             });
+
         } else {
             selectedSchemaContent = null;
             content = { json: {} };
@@ -460,7 +471,6 @@
                                 placeholder="Select Workflow" />
                     {/await}
                 </Label>
-
             {/if}
 
             {#if selectedResourceType === ResourceType.schema}
@@ -480,34 +490,43 @@
                     <WorkflowForm bind:content={content.json}/>
                 {:else if selectedInputMode === InputMode.json}
                     <JSONEditor
-                            onRenderMenu={handleRenderMenu}
-                            mode={Mode.text}
-                            bind:content={content}
-                    />
+                        onRenderMenu={handleRenderMenu}
+                        mode={Mode.text}
+                        bind:content={content} />
                 {/if}
             {/if}
 
-            <div class="my-2">
-                {#if resourcesWithFormAndJson.includes(selectedResourceType) || subpath === "workflows"}
-                    {#if selectedInputMode === InputMode.form}
-                        {#if selectedSchemaContent}
-                            {#if content.json}
-                                <DynamicSchemaBasedForms schema={selectedSchemaContent} bind:content={content.json} />
-                            {/if}
-                        {:else}
-                            <p class="content-center">Nothing to render.</p>
-                        {/if}
-                    {:else if selectedInputMode === InputMode.json}
-                        <JSONEditor
-                            onRenderMenu={handleRenderMenu}
-                            mode={Mode.text}
-                            bind:content={content}
-                        />
-                    {/if}
+            <!--{#if selectedResourceType === ResourceType.content && selectedSchema === "configuration"}-->
+            <!--    <ConfigForm bind:entries={content.json.items}/>-->
+            {#if selectedResourceType === ResourceType.content && selectedSchema === "translation"}
+                {#if selectedSchemaContent}
+                    <TranslationForm
+                        bind:entries={content.json}
+                        columns={Object.keys(selectedSchemaContent.properties.items.items.properties)}
+                    />
                 {/if}
-            </div>
+                {:else}
+                    <div class="my-2">
+                        {#if resourcesWithFormAndJson.includes(selectedResourceType) || subpath === "workflows"}
+                            {#if selectedInputMode === InputMode.form}
+                                {#if selectedSchemaContent}
+                                    {#if content.json}
+                                        <DynamicSchemaBasedForms schema={selectedSchemaContent} bind:content={content.json} />
+                                    {/if}
+                                {:else}
+                                    <p class="content-center">Nothing to render.</p>
+                                {/if}
+                            {:else if selectedInputMode === InputMode.json}
+                                <JSONEditor
+                                        onRenderMenu={handleRenderMenu}
+                                        mode={Mode.text}
+                                        bind:content={content}
+                                />
+                            {/if}
+                        {/if}
+                    </div>
+            {/if}
         {/if}
-
 
         {#if errorContent}
             <div id="error-content" class="mt-3">

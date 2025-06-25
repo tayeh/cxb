@@ -14,10 +14,10 @@
         </div>
     {:then entry}
         <EntryRenderer
-                {entry}
-                resource_type={ResourceType.space}
-                space_name={$params.space_name}
-                subpath={$params.subpath}
+            {entry}
+            resource_type={ResourceType.space}
+            space_name={$params.space_name}
+            subpath={$params.subpath}
         />
     {:catch error}
         <div class="alert alert-danger text-center m-5">

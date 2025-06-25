@@ -35,8 +35,10 @@
     import MetaTicketForm from "@/components/management/forms/MetaTicketForm.svelte";
     import WorkflowDiagram from "@/components/management/diagram/WorkflowDiagram.svelte";
     import SchemaDiagram from "@/components/management/diagram/SchemaDiagram.svelte";
-    import {CardPlaceholder} from "flowbite-svelte";
+    import {CardPlaceholder, TextPlaceholder} from "flowbite-svelte";
     import DynamicSchemaBasedForms from "@/components/management/forms/DynamicSchemaBasedForms.svelte";
+    import TranslationForm from "@/components/management/forms/TranslationForm.svelte";
+    import ConfigForm from "@/components/management/forms/ConfigForm.svelte";
     $goto
 
     enum TabMode {
@@ -53,14 +55,14 @@
         space_name,
         subpath,
         resource_type,
-        schema_name = null,
     }: {
         entry: ResponseEntry,
         space_name: string,
         subpath: string,
         resource_type: ResourceType,
-        schema_name?: string | null,
     } = $props();
+    
+    const schemaShortname = entry?.payload?.schema_shortname || null;
     
     currentEntry.set({
         entry,
@@ -263,11 +265,11 @@
         }
     });
 
-    async function getPayloadSchema(){
-        if(jeContent.json.payload.schema_shortname === "folder_rendering"){
-            return Dmart.retrieve_entry(ResourceType.schema,"management","schema",jeContent.json.payload.schema_shortname,true,false)
+    async function getPayloadSchema() {
+        if(schemaShortname === "folder_rendering"){
+            return Dmart.retrieve_entry(ResourceType.schema,"management","schema",schemaShortname,true,false)
         }
-        return Dmart.retrieve_entry(ResourceType.schema,space_name,"schema",jeContent.json.payload.schema_shortname,true,false)
+        return Dmart.retrieve_entry(ResourceType.schema,space_name,"schema",schemaShortname,true,false)
     }
 </script>
 
@@ -278,7 +280,7 @@
         {space_name}
         {subpath}
         {resource_type}
-        {schema_name}
+        schema_name={schemaShortname}
         shortname={entry.shortname}
     />
 
@@ -349,12 +351,11 @@
             {/if}
             <li class="mr-2" role="presentation">
                 <button
-                        class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === TabMode.attachments ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
-                        type="button"
-                        role="tab"
-                        aria-selected={activeTab === TabMode.attachments}
-                        onclick={() => activeTab = TabMode.attachments}
-                >
+                    class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === TabMode.attachments ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === TabMode.attachments}
+                    onclick={() => activeTab = TabMode.attachments}>
                     <div class="flex items-center gap-2">
                         <PaperClipOutline size="md" />
                         <p>Attachments {Object.values(entry.attachments).flat(1).length ? `(${Object.values(entry.attachments).flat(1).length})` : ""}</p>
@@ -461,16 +462,30 @@
                             <FolderForm bind:content={jeContent.json.payload.body} />
                         {:else if resource_type === ResourceType.content && subpath === "workflows"}
                             <WorkflowForm bind:content={jeContent.json.payload.body} />
-                        {/if}
-                        {#if jeContent.json.payload.schema_shortname}
-                            {#await getPayloadSchema()}
-                                <CardPlaceholder size="md" class="mt-8" />
-                            {:then schema}
-                                <DynamicSchemaBasedForms
-                                    schema={schema.payload.body}
-                                    bind:content={jeContent.json.payload.body}
-                                />
-                            {/await}
+                        {:else}
+                            {#if schemaShortname}
+                                <!--{#if resource_type === ResourceType.content && schemaShortname === "configuration"}-->
+                                <!--    <ConfigForm bind:entries={jeContent.json.payload.body.items}/>-->
+                                {#if resource_type === ResourceType.content && schemaShortname === "translation"}
+                                    {#await getPayloadSchema()}
+                                        <TextPlaceholder class="m-5" size="lg" style="width: 100vw"/>
+                                    {:then schema}
+                                        <TranslationForm
+                                            bind:entries={jeContent.json.payload.body}
+                                            columns={Object.keys(schema.payload.body.properties.items.items.properties)}
+                                        />
+                                    {/await}
+                                {:else}
+                                    {#await getPayloadSchema()}
+                                        <CardPlaceholder size="md" class="mt-8" />
+                                    {:then schema}
+                                        <DynamicSchemaBasedForms
+                                                schema={schema.payload.body}
+                                                bind:content={jeContent.json.payload.body}
+                                        />
+                                    {/await}
+                                {/if}
+                            {/if}
                         {/if}
                     {/if}
                 {/if}
