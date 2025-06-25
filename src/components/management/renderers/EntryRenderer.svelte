@@ -262,6 +262,13 @@
             });
         }
     });
+
+    async function getPayloadSchema(){
+        if(jeContent.json.payload.schema_shortname === "folder_rendering"){
+            return Dmart.retrieve_entry(ResourceType.schema,"management","schema",jeContent.json.payload.schema_shortname,true,false)
+        }
+        return Dmart.retrieve_entry(ResourceType.schema,space_name,"schema",jeContent.json.payload.schema_shortname,true,false)
+    }
 </script>
 
 
@@ -456,7 +463,7 @@
                             <WorkflowForm bind:content={jeContent.json.payload.body} />
                         {/if}
                         {#if jeContent.json.payload.schema_shortname}
-                            {#await Dmart.retrieve_entry(ResourceType.schema,space_name,"schema",jeContent.json.payload.schema_shortname,true,false)}
+                            {#await getPayloadSchema()}
                                 <CardPlaceholder size="md" class="mt-8" />
                             {:then schema}
                                 <DynamicSchemaBasedForms

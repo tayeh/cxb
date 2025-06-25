@@ -31,7 +31,7 @@
   import {
     DotsHorizontalOutline, EyeSolid, PenSolid, TrashBinSolid,
     FileImageOutline, FileCsvOutline,FileOutline, ListOutline, FileLinesOutline,
-    UploadOutline
+    UploadOutline, FileLinesSolid
   } from "flowbite-svelte-icons";
   import {getSpaces} from "@/lib/dmart_services";
   import {jsonEditorContentParser} from "@/utils/jsonEditor";
@@ -126,10 +126,6 @@
 
   function toggleMetaEditAttachmentModal() {
     openMetaEditAttachmentModal = !openMetaEditAttachmentModal;
-  }
-
-  function toggleCreateAttachemntModal() {
-    openCreateAttachmentModal = !openCreateAttachmentModal;
   }
 
   let content = $state({
@@ -546,7 +542,7 @@
         {/each}
       </div>
       <Button class="text-primary cursor-pointer hover:bg-primary hover:text-white" outline
-      onclick={toggleCreateAttachemntModal}>
+      onclick={()=>{openCreateAttachmentModal = true}}>
         <UploadOutline size="md" class="mr-2"/>
         <strong>UPLOAD</strong>
       </Button>
@@ -585,7 +581,11 @@
             onclick={() => handleViewContentModal(attachment)}
           >
             {#if attachment.resource_type === ResourceType.media}
-              <FileImageOutline size="xl" class="text-white" />
+              {#if attachment.attributes?.payload.content_type === "image"}
+                <FileImageOutline size="xl" class="text-white" />
+              {:else if ["text","markdown"].includes(attachment.attributes?.payload.content_type)}
+                <FileLinesSolid size="xl" class="text-white" />
+              {/if}
             {:else if attachment.resource_type === ResourceType.csv}
               <FileCsvOutline size="xl" class="text-white"/>
             {:else if [ResourceType.comment, ResourceType.json].includes(attachment.resource_type)}
@@ -630,6 +630,7 @@
 
 <ModalCreateAttachments
   isOpen={openCreateAttachmentModal}
+  parentResourceType={resource_type}
   space_name={space_name}
   subpath={subpath}
   parent_shortname={parent_shortname}

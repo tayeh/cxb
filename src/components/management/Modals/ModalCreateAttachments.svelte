@@ -1,6 +1,6 @@
 <script lang="ts">
-    import { Button, Label, Modal, Input, Select, Fileupload, Textarea } from "flowbite-svelte";
-    import {Dmart, QueryType, ResourceAttachmentType, ContentType, RequestType, ResourceType} from "@edraj/tsdmart";
+    import {Button, Fileupload, Input, Label, Modal, Select, Textarea} from "flowbite-svelte";
+    import {ContentType, Dmart, QueryType, RequestType, ResourceAttachmentType, ResourceType} from "@edraj/tsdmart";
     import {JSONEditor, Mode} from "svelte-jsoneditor";
     import HtmlEditor from "@/components/management/editors/HtmlEditor.svelte";
     import MarkdownEditor from "@/components/management/editors/MarkdownEditor.svelte";
@@ -15,6 +15,7 @@
         isOpen = $bindable(false),
         isUpdateMode = $bindable(false),
         space_name = $bindable(""),
+        parentResourceType,
         subpath = $bindable(""),
         parent_shortname = $bindable(""),
     } = $props();
@@ -29,6 +30,8 @@
     let payloadContent: any = $state();
     let selectedSchema = $state("");
     let isModalInUpdateMode = false;
+
+    let isLoading = $state(false);
 
     function toggleModal() {
         isOpen = !isOpen;
@@ -48,124 +51,122 @@
 
     async function upload(event) {
         event.preventDefault();
+        isLoading = true;
 
-        let response;
-        if (resourceType == ResourceAttachmentType.comment) {
-            const request_dict = {
-                space_name,
-                request_type: isModalInUpdateMode
-                    ? RequestType.update
-                    : RequestType.create,
-                records: [
-                    {
-                        resource_type: ResourceType.comment,
-                        shortname: shortname,
-                        subpath: `${subpath}/${parent_shortname}`.replaceAll("//", "/"),
-                        attributes: {
-                            displayname: displayname,
-                            description: description,
-                            is_active: true,
-                            state: "commented",
-                            body: payloadData,
-                        },
-                    },
-                ],
-            };
-            response = await Dmart.request(request_dict);
-        }
-        else if (
-            [
-                ResourceAttachmentType.csv,
-                ResourceAttachmentType.jsonl,
-                ResourceAttachmentType.sqlite,
-                ResourceAttachmentType.parquet,
-            ].includes(resourceType)
-        ) {
-            response = await Dmart.upload_with_payload(
-                space_name,
-                subpath + "/" + parent_shortname,
-                shortname,
-                ResourceType[resourceType],
-                ResourceType[resourceType] === ResourceType.json
-                    ? jsonToFile(payloadContent)
-                    : payloadFiles[0],
-                ContentType[resourceType],
-                selectedSchema
-            );
-        }
-        else if (
-            [
-                ContentType.image,
-                ContentType.pdf,
-                ContentType.audio,
-                ContentType.video,
-            ].includes(contentType)
-        ) {
-            response = await Dmart.upload_with_payload(
-                space_name,
-                subpath + "/" + parent_shortname,
-                shortname,
-                ResourceType[resourceType],
-                ResourceType[resourceType] === ResourceType.json
-                    ? jsonToFile(payloadContent)
-                    : payloadFiles[0],
-                contentType,
-                null
-            );
-        }
-        else if (
-            [
-                ContentType.json,
-                ContentType.text,
-                ContentType.html,
-                ContentType.markdown,
-                ContentType,
-            ].includes(contentType)
-        ) {
-            console.log({
-                payloadContent,
-                payloadData,
-            })
-            let _payloadContent = jsonEditorContentParser(payloadContent);
-            let request_dict = {
-                space_name,
-                request_type: isModalInUpdateMode
-                    ? RequestType.update
-                    : RequestType.create,
-                records: [
-                    {
-                        resource_type: ResourceType[resourceType],
-                        shortname: shortname,
-                        subpath: `${subpath}/${parent_shortname}`,
-                        attributes: {
-                            displayname: displayname,
-                            description: description,
-                            is_active: true,
-                            payload: {
-                                content_type: contentType,
-                                schema_shortname:
-                                    resourceType == ResourceAttachmentType.json && selectedSchema
-                                        ? selectedSchema
-                                        : null,
-                                body:
-                                    resourceType == ResourceAttachmentType.json
-                                        ? _payloadContent
-                                        : payloadData,
+        try {
+            let response;
+            if (resourceType == ResourceAttachmentType.comment) {
+                response = await Dmart.request({
+                    space_name,
+                    request_type: isModalInUpdateMode
+                        ? RequestType.update
+                        : RequestType.create,
+                    records: [
+                        {
+                            resource_type: ResourceType.comment,
+                            shortname: shortname,
+                            subpath: parentResourceType === ResourceType.folder ? subpath : `${subpath}/${parent_shortname}`.replaceAll("//", "/"),
+                            attributes: {
+                                displayname: displayname,
+                                description: description,
+                                is_active: true,
+                                state: "commented",
+                                body: payloadData,
                             },
                         },
-                    },
-                ],
-            };
-            response = await Dmart.request(request_dict);
-        }
+                    ],
+                });
+            } else if (
+                [
+                    ResourceAttachmentType.csv,
+                    ResourceAttachmentType.jsonl,
+                    ResourceAttachmentType.sqlite,
+                    ResourceAttachmentType.parquet,
+                ].includes(resourceType)
+            ) {
+                response = await Dmart.upload_with_payload(
+                    space_name,
+                    parentResourceType === ResourceType.folder ? subpath : subpath + "/" + parent_shortname,
+                    shortname,
+                    ResourceType[resourceType],
+                    ResourceType[resourceType] === ResourceType.json
+                        ? jsonToFile(payloadContent)
+                        : payloadFiles[0],
+                    ContentType[resourceType],
+                    selectedSchema
+                );
+            } else if (
+                [
+                    ContentType.image,
+                    ContentType.pdf,
+                    ContentType.audio,
+                    ContentType.video,
+                ].includes(contentType)
+            ) {
+                console.log({parentResourceType})
+                response = await Dmart.upload_with_payload(
+                    space_name,
+                    parentResourceType === ResourceType.folder ? subpath : subpath + "/" + parent_shortname,
+                    shortname,
+                    ResourceType[resourceType],
+                    ResourceType[resourceType] === ResourceType.json
+                        ? jsonToFile(payloadContent)
+                        : payloadFiles[0],
+                    contentType,
+                    null
+                );
+            } else if (
+                [
+                    ContentType.json,
+                    ContentType.text,
+                    ContentType.html,
+                    ContentType.markdown,
+                    ContentType,
+                ].includes(contentType)
+            ) {
+                response = await Dmart.request({
+                    space_name,
+                    request_type: isModalInUpdateMode
+                        ? RequestType.update
+                        : RequestType.create,
+                    records: [
+                        {
+                            resource_type: ResourceType[resourceType],
+                            shortname: shortname,
+                            subpath: parentResourceType === ResourceType.folder ? subpath : `${subpath}/${parent_shortname}`,
+                            attributes: {
+                                displayname: displayname,
+                                description: description,
+                                is_active: true,
+                                payload: {
+                                    content_type: contentType,
+                                    schema_shortname:
+                                        resourceType == ResourceAttachmentType.json && selectedSchema
+                                            ? selectedSchema
+                                            : null,
+                                    body:
+                                        resourceType == ResourceAttachmentType.json
+                                            ? jsonEditorContentParser(payloadContent)
+                                            : payloadData,
+                                },
+                            },
+                        },
+                    ],
+                });
+            }
 
-        if (response.status === "success") {
-            showToast(Level.info);
-            isOpen = false;
-            resetModal();
-            $currentEntry.refreshEntry();
-        } else {
-            showToast(Level.warn);
+            if (response.status === "success") {
+                showToast(Level.info);
+                isOpen = false;
+                resetModal();
+                $currentEntry.refreshEntry();
+            } else {
+                showToast(Level.warn);
+            }
+        } catch (e) {
+            showToast(Level.warn, e.response.data)
+        } finally {
+            isLoading = false;
         }
     }
 
@@ -418,11 +419,16 @@
         </div>
 
         <div class="flex justify-end space-x-2 p-4 border-t">
-            <Button color="alternative" onclick={()=>{isOpen=true}}>
+            <Button color="alternative" onclick={()=>{isOpen=true}} disabled={isLoading}>
                 Close
             </Button>
-            <Button color="blue" type="submit">
-                Upload
+            <Button color="blue" type="submit" class={isLoading ? "cursor-not-allowed" : "cursor-pointer"} disabled={isLoading}>
+                {#if isLoading}
+                    Uploading ...
+                {:else}
+                    Upload
+                {/if}
+
             </Button>
         </div>
     </form>

@@ -98,11 +98,7 @@
                     </div>
                 {/if}
             {/key}
-            {ticket_status}
-            {ticket_status}
-            {JSON.stringify(
-                ticketPayload.states.filter((e) => e.state === ticket_status)[0]?.next
-            )}
+
             {#if ticket_status && !!ticketPayload.states.filter((e) => e.state === ticket_status)[0]?.next === false}
                 <div class="mb-4">
                     <Label for="comment" class="block mb-2">Comment</Label>
