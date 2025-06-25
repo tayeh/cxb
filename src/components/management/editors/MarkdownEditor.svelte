@@ -37,7 +37,7 @@
           "{% /ListView %}\n";
   const tableInsert = `| Header 1 | Header 2 |
 |----------|----------|
-|  Cell1   |  Cell2   |`
+|  Cell1   |  Cell2   |`;
 
   function handleKeyDown(event) {
     if (event.ctrlKey) {
@@ -138,25 +138,23 @@
     <TabItem open title="Editor">
       <div class="w-full">
         <textarea
-                bind:this={textarea}
-                onselect={handleSelect}
-                onkeydown={handleKeyDown}
-                rows="22"
-                maxlength="4096"
-                class="w-full font-mono bg-white border border-gray-300 rounded-lg p-2.5 focus:ring-blue-500 focus:border-blue-500"
-                bind:value={content}
-                oninput={() => dispatch("changed")}
-                onblur={(e) => {
-            e.preventDefault();
-            textarea.focus();
-          }}
+            bind:this={textarea}
+            onselect={handleSelect}
+            onkeydown={handleKeyDown}
+            rows="22"
+            maxlength="4096"
+            class="w-full font-mono bg-white border border-gray-300 rounded-lg p-2.5 focus:ring-blue-500 focus:border-blue-500"
+            bind:value={content}
+            oninput={() => dispatch("changed")}
+            onblur={(e) => {
+              e.preventDefault();
+              textarea.focus();
+            }}
         ></textarea>
       </div>
     </TabItem>
     <TabItem title="Preview">
-      <div class="h-full w-full p-3 overflow-auto prose">
-        {@html marked(content)}
-      </div>
+        <iframe class="h-full w-full p-3 prose font-mono" srcdoc={marked(content)}></iframe>
     </TabItem>
   </Tabs>
 </Card>
