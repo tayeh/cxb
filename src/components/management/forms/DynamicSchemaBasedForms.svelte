@@ -10,10 +10,6 @@
         schema: any,
     } = $props();
 
-    console.log({
-        content, schema
-    })
-
     onMount(() => {
         if (schema && schema.properties) {
             initializeContent(schema.properties);
@@ -138,10 +134,6 @@
     function isRequired(propertyName) {
         return schema.required && schema.required.includes(propertyName);
     }
-
-    $effect(()=>{
-        console.log({content})
-    })
 </script>
 
 <Card class="p-4 max-w-4xl mx-auto my-2">

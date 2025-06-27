@@ -9,8 +9,6 @@
   export let displayname: string = undefined;
   let content_type: string = attributes?.payload?.content_type || "";
   let body: any = attributes?.payload?.body;
-
-  console.log({url})
 </script>
 
 {#if resource_type === ResourceType.comment}

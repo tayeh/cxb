@@ -14,6 +14,7 @@
         payload = $bindable({}),
         isOpen = $bindable(false),
         isUpdateMode = $bindable(false),
+        selectedAttachment = $bindable(null),
         space_name = $bindable(""),
         parentResourceType,
         subpath = $bindable(""),
@@ -29,9 +30,67 @@
     let payloadData = $state("");
     let payloadContent: any = $state();
     let selectedSchema = $state("");
-    let isModalInUpdateMode = false;
-
+    let isModalInUpdateMode = $state(false);
+    let trueResourceType = $state(null);
+    let trueContentType = $state(null);
     let isLoading = $state(false);
+
+    $effect(() => {
+        isModalInUpdateMode = isUpdateMode;
+    });
+
+    $effect(() => {
+        if (isOpen && selectedAttachment && isUpdateMode) {
+            initializeFormWithAttachment(selectedAttachment);
+        } else if (!isOpen) {
+            resetModal();
+        }
+    });
+
+    function initializeFormWithAttachment(attachment) {
+        if (!attachment) return;
+
+        const _attachment = structuredClone($state.snapshot(attachment));
+        shortname = _attachment.shortname;
+
+        if (_attachment.attributes?.displayname) {
+            displayname = _attachment.attributes.displayname;
+        }
+
+        if (_attachment.attributes?.description) {
+            description = _attachment.attributes.description;
+        }
+
+        // Only update payload for json, text, comment, markdown, html types
+        // For all other types, only update metadata
+        if (_attachment.resource_type === ResourceType.json || 
+            (_attachment.resource_type === ResourceType.media && 
+             [ContentType.text, ContentType.json, ContentType.markdown, ContentType.html].includes(_attachment?.attributes?.payload?.content_type)) ||
+            _attachment.resource_type === ResourceType.comment) {
+            // Full edit mode - update both metadata and payload
+            resourceType = ResourceAttachmentType[_attachment.resource_type];
+            contentType = _attachment?.attributes?.payload?.content_type;
+
+            if (_attachment.resource_type === ResourceType.json) {
+                payloadContent = { json: _attachment.attributes.payload.body };
+            } else if (_attachment.resource_type === ResourceType.comment) {
+                payloadData = _attachment.attributes.body;
+            } else {
+                payloadData = _attachment.attributes.payload.body;
+            }
+        } else {
+            // Metadata-only edit mode
+            trueResourceType = ResourceAttachmentType[_attachment.resource_type];
+            trueContentType = ContentType[_attachment?.attributes?.payload?.content_type];
+            resourceType = ResourceAttachmentType.json;
+
+            const metaAttachment = structuredClone(_attachment);
+            if (metaAttachment?.attributes?.payload?.body) {
+                delete metaAttachment.attributes.payload.body;
+            }
+            payloadContent = { json: metaAttachment, text: undefined };
+        }
+    }
 
     function toggleModal() {
         isOpen = !isOpen;
@@ -54,6 +113,11 @@
         isLoading = true;
 
         try {
+            if (isUpdateMode && resourceType === ResourceAttachmentType.json && trueResourceType !== null) {
+                await updateMeta();
+                return;
+            }
+
             let response;
             if (resourceType == ResourceAttachmentType.comment) {
                 response = await Dmart.request({
@@ -177,6 +241,46 @@
     function setSchemaItems(schemas) {
         return schemas?.records?.map(e => e.shortname) || [];
     }
+
+    async function updateMeta() {
+        if (isUpdateMode) {
+            if (trueResourceType !== null) {
+                resourceType = trueResourceType;
+                trueResourceType = null;
+            }
+            if (trueContentType !== null) {
+                contentType = trueContentType;
+                trueContentType = null;
+            }
+        }
+
+        let _payloadContent = payloadContent.json
+            ? structuredClone($state.snapshot(payloadContent).json)
+            : JSON.parse($state.snapshot(payloadContent).text ?? "{}");
+
+        _payloadContent.subpath = `${subpath}/${parent_shortname}`;
+        const request_dict = {
+            space_name,
+            request_type: RequestType.update,
+            records: [_payloadContent],
+        };
+
+        try {
+            const response = await Dmart.request(request_dict);
+            if (response.status === "success") {
+                showToast(Level.info);
+                isOpen = false;
+                resetModal();
+                $currentEntry.refreshEntry();
+            } else {
+                showToast(Level.warn);
+            }
+        } catch (e) {
+            showToast(Level.warn, e.response?.data || "Error updating metadata");
+        } finally {
+            isLoading = false;
+        }
+    }
 </script>
 
 <Modal
@@ -186,7 +290,15 @@
     <form onsubmit={upload}>
         <div class="flex justify-between items-center px-4 pt-4 border-b rounded-t">
             <h3 class="text-xl font-semibold text-gray-900">
-                {isUpdateMode ? "Update attachment" : "Add attachment"}
+                {#if isUpdateMode}
+                    {#if resourceType === ResourceAttachmentType.json && trueResourceType !== null}
+                        Edit Attachment Metadata
+                    {:else}
+                        Edit Attachment Content
+                    {/if}
+                {:else}
+                    Add Attachment
+                {/if}
             </h3>
         </div>
 
@@ -419,16 +531,23 @@
         </div>
 
         <div class="flex justify-end space-x-2 p-4 border-t">
-            <Button color="alternative" onclick={()=>{isOpen=true}} disabled={isLoading}>
-                Close
+            <Button color="alternative" onclick={()=>{isOpen=false}} disabled={isLoading}>
+                Cancel
             </Button>
             <Button color="blue" type="submit" class={isLoading ? "cursor-not-allowed" : "cursor-pointer"} disabled={isLoading}>
                 {#if isLoading}
-                    Uploading ...
+                    {isUpdateMode ? "Updating..." : "Uploading..."}
                 {:else}
-                    Upload
+                    {#if isUpdateMode}
+                        {#if resourceType === ResourceAttachmentType.json && trueResourceType !== null}
+                            Update Metadata
+                        {:else}
+                            Update Content
+                        {/if}
+                    {:else}
+                        Upload
+                    {/if}
                 {/if}
-
             </Button>
         </div>
     </form>

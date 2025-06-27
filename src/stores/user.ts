@@ -41,7 +41,7 @@ user = writable<User>(JSON.parse(data) || signedout);
 
 export async function signin(username: string, password: string) {
   const response = await Dmart.login(username, password);
-  console.log({response})
+
   if (response.status == "success" && response.records.length > 0) {
     const account = response.records[0];
     const auth = account.attributes.access_token;

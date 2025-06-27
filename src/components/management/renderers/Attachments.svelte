@@ -1,41 +1,24 @@
 <script lang="ts">
   import {
     Dmart,
-    type ApiResponse,
     ContentType,
-    ContentTypeMedia,
-    QueryType,
     RequestType,
-    ResourceAttachmentType,
     ResourceType,
-    type Translation,
   } from "@edraj/tsdmart";
   import { Level, showToast } from "@/utils/toast";
   import {
     Button, Card, Dropdown, DropdownItem,
-    Input,
-    Label,
     Modal,
     Badge,
     CardPlaceholder,
   } from "flowbite-svelte";
   import { JSONEditor, Mode } from "svelte-jsoneditor";
-  import { jsonToFile } from "@/utils/jsonToFile";
-  import Prism from "@/components/Prism.svelte";
-  import { parseCSV, parseJSONL } from "@/utils/attachements";
   import { AxiosError } from "axios";
-  import MarkdownEditor from "@/components/management/editors/MarkdownEditor.svelte";
-  import HtmlEditor from "@/components/management/editors/HtmlEditor.svelte";
-  import {untrack} from "svelte";
-  import Media from "@/components/management/renderers/Media.svelte";
   import {
     DotsHorizontalOutline, EyeSolid, PenSolid, TrashBinSolid,
     FileImageOutline, FileCsvOutline,FileOutline, ListOutline, FileLinesOutline,
     UploadOutline, FileLinesSolid, FileVideoSolid, FileMusicSolid
   } from "flowbite-svelte-icons";
-  import {getSpaces} from "@/lib/dmart_services";
-  import {jsonEditorContentParser} from "@/utils/jsonEditor";
-  import {website} from "@/config";
   import ModalViewAttachments from "@/components/management/Modals/ModalViewAttachments.svelte";
   import {getFileExtension} from "@/utils/getFileExtension";
   import ModalCreateAttachments from "@/components/management/Modals/ModalCreateAttachments.svelte";
@@ -119,8 +102,6 @@
   let shortname = $state("auto");
   let isModalInUpdateMode = $state(false);
   let openViewAttachmentModal = $state(false);
-  let openMetaEditAttachmentModal = $state(false);
-
 
   let content = $state({
     json: {},
@@ -154,224 +135,16 @@
     }
   }
 
-  let payloadFiles: FileList = $state();
-  let displayname: Translation = {
-    'en': "",
-    'ar': "",
-    'ku': "",
-  };
-  let description: Translation = {
-    'en': "",
-    'ar': "",
-    'ku': "",
-  };
 
-  let payloadContent: any = $state({ json: {}, text: undefined });
-  let payloadData: string = $state();
-  let selectedSchema: string = $state();
-  let resourceType: ResourceAttachmentType = $state(ResourceAttachmentType.media);
-  let contentType: ContentType = $state(ContentType.image);
-
-  async function upload() {
-    let response: ApiResponse;
-    if (resourceType == ResourceAttachmentType.comment) {
-      const request_dict = {
-        space_name,
-        request_type: isModalInUpdateMode
-          ? RequestType.update
-          : RequestType.create,
-        records: [
-          {
-            resource_type: ResourceType.comment,
-            shortname: shortname,
-            subpath: `${subpath}/${parent_shortname}`.replaceAll("//", "/"),
-            attributes: {
-              displayname: displayname,
-              description: description,
-              is_active: true,
-              state: "commented",
-              body: payloadData,
-            },
-          },
-        ],
-      };
-      response = await Dmart.request(request_dict);
-    } else if (
-      [
-        ResourceAttachmentType.csv,
-        ResourceAttachmentType.jsonl,
-        ResourceAttachmentType.sqlite,
-        ResourceAttachmentType.parquet,
-      ].includes(resourceType)
-    ) {
-      response = await Dmart.upload_with_payload(
-        space_name,
-        subpath + "/" + parent_shortname,
-        shortname,
-        ResourceType[resourceType],
-              ResourceType[resourceType] === ResourceType.json
-                      ? jsonToFile(payloadContent)
-                      : payloadFiles[0],
-        ContentType[resourceType],
-        resourceType === ResourceAttachmentType.csv ? selectedSchema : null,
-
-      );
-    } else if (
-      [
-        ContentType.image,
-        ContentType.pdf,
-        ContentType.audio,
-        ContentType.video,
-      ].includes(contentType)
-    ) {
-      response = await Dmart.upload_with_payload(
-        space_name,
-        subpath + "/" + parent_shortname,
-        shortname,
-        ResourceType[resourceType],
-        ResourceType[resourceType] === ResourceType.json
-                ? jsonToFile(payloadContent)
-                : payloadFiles[0],
-        ContentType[resourceType],
-        null,
-      );
-    } else if (
-      [
-        ContentType.json,
-        ContentType.text,
-        ContentType.html,
-        ContentType.markdown,
-        ContentType,
-      ].includes(contentType)
-    ) {
-      let _payloadContent = payloadContent.json
-        ? structuredClone($state.snapshot(payloadContent).json)
-        : JSON.parse(payloadContent.text ?? "{}");
-      let request_dict = {
-        space_name,
-        request_type: isModalInUpdateMode
-          ? RequestType.update
-          : RequestType.create,
-        records: [
-          {
-            resource_type: ResourceType[resourceType],
-            shortname: shortname,
-            subpath: `${subpath}/${parent_shortname}`,
-            attributes: {
-              displayname: displayname,
-              description: description,
-              is_active: true,
-              payload: {
-                content_type: contentType,
-                schema_shortname:
-                  resourceType == ResourceAttachmentType.json && selectedSchema
-                    ? selectedSchema
-                    : null,
-                body:
-                  resourceType == ResourceAttachmentType.json
-                    ? _payloadContent
-                    : payloadData,
-              },
-            },
-          },
-        ],
-      };
-      response = await Dmart.request(request_dict);
-    }
-
-    if (response.status === "success") {
-      showToast(Level.info);
-      openCreateAttachmentModal = false;
-      refreshEntry()
-    } else {
-      showToast(Level.warn);
-    }
-  }
-
-  let trueResourceType = null;
-  let trueContentType = null;
-
-  async function updateMeta() {
-    if (isModalInUpdateMode) {
-      if (trueResourceType !== null) {
-        resourceType = trueResourceType;
-        trueResourceType = null;
-      }
-      if (trueContentType !== null) {
-        contentType = trueContentType;
-        trueContentType = null;
-      }
-    }
-
-    let _payloadContent = payloadContent.json
-      ? structuredClone($state.snapshot(payloadContent).json)
-      : JSON.parse($state.snapshot(payloadContent).text ?? "{}");
-
-    _payloadContent.subpath = `${subpath}/${parent_shortname}`;
-    const request_dict = {
-      space_name,
-      request_type: RequestType.update,
-      records: [_payloadContent],
-    };
-    const response = await Dmart.request(request_dict);
-    if (response.status === "success") {
-      showToast(Level.info);
-      openCreateAttachmentModal = false;
-      refreshEntry()
-    } else {
-      showToast(Level.warn);
-    }
-  }
-
-  $effect(() => {
-    switch (resourceType) {
-      case ResourceAttachmentType.media:
-        untrack(() => {
-          contentType = ContentType.image;
-        });
-        break;
-      case ResourceAttachmentType.comment:
-        untrack(() => {
-          contentType = ContentType.text;
-        });
-        break;
-      case ResourceAttachmentType.json:
-        untrack(() => {
-          contentType = ContentType.json;
-        });
-        break;
-    }
-  });
 
   function handleMetaEditModal(attachment) {
-    attachment = $state.snapshot(attachment);
-    const _attachment = structuredClone(attachment);
-    trueResourceType = ResourceAttachmentType[_attachment.resource_type];
-    trueContentType = ContentType[_attachment?.payload?.content_type];
-    delete _attachment?.payload?.body;
-    shortname = _attachment.shortname;
-    resourceType = ResourceAttachmentType.json;
-    payloadContent = { json: _attachment, text: undefined };
-
-    openMetaEditAttachmentModal = true;
+    selectedAttachment = attachment;
+    openCreateAttachmentModal = true;
     isModalInUpdateMode = true;
   }
 
   function handleContentEditModal(attachment) {
-    attachment = $state.snapshot(attachment);
-    const _attachment = structuredClone(attachment);
-    shortname = _attachment.shortname;
-
-    resourceType = _attachment.resource_type;
-    contentType = _attachment?.attributes.payload?.content_type;
-    if (attachment.resource_type === ResourceAttachmentType.json) {
-      payloadContent = { json: _attachment.attributes.payload.body };
-    } else if (attachment.resource_type === ResourceAttachmentType.comment) {
-      payloadData = _attachment.attributes.body;
-    } else {
-      payloadData = _attachment.attributes.payload.body;
-    }
-
+    selectedAttachment = attachment;
     openCreateAttachmentModal = true;
     isModalInUpdateMode = true;
   }
@@ -393,16 +166,6 @@
     ]);
   }
 
-  function setSchemaItems(schemas): Array<string> {
-    if (schemas === null) {
-      return [];
-    }
-    const _schemas = schemas.records.map((e) => e.shortname);
-    return _schemas.filter(
-      (e) => !["meta_schema", "folder_rendering"].includes(e)
-    );
-  }
-
   function viewMeta(attachment) {
     selectedAttachment = attachment;
     content = {
@@ -415,11 +178,15 @@
   function editAttachment(attachment) {
     selectedAttachment = attachment;
 
-    if (attachment.resource_type === ResourceType.media ||
-            attachment.resource_type === ResourceType.csv) {
-      handleMetaEditModal(attachment);
-    } else {
+    // Only update payload for json, text, comment, markdown, html types
+    if (attachment.resource_type === ResourceType.json || 
+        (attachment.resource_type === ResourceType.media && 
+         [ContentType.text, ContentType.json, ContentType.markdown, ContentType.html].includes(attachment.attributes?.payload?.content_type)) ||
+        attachment.resource_type === ResourceType.comment) {
       handleContentEditModal(attachment);
+    } else {
+      // For all other types, only update metadata
+      handleMetaEditModal(attachment);
     }
   }
 
@@ -449,25 +216,14 @@
 
   let createMetaContent = $state({});
   let createPayloadContent = $state({});
+  function handleCreateAttachmentModal(e){
+    e.stopPropagation();
+    isModalInUpdateMode=false;
+    selectedAttachment = null;
+    openCreateAttachmentModal = true;
+  }
 </script>
 
-<Modal
-  bind:open={openMetaEditAttachmentModal}
-  size={"lg"}
->
-  <div>
-    <JSONEditor
-      onRenderMenu={handleRenderMenu}
-      mode={Mode.text}
-      bind:content={payloadContent}
-    />
-  </div>
-
-  <div class="flex justify-between w-full">
-    <Button color="alternative" onclick={() => openMetaEditAttachmentModal = false}>Cancel</Button>
-    <Button class="bg-primary" onclick={updateMeta}>Update</Button>
-  </div>
-</Modal>
 
 <Modal
   bind:open={openViewAttachmentModal}
@@ -528,7 +284,7 @@
         {/each}
       </div>
       <Button class="text-primary cursor-pointer hover:bg-primary hover:text-white" outline
-      onclick={()=>{openCreateAttachmentModal = true}}>
+      onclick={handleCreateAttachmentModal}>
         <UploadOutline size="md" class="mr-2"/>
         <strong>UPLOAD</strong>
       </Button>
@@ -621,7 +377,9 @@
 />
 
 <ModalCreateAttachments
-  isOpen={openCreateAttachmentModal}
+  bind:isOpen={openCreateAttachmentModal}
+  isUpdateMode={isModalInUpdateMode}
+  selectedAttachment={selectedAttachment}
   parentResourceType={resource_type}
   space_name={space_name}
   subpath={subpath}
