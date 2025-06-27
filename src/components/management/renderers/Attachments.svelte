@@ -255,13 +255,13 @@
       filteredAttachments = contentTypeGroups[selectedFilter] || contentTypeGroups.all;
     })
   });
-    $effect(() => {
-        if (selectedFilter) {
-          untrack(()=>{
-            filteredAttachments = contentTypeGroups[selectedFilter] || contentTypeGroups.all;
-          })
-        }
-    });
+  $effect(() => {
+      if (selectedFilter) {
+        untrack(()=>{
+          filteredAttachments = contentTypeGroups[selectedFilter] || contentTypeGroups.all;
+        })
+      }
+  });
 </script>
 
 
