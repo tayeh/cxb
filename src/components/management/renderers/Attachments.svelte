@@ -23,6 +23,7 @@
   import {getFileExtension} from "@/utils/getFileExtension";
   import ModalCreateAttachments from "@/components/management/Modals/ModalCreateAttachments.svelte";
   import {currentEntry} from "@/stores/global";
+  import {untrack} from "svelte";
 
 
   let {
@@ -41,8 +42,6 @@
     refreshEntry: any,
   } = $props();
 
-  let selectedFilter = $state("all");
-  let filteredAttachments: any = $state(Object.values(attachments).flat(1));
 
   async function fetchDataAssetsForAttachments() {
     for (const attachment of filteredAttachments) {
@@ -222,6 +221,47 @@
     selectedAttachment = null;
     openCreateAttachmentModal = true;
   }
+
+  let selectedFilter = $state("all");
+  let filteredAttachments: any = $state(Object.values(attachments).flat(1));
+  let contentTypeGroups: any = $state({});
+
+  function groupAttachmentsByContentType() {
+    const allAttachments = Object.values(attachments).flat(1);
+    const groups = { all: allAttachments };
+
+    allAttachments.forEach((attachment:any) => {
+      let contentType = "other";
+
+      if (attachment.resource_type === ResourceType.media && attachment.attributes?.payload?.content_type) {
+        contentType = attachment.attributes.payload.content_type;
+      } else if (attachment.resource_type === ResourceType.csv) {
+        contentType = "csv";
+      } else if (attachment.resource_type === ResourceType.json) {
+        contentType = "json";
+      } else if (attachment.resource_type === ResourceType.comment) {
+        contentType = "comment";
+      }
+
+      groups[contentType] = groups[contentType] || [];
+      groups[contentType].push(attachment);
+    });
+
+    return groups;
+  }
+  $effect(() => {
+    contentTypeGroups = groupAttachmentsByContentType();
+    untrack(()=>{
+      filteredAttachments = contentTypeGroups[selectedFilter] || contentTypeGroups.all;
+    })
+  });
+    $effect(() => {
+        if (selectedFilter) {
+          untrack(()=>{
+            filteredAttachments = contentTypeGroups[selectedFilter] || contentTypeGroups.all;
+          })
+        }
+    });
 </script>
 
 
@@ -255,36 +295,42 @@
   <div class="d-flex justify-content-center flex-column px-5 mt-2">
     <div class="flex justify-between">
       <div>
-        <Badge class={selectedFilter === "all" ? "m-1 bg-primary text-white" : "m-1 bg-[#F5F5FF] text-primary"} style="cursor: pointer;"
-               onclick={() => {
-            selectedFilter = 'all';
-          }}
+        <Badge class={selectedFilter === "all" ? "m-1 bg-primary text-white" : "m-1 bg-[#F5F5FF] text-primary"}
+               style="cursor: pointer;"
+               onclick={() => { selectedFilter = 'all'; }}
         >
-          <ListOutline size="lg"  />
-          ALL ({filteredAttachments.length})
+          <ListOutline size="lg" />
+          ALL ({contentTypeGroups.all?.length || 0})
         </Badge>
-        {#each Object.keys(attachments) as key}
-          <Badge class={selectedFilter === key ? "m-1 bg-primary text-white" : "m-1 bg-[#F5F5FF] text-balck"} style="cursor: pointer;"
-                 onclick={() => {
-            selectedFilter = key;
-          }}>
+
+        {#each Object.keys(contentTypeGroups).filter(key => key !== 'all') as contentType}
+          <Badge class={selectedFilter === contentType ? "m-1 bg-primary text-white" : "m-1 bg-[#F5F5FF] text-black"}
+                 style="cursor: pointer;"
+                 onclick={() => { selectedFilter = contentType; }}
+          >
         <span class="inline-flex items-center gap-2">
-          {#if key === "media"}
+          {#if contentType === ContentType.image}
             <FileImageOutline size="lg" />
-          {:else if key === "csv"}
+          {:else if contentType === ContentType.audio}
+            <FileMusicSolid size="lg" />
+          {:else if contentType === ContentType.video}
+            <FileVideoSolid size="lg" />
+          {:else if contentType === ContentType.text || contentType === ContentType.markdown || contentType === ContentType.html}
+            <FileLinesSolid size="lg" />
+          {:else if contentType === "csv"}
             <FileCsvOutline size="lg" />
-          {:else if key === "comment" || key === "json"}
-            <FileLinesOutline size="lg" />
           {:else}
             <FileOutline size="lg" />
           {/if}
-          {key.toUpperCase()} ({attachments[key].length})
+          {contentType.toUpperCase()} ({contentTypeGroups[contentType]?.length || 0})
         </span>
           </Badge>
         {/each}
       </div>
+
+      <!-- Keep the upload button as is -->
       <Button class="text-primary cursor-pointer hover:bg-primary hover:text-white" outline
-      onclick={handleCreateAttachmentModal}>
+              onclick={handleCreateAttachmentModal}>
         <UploadOutline size="md" class="mr-2"/>
         <strong>UPLOAD</strong>
       </Button>
