@@ -16,20 +16,21 @@
 
   let username: string;
   let password: string;
-  let isError: boolean = $state(false);
+  let errorMessage: string = $state(null);
   let showPassword: boolean = $state(false);
   let isLoginLoading: boolean = $state(false);
 
   async function handleSubmit(event: Event) {
     event.preventDefault();
-    isError = false;
+      errorMessage = null;
       isLoginLoading = false;
     try {
         isLoginLoading = true;
       await signin(username, password);
       window.location.reload();
     } catch (error) {
-      isError = true;
+        console.log({ error });
+        errorMessage = error.response?.data?.error?.message ?? "Something went wrong, please try again.";
     }
     isLoginLoading = false;
   }
@@ -53,7 +54,7 @@
           placeholder={$_("shortname")}
           type="text"
           bind:value={username}
-          color={isError ? "red" : "default"}
+          color={errorMessage ? "red" : "default"}
           required
         />
         <div class="mt-6"></div>
@@ -64,7 +65,7 @@
               placeholder={$_("password")}
               type={showPassword ? "text" : "password"}
               bind:value={password}
-              color={isError ? "red" : "default"}
+              color={errorMessage ? "red" : "default"}
               minlength={8}
               maxlength={24}
               required
@@ -89,8 +90,8 @@
                 {$_("login")}
             {/if}
         </Button>
-        {#if isError}
-            <p class="text-red-600 mt-2">{$_("login_error")}</p>
+        {#if errorMessage}
+            <p class="text-red-600 mt-2">{errorMessage}</p>
         {/if}
     </form>
   </div>

@@ -39,6 +39,7 @@
   import ModalViewAttachments from "@/components/management/Modals/ModalViewAttachments.svelte";
   import {getFileExtension} from "@/utils/getFileExtension";
   import ModalCreateAttachments from "@/components/management/Modals/ModalCreateAttachments.svelte";
+  import {currentEntry} from "@/stores/global";
 
 
   let {
@@ -120,39 +121,17 @@
   let openViewAttachmentModal = $state(false);
   let openMetaEditAttachmentModal = $state(false);
 
-  function toggleViewAttachmentModal() {
-    openViewAttachmentModal = !openViewAttachmentModal;
-  }
-
-  function toggleMetaEditAttachmentModal() {
-    openMetaEditAttachmentModal = !openMetaEditAttachmentModal;
-  }
 
   let content = $state({
     json: {},
     text: undefined,
   });
 
-  function handleView(attachment) {
-    content = {
-      json: attachment,
-      text: undefined,
-    };
-    openViewAttachmentModal = true;
-  }
-
   async function handleDelete(item: {
     shortname: string;
     subpath: string;
     resource_type: ResourceType;
   }) {
-    if (
-      confirm(`Are you sure want to delete ${item.shortname} attachment`) ===
-      false
-    ) {
-      return;
-    }
-
     const request_dict = {
       space_name,
       request_type: RequestType.delete,
@@ -167,12 +146,9 @@
     };
     const response = await Dmart.request(request_dict);
     if (response.status === "success") {
-      showToast(Level.info);
-      attachments = attachments.filter(
-        (e: { shortname: string }) => e.shortname !== item.shortname
-      );
+      showToast(Level.info, `Attachment ${item.shortname} deleted successfully.`);
+      $currentEntry.refreshEntry();
       openCreateAttachmentModal = false;
-      refreshEntry()
     } else {
       showToast(Level.warn);
     }
@@ -427,9 +403,32 @@
     );
   }
 
-  function viewMeta(attachment){}
-  function editAttachment(attachment){}
-  function confirmDelete(attachment){}
+  function viewMeta(attachment) {
+    selectedAttachment = attachment;
+    content = {
+      json: attachment,
+      text: undefined,
+    };
+    openViewAttachmentModal = true;
+  }
+
+  function editAttachment(attachment) {
+    selectedAttachment = attachment;
+
+    if (attachment.resource_type === ResourceType.media ||
+            attachment.resource_type === ResourceType.csv) {
+      handleMetaEditModal(attachment);
+    } else {
+      handleContentEditModal(attachment);
+    }
+  }
+
+  function confirmDelete(attachment) {
+    selectedAttachment = attachment;
+    openDeleteModal = true;
+  }
+
+  let openDeleteModal = $state(false);
 
   let openViewContentModal = $state(false);
   let openCreateAttachmentModal = $state(false);
@@ -463,37 +462,24 @@
       bind:content={payloadContent}
     />
   </div>
-  <div>
-    <Button type="button" color="primary" onclick={updateMeta}>Update</Button>
-    <Button
-      type="button"
-      color="secondary"
-      onclick={() => (openMetaEditAttachmentModal = false)}
-    >
-      close
-    </Button>
+
+  <div class="flex justify-between w-full">
+    <Button color="alternative" onclick={() => openMetaEditAttachmentModal = false}>Cancel</Button>
+    <Button class="bg-primary" onclick={updateMeta}>Update</Button>
   </div>
 </Modal>
 
 <Modal
-  open={openViewAttachmentModal}
+  bind:open={openViewAttachmentModal}
   size={"lg"}
 >
-  <div>
+  <div class="p-6">
     <JSONEditor
       onRenderMenu={handleRenderMenu}
       mode={Mode.text}
       {content}
       readOnly={true}
     />
-  </div>
-  <div>
-    <Button
-      type="button"
-      color="secondary"
-      onclick={() => (openViewAttachmentModal = false)}
-      >close
-    </Button>
   </div>
 </Modal>
 
@@ -643,3 +629,17 @@
   meta={createMetaContent}
   payload={createPayloadContent}
 />
+
+<Modal bind:open={openDeleteModal} size="md" title="Confirm Deletion">
+  {#if selectedAttachment}
+    <p class="text-center mb-6">
+      Are you sure you want to delete the attachment <span class="font-bold">{selectedAttachment.shortname}</span>?<br>
+      This action cannot be undone.
+    </p>
+  {/if}
+
+  <div class="flex justify-between w-full">
+    <Button color="alternative" onclick={() => openDeleteModal = false}>Cancel</Button>
+    <Button color="red" onclick={() => handleDelete(selectedAttachment)}>Delete</Button>
+  </div>
+</Modal>

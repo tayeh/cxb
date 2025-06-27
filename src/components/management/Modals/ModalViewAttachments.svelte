@@ -28,7 +28,7 @@ let {
     </div>
 
     {#if selectedAttachment}
-        <div class="flex justify-center align-center h-full w-full border-2 rounded-2xl">
+        <div class="flex justify-center align-center h-full w-full border-2 rounded-2xl p-3">
             <Media
             resource_type={ResourceType[selectedAttachment.resource_type]}
             attributes={selectedAttachment.attributes}
