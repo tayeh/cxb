@@ -14,8 +14,8 @@ let {
 </script>
 
 <Modal
-    class="h-full"
-    bodyClass="h-full justify-center"
+    class=""
+    bodyClass="justify-center"
     bind:open={openViewContentModal}
     size="lg"
 >

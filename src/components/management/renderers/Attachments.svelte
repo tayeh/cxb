@@ -7,7 +7,10 @@
   } from "@edraj/tsdmart";
   import { Level, showToast } from "@/utils/toast";
   import {
-    Button, Card, Dropdown, DropdownItem,
+    Button,
+    Card,
+    Dropdown,
+    DropdownItem,
     Modal,
     Badge,
     CardPlaceholder,
@@ -32,7 +35,6 @@
     space_name,
     subpath,
     parent_shortname,
-    refreshEntry,
   } :{
     attachments: any,
     resource_type: ResourceType,
@@ -97,7 +99,6 @@
     }
   }
 
-  // exp rt let forceRefresh;
   let shortname = $state("auto");
   let isModalInUpdateMode = $state(false);
   let openViewAttachmentModal = $state(false);
@@ -107,6 +108,7 @@
     text: undefined,
   });
 
+  let isDeleteLoading = $state(false);
   async function handleDelete(item: {
     shortname: string;
     subpath: string;
@@ -124,25 +126,26 @@
         },
       ],
     };
-    const response = await Dmart.request(request_dict);
-    if (response.status === "success") {
-      showToast(Level.info, `Attachment ${item.shortname} deleted successfully.`);
-      $currentEntry.refreshEntry();
-      openCreateAttachmentModal = false;
-    } else {
+    try {
+      isDeleteLoading = true;
+      const response = await Dmart.request(request_dict);
+      if (response.status === "success") {
+        showToast(Level.info, `Attachment ${item.shortname} deleted successfully.`);
+        $currentEntry.refreshEntry();
+        openCreateAttachmentModal = false;
+      } else {
+        showToast(Level.warn);
+      }
+    } catch (e) {
       showToast(Level.warn);
+    } finally {
+      isDeleteLoading = false;
+      openDeleteModal = false;
     }
   }
 
-
-
-  function handleMetaEditModal(attachment) {
-    selectedAttachment = attachment;
-    openCreateAttachmentModal = true;
-    isModalInUpdateMode = true;
-  }
-
-  function handleContentEditModal(attachment) {
+  function handleEditModal(attachment) {
+    console.log({selectedAttachment})
     selectedAttachment = attachment;
     openCreateAttachmentModal = true;
     isModalInUpdateMode = true;
@@ -178,15 +181,16 @@
     selectedAttachment = attachment;
 
     // Only update payload for json, text, comment, markdown, html types
-    if (attachment.resource_type === ResourceType.json || 
-        (attachment.resource_type === ResourceType.media && 
-         [ContentType.text, ContentType.json, ContentType.markdown, ContentType.html].includes(attachment.attributes?.payload?.content_type)) ||
-        attachment.resource_type === ResourceType.comment) {
-      handleContentEditModal(attachment);
-    } else {
-      // For all other types, only update metadata
-      handleMetaEditModal(attachment);
-    }
+    // if (attachment.resource_type === ResourceType.json
+    //     || [ContentType.text, ContentType.json, ContentType.markdown, ContentType.html].includes(attachment.attributes?.payload?.content_type)
+    //     || attachment.resource_type === ResourceType.comment) {
+    //   handleContentEditModal(attachment);
+    // } else {
+    //   // For all other types, only update metadata
+    //   handleMetaEditModal(attachment);
+    // }
+
+    handleEditModal(selectedAttachment);
   }
 
   function confirmDelete(attachment) {
@@ -400,7 +404,7 @@
             </p>
           {/if}
           <p class="text-gray-600 mt-2 mb-4 line-clamp-3">
-            {attachment?.description?.en || "No description available"}
+            {attachment.attributes?.description?.en || "No description available"}
           </p>
 
           <div class="text-xs text-gray-500 mt-auto">
@@ -444,6 +448,6 @@
 
   <div class="flex justify-between w-full">
     <Button color="alternative" onclick={() => openDeleteModal = false}>Cancel</Button>
-    <Button color="red" onclick={() => handleDelete(selectedAttachment)}>Delete</Button>
+    <Button color="red" onclick={() => handleDelete(selectedAttachment)} disabled={isDeleteLoading}>{isDeleteLoading ? "Deleting..." : "Delete"}</Button>
   </div>
 </Modal>
