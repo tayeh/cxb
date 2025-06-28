@@ -44,13 +44,4 @@ let {
             />
         </div>
     {/if}
-
-    <div>
-        <Button
-            type="button"
-            color="secondary"
-            onclick={() => openViewContentModal = false}>
-            Close
-        </Button>
-    </div>
 </Modal>

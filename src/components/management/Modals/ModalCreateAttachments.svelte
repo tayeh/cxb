@@ -367,7 +367,7 @@
                     <div>
                         <Label for="contentType">Content Type</Label>
                         <Select id="contentType" bind:value={contentType} disabled={isUpdateMode}>
-                            {#each Object.values(ContentType) as type}
+                            {#each Object.values(ContentType).filter(c=>![ContentType.json,ContentType.csv,ContentType.jsonl,ContentType.sqlite,ContentType.parquet].includes(c)) as type}
                                 <option value={type}>{type}</option>
                             {/each}
                         </Select>

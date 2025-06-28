@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ResourceType } from "@edraj/tsdmart";
+  import {ContentType, ResourceType} from "@edraj/tsdmart";
   import {marked} from "marked";
   import Prism from "@/components/Prism.svelte";
 
@@ -50,10 +50,10 @@
     >
       <p>For some reason PDF is not rendered here properly.</p>
     </object>
-{:else if content_type === "markdown"}
-  <div class="w-full h-full">
-    <iframe class="h-full w-full p-3 prose font-mono" srcdoc={marked(body)}></iframe>
-  </div>
+{:else if content_type === ContentType.markdown}
+
+    <iframe class="min-h-dvh w-full p-3 prose font-mono" srcdoc={marked(body)}></iframe>
+
 {:else if ["html", "text"].includes(content_type)}
   <div class="w-full h-full">
     {@html body}
