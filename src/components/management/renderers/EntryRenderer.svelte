@@ -4,14 +4,14 @@
     import {checkAccess} from "@/utils/checkAccess";
     import {
         ClockOutline,
+        DrawSquareSolid,
         EditOutline,
         EyeSolid,
         FloppyDiskOutline,
         ListOutline,
         PaperClipOutline,
         RectangleListOutline,
-        TrashBinOutline,
-        DrawSquareSolid
+        TrashBinOutline
     } from "flowbite-svelte-icons";
     import {JSONEditor, Mode} from "svelte-jsoneditor";
     import {jsonEditorContentParser} from "@/utils/jsonEditor";
@@ -25,7 +25,7 @@
     import MetaUserForm from "@/components/management/forms/MetaUserForm.svelte";
     import MetaRoleForm from "@/components/management/forms/MetaRoleForm.svelte";
     import MetaPermissionForm from "@/components/management/forms/MetaPermissionForm.svelte";
-    import {onMount, untrack} from "svelte";
+    import {untrack} from "svelte";
     import {goto} from "@roxi/routify";
     import HistoryListView from "@/components/management/HistoryListView.svelte";
     import SchemaForm from "@/components/management/forms/SchemaForm.svelte";
@@ -38,7 +38,7 @@
     import {CardPlaceholder, TextPlaceholder} from "flowbite-svelte";
     import DynamicSchemaBasedForms from "@/components/management/forms/DynamicSchemaBasedForms.svelte";
     import TranslationForm from "@/components/management/forms/TranslationForm.svelte";
-    import ConfigForm from "@/components/management/forms/ConfigForm.svelte";
+
     $goto
 
     enum TabMode {
@@ -121,6 +121,11 @@
         }
     }
 
+    function getParentSubpath(path: string): string {
+        const parts = path.replace(/^\/+|\/+$/g, "").split("/");
+        return parts.length > 1 ? "/" + parts.slice(1).join("/") : "/";
+    }
+
     async function handleSave(){
         isActionLoading = true;
         const content = jsonEditorContentParser($state.snapshot(jeContent));
@@ -148,7 +153,7 @@
                 records: [{
                     resource_type: resource_type,
                     shortname: shortname,
-                    subpath: subpath,
+                    subpath: resource_type === ResourceType.folder ? getParentSubpath(subpath)  : subpath,
                     attributes: content
                 }]
             })

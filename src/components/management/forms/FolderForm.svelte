@@ -161,7 +161,7 @@
                         </div>
                     {/each}
                 {/if}
-                <Button size="xs" class="mt-2 text-gray" outline onclick={() => addItem('query.filter_types', '')}>Add Filter Type</Button>
+                <Button size="xs" class="mt-2 text-gray hover:text-gray cursor-pointer" outline onclick={() => addItem('query.filter_types', '')}>Add Filter Type</Button>
             </div>
         </div>
 
@@ -186,7 +186,7 @@
                     </div>
                 {/each}
             {/if}
-            <Button size="sm" class="mt-2 text-gray" outline onclick={() => addItem('index_attributes', {key: '', name: ''})}>Add Index Attribute</Button>
+            <Button size="sm" class="mt-2 text-gray hover:text-gray cursor-pointer" outline onclick={() => addItem('index_attributes', {key: '', name: ''})}>Add Index Attribute</Button>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -206,7 +206,7 @@
                         </div>
                     {/each}
                 {/if}
-                <Button size="xs" class="mt-2 text-gray" outline onclick={() => addItem('search_columns', {key: '', name: ''})}>Add Column</Button>
+                <Button size="xs" class="mt-2 text-gray hover:text-gray cursor-pointer" outline onclick={() => addItem('search_columns', {key: '', name: ''})}>Add Column</Button>
             </div>
 
             <div class="border p-4 rounded-lg">
@@ -225,7 +225,7 @@
                         </div>
                     {/each}
                 {/if}
-                <Button size="xs" class="mt-2 text-gray" outline onclick={() => addItem('csv_columns', {key: '', name: ''})}>Add Column</Button>
+                <Button size="xs" class="mt-2 text-gray hover:text-gray cursor-pointer" outline onclick={() => addItem('csv_columns', {key: '', name: ''})}>Add Column</Button>
             </div>
         </div>
 
@@ -257,7 +257,7 @@
                         </div>
                     {/each}
                 {/if}
-                <Button size="xs" class="mt-2 text-gray" outline onclick={() => addItem('content_resource_types', '')}>Add Resource Type</Button>
+                <Button size="xs" class="mt-2 text-gray hover:text-gray cursor-pointer" outline onclick={() => addItem('content_resource_types', '')}>Add Resource Type</Button>
             </div>
 
             <div class="border p-3 rounded-md">
@@ -271,7 +271,7 @@
                         </div>
                     {/each}
                 {/if}
-                <Button size="xs" class="mt-2 text-gray" outline onclick={() => addItem('content_schema_shortnames', '')}>Add Schema Shortname</Button>
+                <Button size="xs" class="mt-2 text-gray hover:text-gray cursor-pointer" outline onclick={() => addItem('content_schema_shortnames', '')}>Add Schema Shortname</Button>
             </div>
         </div>
 
@@ -287,7 +287,7 @@
                         </div>
                     {/each}
                 {/if}
-                <Button size="xs" class="mt-2 text-gray" outline onclick={() => addItem('workflow_shortnames', '')}>Add Workflow Shortname</Button>
+                <Button size="xs" class="mt-2 text-gray hover:text-gray cursor-pointer" outline onclick={() => addItem('workflow_shortnames', '')}>Add Workflow Shortname</Button>
             </div>
 
             <div class="border p-3 rounded-md">
@@ -301,7 +301,7 @@
                         </div>
                     {/each}
                 {/if}
-                <Button size="xs" class="mt-2 text-gray" outline onclick={() => addItem('enable_pdf_schema_shortnames', '')}>Add PDF Schema Shortname</Button>
+                <Button size="xs" class="mt-2 text-gray hover:text-gray cursor-pointer" outline onclick={() => addItem('enable_pdf_schema_shortnames', '')}>Add PDF Schema Shortname</Button>
             </div>
         </div>
 
