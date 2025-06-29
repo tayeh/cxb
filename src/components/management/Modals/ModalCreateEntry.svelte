@@ -41,7 +41,6 @@
         ResourceType.user,
         ResourceType.content,
         ResourceType.folder,
-        ResourceType.schema,
     ];
 
     enum InputMode {
@@ -270,7 +269,6 @@
                 }
             }
 
-            console.log({rca: requestCreate.attributes})
             const request = {
                 space_name,
                 request_type: RequestType.create,
@@ -383,9 +381,7 @@
                         json: _schemaContent && generateObjectFromSchema(_schemaContent.attributes.payload.body)
                     }
                 }
-
             });
-
         } else {
             selectedSchemaContent = null;
             content = { json: {} };
@@ -395,15 +391,16 @@
     $effect(()=>{
         if(selectedInputMode === InputMode.json){
             untrack(()=>{
-                const _jeContent = jsonEditorContentParser($state.snapshot(content));
-                content = { text: JSON.stringify(_jeContent, null, 2) };
+                content = { text: JSON.stringify(jsonEditorContentParser($state.snapshot(content)), null, 2) };
+                console.log({content})
             });
         } else if(selectedInputMode === InputMode.form){
             untrack(()=>{
-                const _jeContent = jsonEditorContentParser($state.snapshot(content));
-                content = { json: _jeContent };
+                content = { json: jsonEditorContentParser($state.snapshot(content)) };
+                console.log({content})
             });
         }
+
     });
 
     $effect(()=>{
@@ -490,7 +487,9 @@
 
             {#if selectedResourceType === ResourceType.schema}
                 {#if selectedInputMode === InputMode.form}
-                    <SchemaForm bind:content={content.json}/>
+                    {#if content.json}
+                        <SchemaForm bind:content={content.json}/>
+                    {/if}
                 {:else if selectedInputMode === InputMode.json}
                     <JSONEditor
                         onRenderMenu={handleRenderMenu}
@@ -521,25 +520,25 @@
                     />
                 {/if}
                 {:else}
-                    <div class="my-2">
-                        {#if resourcesWithFormAndJson.includes(selectedResourceType) || subpath === "workflows"}
-                            {#if selectedInputMode === InputMode.form}
-                                {#if selectedSchemaContent}
-                                    {#if content.json}
-                                        <DynamicSchemaBasedForms schema={selectedSchemaContent} bind:content={content.json} />
-                                    {/if}
-                                {:else}
-                                    <p class="content-center">Nothing to render.</p>
+                <div class="my-2">
+                    {#if resourcesWithFormAndJson.includes(selectedResourceType) || subpath === "workflows"}
+                        {#if selectedInputMode === InputMode.form}
+                            {#if selectedSchemaContent}
+                                {#if content.json}
+                                    <DynamicSchemaBasedForms schema={selectedSchemaContent} bind:content={content.json} />
                                 {/if}
-                            {:else if selectedInputMode === InputMode.json}
-                                <JSONEditor
-                                        onRenderMenu={handleRenderMenu}
-                                        mode={Mode.text}
-                                        bind:content={content}
-                                />
+                            {:else}
+                                <p class="content-center">Nothing to render.</p>
                             {/if}
+                        {:else if selectedInputMode === InputMode.json}
+                            <JSONEditor
+                                onRenderMenu={handleRenderMenu}
+                                mode={Mode.text}
+                                bind:content={content}
+                            />
                         {/if}
-                    </div>
+                    {/if}
+                </div>
             {/if}
         {/if}
 
@@ -552,7 +551,7 @@
 
     {#snippet footer()}
         <div class="w-full flex flex-row justify-between">
-            {#if resourcesWithFormAndJson.includes(selectedResourceType) || subpath === "workflows"}
+            {#if [ResourceType.schema, ...resourcesWithFormAndJson].includes(selectedResourceType) || subpath === "workflows"}
                 <Button class="cursor-pointer text-green-700 hover:text-green-500 mx-1" outline
                         onclick={() => selectedInputMode = selectedInputMode === InputMode.form ? InputMode.json : InputMode.form}>
                     {#if selectedInputMode === InputMode.form}
