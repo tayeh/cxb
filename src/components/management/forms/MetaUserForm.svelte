@@ -158,8 +158,11 @@
 
     function validate() {
         const isValid = form.checkValidity();
-        if (!isValid) {
+        isEmailValid = validateEmail(formData.email)
+        console.log({isEmailValid})
+        if (!isValid || !isEmailValid) {
             form.reportValidity();
+            return false;
         }
         return isValid;
     }
@@ -181,6 +184,20 @@
             updateFilteredGroups();
         } else {
             filteredGroups = availableGroups.map(group => ({ key: group.shortname, value: group.shortname }));
+        }
+    });
+
+
+    let isEmailValid = $state(true);
+    let emailTouched = $state(false);
+    function validateEmail(email: string | null): boolean {
+        if (!email) return true; // Empty is allowed as the field isn't required
+        const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,6}$/;
+        return emailRegex.test(email);
+    }
+    $effect(() => {
+        if (emailTouched) {
+            isEmailValid = validateEmail(formData.email);
         }
     });
 </script>
@@ -205,11 +222,17 @@
         <div class="mb-4">
             <Label for="email" class="mb-2">Email</Label>
             <Input
-                    id="email"
-                    type="email"
-                    placeholder="user@example.com"
-                    bind:value={formData.email}
-                    pattern="[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]$" />
+                id="email"
+                type="email"
+                placeholder="user@example.com"
+                pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{'{'}2,6{'}'}$"
+                bind:value={formData.email}
+                class={!isEmailValid ? "border-red-500" : ""}
+                onblur={() => emailTouched = true}
+            />
+            {#if !isEmailValid && emailTouched}
+                <Helper class="mt-1 text-red-600">Please enter a valid email address</Helper>
+            {/if}
         </div>
 
         <div class="mb-4">
