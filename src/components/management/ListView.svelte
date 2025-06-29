@@ -27,6 +27,7 @@
   import {Level, showToast} from "@/utils/toast";
   import ListViewActionBar from "@/components/management/ListViewActionBar.svelte";
   import {currentListView} from "@/stores/global";
+  import {untrack} from "svelte";
   $goto
 
   $bulkBucket = [];
@@ -55,9 +56,7 @@
     scope?: string,
   } = $props();
 
-  $effect(() => {
-    $currentListView = {fetchPageRecords};
-  });
+  $currentListView = {fetchPageRecords};
 
   let columns = $state(null);
 
@@ -145,6 +144,7 @@
   }
 
   let old_search = "";
+  let queryObject: any = {};
   async function fetchPageRecords(isSetPage = true, requestExtra = {}) {
     let _search = $searchListView;
 
@@ -160,7 +160,7 @@
       }
     }
 
-    const resp = await Dmart.query({
+    queryObject = {
       filter_shortnames: shortname ? [shortname] : [],
       type,
       space_name: space_name,
@@ -170,12 +170,14 @@
       sort_by: objectDatatable.stringSortBy.toString(),
       sort_type: SortyType[objectDatatable.stringSortOrder],
       offset:
-        objectDatatable.numberRowsPerPage *
-        (objectDatatable.numberActivePage - 1),
+              objectDatatable.numberRowsPerPage *
+              (objectDatatable.numberActivePage - 1),
       search: _search.trim(),
       ...requestExtra,
       retrieve_json_payload: true
-    }, scope);
+    }
+
+    const resp = await Dmart.query(queryObject, scope);
 
     old_search = $searchListView;
     total = resp.attributes.total;
@@ -267,7 +269,9 @@
       type !== QueryType.history &&
       objectDatatable
     ) {
-      fetchPageRecords(true);
+      untrack(()=>{
+        fetchPageRecords(true);
+      });
     }
   });
 
@@ -287,9 +291,12 @@
           sortBy: objectDatatable.stringSortBy.toString(),
           sortOrder: objectDatatable.stringSortOrder,
         });
-        fetchPageRecords(true, {
+
+        untrack(()=>{
+          fetchPageRecords(true, {
             sort_by: objectDatatable.stringSortBy.toString(),
             sort_type: objectDatatable.stringSortOrder,
+          });
         });
         sort = structuredClone(x);
       }
@@ -388,6 +395,14 @@
       destroy() {}
     };
   }
+
+  $effect(() => {
+    if(queryObject){
+      untrack(() => {
+        $currentListView.query = queryObject;
+      });
+    }
+  })
 </script>
 
 {#key open}

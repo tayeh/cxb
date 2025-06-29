@@ -4,11 +4,12 @@ import {Button, Input,ButtonGroup,InputAddon} from "flowbite-svelte";
 import ModalCreateEntry from "@/components/management/Modals/ModalCreateEntry.svelte";
 import {onMount} from "svelte";
 import {checkAccess} from "@/utils/checkAccess";
-import {currentListView, subpathInManagementNoAction} from "@/stores/global";
+import {currentEntry, currentListView, subpathInManagementNoAction} from "@/stores/global";
 import {bulkBucket} from "@/stores/management/bulk_bucket";
 import {Dmart,RequestType} from "@edraj/tsdmart";
 import {Level, showToast} from "@/utils/toast";
 import {searchListView} from "@/stores/management/triggers";
+import downloadFile from "@/utils/downloadFile";
 
 let {space_name,subpath}:{space_name:string,subpath:string} = $props();
 
@@ -18,6 +19,9 @@ let canDownloadCSV = $state(false);
 let canDelete = $state(false);
 
 onMount(() => {
+    if($currentEntry.entry?.payload?.body?.allow_csv){
+        canDownloadCSV = true
+    }
     if(space_name === "management" && subpath === "/") {
         canCreate = false;
         canDelete = false;
@@ -79,6 +83,17 @@ async function handleSearch(e){
     searchListView.set(searchInput);
     await $currentListView.fetchPageRecords()
 }
+
+async function handleDownloadCSV(){
+    // if (startDateCSVDownload) {
+    //     body.from_date = startDateCSVDownload;
+    // }
+    // if (endDateCSVDownload) {
+    //     body.to_date = endDateCSVDownload;
+    // }
+    const data = await Dmart.csv($currentListView.query);
+    downloadFile(data, `${space_name}/${subpath}.csv`, "text/csv");
+}
 </script>
 
 <div class="flex flex-col md:flex-row justify-between items-center my-2 mx-3">
@@ -103,9 +118,12 @@ async function handleSearch(e){
                 <UploadOutline size="md"/> Upload
             </Button>
         {/if}
-        <Button class="text-primary cursor-pointer hover:text-primary" size="xs" outline>
-            <DownloadOutline size="md"/> Download
-        </Button>
+        {#if canDownloadCSV}
+            <Button class="text-primary cursor-pointer hover:text-primary" size="xs" outline
+                    onclick={handleDownloadCSV}>
+                <DownloadOutline size="md"/> Download
+            </Button>
+        {/if}
         {#if canDelete}
             <Button class="text-red-600 cursor-pointer hover:text-red-600" size="xs" outline>
                 <TrashBinOutline size="md"/> Delete
