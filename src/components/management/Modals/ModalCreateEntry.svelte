@@ -142,7 +142,7 @@
                 ];
             }
         }
-        if(folderPreference && folderPreference.content_resource_types.length) {
+        if(folderPreference && folderPreference?.content_resource_types?.length) {
             allowedResourceTypes = allowedResourceTypes.filter(rt => folderPreference.content_resource_types.includes(rt.value));
         }
         selectedResourceType = allowedResourceTypes[0].value;
@@ -231,7 +231,7 @@
                 requestCreate.attributes = {
                     ...requestCreate.attributes,
                     payload: {
-                        body: removeEmpty(jsonEditorContentParser($state.snapshot(content))),
+                        body: jsonEditorContentParser($state.snapshot(content)),
                         schema_shortname: 'meta_schema',
                         content_type: "json"
                     }
@@ -241,7 +241,7 @@
                 requestCreate.attributes = {
                     ...requestCreate.attributes,
                     payload: {
-                        body: removeEmpty(jsonEditorContentParser($state.snapshot(content))),
+                        body: jsonEditorContentParser($state.snapshot(content)),
                         schema_shortname: 'workflow',
                         content_type: "json"
                     }
@@ -265,7 +265,12 @@
                         content_type: "json"
                     }
                 };
+                if(requestCreate.attributes.payload === null && requestCreate.attributes.schema_shortname === null){
+                    delete requestCreate.attributes.payload;
+                }
             }
+
+            console.log({rca: requestCreate.attributes})
             const request = {
                 space_name,
                 request_type: RequestType.create,
@@ -276,7 +281,7 @@
                     attributes: requestCreate.attributes
                 }]
             }
-            response = await Dmart.request(removeEmpty(request));
+            response = await Dmart.request(request);
 
             if (response.attributes && response.attributes.error) {
                 isHandleCreateEntryLoading = false;
@@ -400,6 +405,14 @@
             });
         }
     });
+
+    $effect(()=>{
+       if(allowedResourceTypes.length === 1) {
+           untrack(()=>{
+               selectedResourceType = allowedResourceTypes[0].value;
+           })
+       }
+    });
 </script>
 
 <Modal
@@ -413,7 +426,9 @@
     <div>
         <Label>
             Resource Type
-            <Select class="my-2" items={allowedResourceTypes} bind:value={selectedResourceType} />
+            <Select class="my-2" items={allowedResourceTypes} bind:value={selectedResourceType}
+                    disabled={allowedResourceTypes.length === 1}
+            />
         </Label>
 
         <MetaForm bind:formData={metaContent} bind:validateFn={validateMetaForm} />
