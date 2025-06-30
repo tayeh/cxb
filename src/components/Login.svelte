@@ -29,7 +29,6 @@
       await signin(username, password);
       window.location.reload();
     } catch (error) {
-        console.log({ error });
         errorMessage = error.response?.data?.error?.message ?? "Something went wrong, please try again.";
     }
     isLoginLoading = false;

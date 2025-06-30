@@ -145,7 +145,6 @@
   }
 
   function handleEditModal(attachment) {
-    console.log({selectedAttachment})
     selectedAttachment = attachment;
     openCreateAttachmentModal = true;
     isModalInUpdateMode = true;

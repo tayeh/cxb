@@ -159,7 +159,7 @@
     function validate() {
         const isValid = form.checkValidity();
         isEmailValid = validateEmail(formData.email)
-        console.log({isEmailValid})
+
         if (!isValid || !isEmailValid) {
             form.reportValidity();
             return false;

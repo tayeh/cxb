@@ -220,7 +220,6 @@
                 showToast(Level.warn);
             }
         } catch (e) {
-            console.log({e})
             showToast(Level.warn, e.response.data)
         } finally {
             isLoading = false;

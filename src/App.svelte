@@ -85,36 +85,36 @@
                     // return INDEX
                     return (
                             url
-                                    .split("/")
-                                    .slice(0, url.split("/").length - 1)
-                                    .join("/") + `/${paths[paths.length - 1]}`
+                              .split("/")
+                              .slice(0, url.split("/").length - 1)
+                              .join("/") + `/${paths[paths.length - 1]}`
                     );
                   }
                 } else {
                   // return INDEX+LANG
                   return (
                           url
-                                  .split("/")
-                                  .slice(0, url.split("/").length - 1)
-                                  .join("/") + `/${paths[paths.length - 1]}`
+                            .split("/")
+                            .slice(0, url.split("/").length - 1)
+                            .join("/") + `/${paths[paths.length - 1]}`
                   );
                 }
               } else {
                 // return REQUIRED
                 return (
                         url
-                                .split("/")
-                                .slice(0, url.split("/").length - 1)
-                                .join("/") + `/${paths[paths.length - 1]}`
+                          .split("/")
+                          .slice(0, url.split("/").length - 1)
+                          .join("/") + `/${paths[paths.length - 1]}`
                 );
               }
             } else {
               // return REQUIRED+LANG
               return (
                       url
-                              .split("/")
-                              .slice(0, url.split("/").length - 1)
-                              .join("/") + `/${paths[paths.length - 1]}`
+                        .split("/")
+                        .slice(0, url.split("/").length - 1)
+                        .join("/") + `/${paths[paths.length - 1]}`
               );
             }
           }
