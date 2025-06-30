@@ -230,7 +230,7 @@
                     <h3 class="font-semibold text-lg">{space.attributes?.displayname?.en || space.shortname}</h3>
 
                     <p class="text-gray-600 mt-2 mb-4 line-clamp-3">
-                        {space?.description?.en || "No description available"}
+                        {space?.description?.en || ""}
                     </p>
 
                     <div class="text-xs text-gray-500 mt-auto">

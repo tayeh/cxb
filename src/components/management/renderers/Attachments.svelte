@@ -18,7 +18,7 @@
   import { JSONEditor, Mode } from "svelte-jsoneditor";
   import { AxiosError } from "axios";
   import {
-    DotsHorizontalOutline, EyeSolid, PenSolid, TrashBinSolid,
+    DotsHorizontalOutline, EyeSolid, EyeOutline, PenSolid, TrashBinSolid,
     FileImageOutline, FileCsvOutline,FileOutline, ListOutline, FileLinesOutline,
     UploadOutline, FileLinesSolid, FileVideoSolid, FileMusicSolid
   } from "flowbite-svelte-icons";
@@ -369,9 +369,7 @@
         <div class="flex flex-col items-center text-center p-4">
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <span class="inline-block px-3 py-1 mb-3 border border-gray-300 rounded-md text-sm font-medium bg-primary"
-            onclick={() => handleViewContentModal(attachment)}
-          >
+          <span class="inline-block px-3 py-1 mb-3 border border-gray-300 rounded-md text-sm font-medium bg-primary">
             {#if attachment.resource_type === ResourceType.media}
               {#if attachment.attributes?.payload.content_type === ContentType.image}
                 <FileImageOutline size="xl" class="text-white" />
@@ -392,7 +390,6 @@
               <FileOutline size="xl" class="text-white" />
             {/if}
           </span>
-
           {#if attachment.resource_type === ResourceType.media}
             <a class="font-semibold text-lg underline text-primary" href={Dmart.get_attachment_url(
                 attachment.resource_type, space_name, subpath, parent_shortname, attachment.shortname,
@@ -404,12 +401,20 @@
             </p>
           {/if}
           <p class="text-gray-600 mt-2 mb-4 line-clamp-3">
-            {attachment.attributes?.description?.en || "No description available"}
+            {attachment.attributes?.description?.en || ""}
           </p>
 
           <div class="text-xs text-gray-500 mt-auto">
+            Content type: {attachment.attributes?.payload.content_type || attachment.attributes.resource_type}
+            <br>
             Updated: {new Date(attachment?.attributes.updated_at).toLocaleDateString()}
           </div>
+        </div>
+
+        <div class="absolute top-2 right-2" onclick={() => handleViewContentModal(attachment)}>
+          <Button class="!p-1" color="light">
+            <EyeOutline />
+          </Button>
         </div>
       </Card>
     {/each}
