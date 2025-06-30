@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {Button, Label, Modal, Select, Spinner} from "flowbite-svelte";
+    import {Alert, Button, Label, Modal, Select, Spinner} from "flowbite-svelte";
     import {CodeOutline, FileCodeOutline} from "flowbite-svelte-icons";
     import {Dmart, QueryType, RequestType, ResourceType} from "@edraj/tsdmart";
     import FolderForm from "@/components/management/forms/FolderForm.svelte";
@@ -194,14 +194,17 @@
     let validateRTForm;
 
     let isHandleCreateEntryLoading = $state(false);
+    let errorModalMessage = $state(null);
     async function handleCreateEntry() {
+        errorModalMessage = null;
         if (!validateMetaForm()) {
-            showToast(Level.warn, "Please fill all required fields in the meta form.");
+            errorModalMessage = "Please fill all required fields in the meta form.";
             return;
         }
+
         if([ResourceType.user, ResourceType.role, ResourceType.permission].includes(selectedResourceType)){
             if (!validateRTForm()) {
-                showToast(Level.warn, "Please fill all required fields in the respective resource type form.");
+                errorModalMessage = "Please fill all required fields in the respective resource type form.";
                 return;
             }
         }
@@ -286,6 +289,7 @@
             }
             await $currentListView.fetchPageRecords();
             isOpen = false;
+            showToast(Level.info, "Entry created successfully.");
         } catch (e) {
             errorContent = e.response.data;
             tick().then(() => {
@@ -418,6 +422,11 @@
     {#snippet header()}
         <h3>Create New Entry</h3>
     {/snippet}
+    {#if errorModalMessage}
+    <Alert color="red">
+        <span class="font-medium">{errorModalMessage}</span>
+    </Alert>
+    {/if}
     <div>
         <Label>
             Resource Type
