@@ -38,6 +38,7 @@
     import {CardPlaceholder, TextPlaceholder} from "flowbite-svelte";
     import DynamicSchemaBasedForms from "@/components/management/forms/DynamicSchemaBasedForms.svelte";
     import TranslationForm from "@/components/management/forms/TranslationForm.svelte";
+    import {searchListView} from "@/stores/management/triggers";
 
     $goto
 
@@ -61,6 +62,8 @@
         subpath: string,
         resource_type: ResourceType,
     } = $props();
+
+    $searchListView = "";
     
     const schemaShortname = entry?.payload?.schema_shortname || null;
     
