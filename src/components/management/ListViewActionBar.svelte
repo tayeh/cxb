@@ -26,9 +26,14 @@ onMount(() => {
     if($currentEntry.entry?.payload?.body?.allow_upload_csv){
         canUploadCSV = true
     }
+
     if(space_name === "management" && subpath === "/") {
         canCreate = false;
         canDelete = false;
+        canUploadCSV = false;
+        return;
+    } else if (space_name === "management" && subpath === "health_check"){
+        canCreate = false;
         canUploadCSV = false;
         return;
     }

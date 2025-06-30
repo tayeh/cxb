@@ -50,7 +50,7 @@
     let selectedInputMode = $state(InputMode.form);
 
     function prepareResourceTypes() {
-        if (space_name === "management" ){
+        if (space_name === "management"){
             if (subpath === "users") {
                 if(checkAccess('create', "management", "users", ResourceType.user)) {
                     allowedResourceTypes = [
@@ -59,8 +59,6 @@
                             value: ResourceType.user,
                         }
                     ];
-                } else {
-                    allowedResourceTypes = [];
                 }
             }
             else if (subpath === "roles") {
@@ -71,8 +69,6 @@
                             value: ResourceType.role,
                         }
                     ];
-                } else {
-                    allowedResourceTypes = [];
                 }
             }
             else if (subpath === "permissions") {
@@ -83,12 +79,18 @@
                             value: ResourceType.permission,
                         }
                     ];
-                } else {
-                    allowedResourceTypes = [];
                 }
             }
+            else {
+                allowedResourceTypes = [
+                    {
+                        name: ResourceType.content.toString(),
+                        value: ResourceType.content,
+                    }
+                ];
+            }
         }
-        else if (subpath === "schema") {
+        if (subpath === "schema") {
             if(checkAccess('create', space_name, "schema", ResourceType.schema)) {
                 allowedResourceTypes = [
                     {
@@ -96,8 +98,6 @@
                         value: ResourceType.schema,
                     }
                 ];
-            } else {
-                allowedResourceTypes = [];
             }
         }
         else if (subpath === "workflows") {
@@ -108,8 +108,6 @@
                         value: ResourceType.content,
                     }
                 ];
-            } else {
-                allowedResourceTypes = [];
             }
         }
         else {
@@ -141,15 +139,14 @@
                 ];
             }
         }
+
         if(folderPreference && folderPreference?.content_resource_types?.length) {
             allowedResourceTypes = allowedResourceTypes.filter(rt => folderPreference.content_resource_types.includes(rt.value));
         }
         selectedResourceType = allowedResourceTypes[0].value;
     }
 
-    onMount(()=>{
-        prepareResourceTypes();
-    });
+    prepareResourceTypes();
 
 
     let selectedSchema = $state(null);
@@ -176,7 +173,7 @@
             value: e
         }));
 
-        if(folderPreference && folderPreference.content_schema_shortnames.length) {
+        if(folderPreference && folderPreference?.content_schema_shortnames?.length) {
             r.filter(s => folderPreference.content_schema_shortnames.includes(s.value));
         }
 
@@ -352,26 +349,24 @@
 
     $effect(()=>{
         if(selectedResourceType) {
-            isFolderFormReady = false;
-            if(selectedResourceType === ResourceType.folder) {
-                untrack(() => {
+            untrack(() => {
+                isFolderFormReady = false;
+                if(selectedResourceType === ResourceType.folder) {
                     setFolderSchemaContent();
-                });
-            } else {
-                untrack(()=>{
+                } else {
                     selectedSchema = null;
                     content = {json: {}}
-                })
-            }
+                }
+            });
         }
     });
     let selectedSchemaContent = $state(null);
     $effect(()=>{
         if(selectedSchema){
-            const _schemaContent = tmpSchemas.find(t => t.shortname === selectedSchema);
-            selectedSchemaContent = _schemaContent.attributes.payload.body;
-
             untrack(() => {
+                const _schemaContent = tmpSchemas.find(t => t.shortname === selectedSchema);
+                selectedSchemaContent = _schemaContent.attributes.payload.body;
+
                 if(selectedResourceType === ResourceType.content && selectedSchema === "translation"){
                     content = {
                         json: []
@@ -383,8 +378,10 @@
                 }
             });
         } else {
-            selectedSchemaContent = null;
-            content = { json: {} };
+            untrack(() => {
+                selectedSchemaContent = null;
+                content = { json: {} };
+            })
         }
     });
 
@@ -392,12 +389,10 @@
         if(selectedInputMode === InputMode.json){
             untrack(()=>{
                 content = { text: JSON.stringify(jsonEditorContentParser($state.snapshot(content)), null, 2) };
-                console.log({content})
             });
         } else if(selectedInputMode === InputMode.form){
             untrack(()=>{
                 content = { json: jsonEditorContentParser($state.snapshot(content)) };
-                console.log({content})
             });
         }
 
