@@ -235,6 +235,8 @@
         let _payloadContent = jsonEditorContentParser($state.snapshot(payloadContent));
 
         _payloadContent.subpath = parentResourceType === ResourceType.folder ? subpath : `${subpath}/${parent_shortname}`;
+        _payloadContent.attributes.displayname= displayname
+        _payloadContent.attributes.description= description
         const request_dict = {
             space_name,
             request_type: RequestType.replace,
