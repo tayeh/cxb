@@ -3,7 +3,7 @@
     import {CodeOutline, FileCodeOutline} from "flowbite-svelte-icons";
     import {Dmart, QueryType, RequestType, ResourceType} from "@edraj/tsdmart";
     import FolderForm from "@/components/management/forms/FolderForm.svelte";
-    import {onMount, untrack} from "svelte";
+    import {onMount, tick, untrack} from "svelte";
     import {generateObjectFromSchema, scrollToElById} from "@/utils/renderer/rendererUtils";
     import Prism from "@/components/Prism.svelte";
     import MetaForm from "@/components/management/forms/MetaForm.svelte";
@@ -41,6 +41,7 @@
         ResourceType.user,
         ResourceType.content,
         ResourceType.folder,
+        ResourceType.ticket,
     ];
 
     enum InputMode {
@@ -286,8 +287,10 @@
             await $currentListView.fetchPageRecords();
             isOpen = false;
         } catch (e) {
-            scrollToElById("#error-content");
             errorContent = e.response.data;
+            tick().then(() => {
+                scrollToElById("error-content");
+            });
         }
 
         isHandleCreateEntryLoading = false;
@@ -514,7 +517,7 @@
                         columns={Object.keys(selectedSchemaContent.properties.items.items.properties)}
                     />
                 {/if}
-                {:else}
+            {:else}
                 <div class="my-2">
                     {#if resourcesWithFormAndJson.includes(selectedResourceType) || subpath === "workflows"}
                         {#if selectedInputMode === InputMode.form}

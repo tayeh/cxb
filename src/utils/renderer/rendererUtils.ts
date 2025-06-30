@@ -97,7 +97,7 @@ export async function get_schema(space_name:string, schema_shortname:string) {
 }
 
 export function scrollToElById(elementId: string) {
-    const el = document.querySelector(elementId);
+    const el = document.getElementById(elementId);
     if (el) {
         el.scrollIntoView({ behavior: "smooth" });
     }
