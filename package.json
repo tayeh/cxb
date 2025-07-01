@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@akebifiky/remark-simple-plantuml": "^1.0.2",
-    "@edraj/tsdmart": "^2.7.0",
+    "@edraj/tsdmart": "^2.7.1",
     "@roxi/routify": "^3.0.0-next.285",
     "@tailwindcss/vite": "^4.1.10",
     "@zerodevx/svelte-toast": "^0.9.6",

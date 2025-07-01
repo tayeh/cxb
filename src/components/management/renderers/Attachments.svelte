@@ -404,7 +404,7 @@
           </p>
 
           <div class="text-xs text-gray-500 mt-auto">
-            Content type: {attachment.attributes?.payload.content_type || attachment.attributes.resource_type}
+            Type: {attachment.resource_type} ({attachment.attributes?.payload.content_type ?? "N/A"})
             <br>
             Updated: {new Date(attachment?.attributes.updated_at).toLocaleDateString()}
           </div>

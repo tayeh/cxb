@@ -13,9 +13,9 @@
 
 {#if resource_type === ResourceType.comment}
   <div class="h-full w-full">
-    <p style="margin: 0px"><b>State:</b> {attributes.state}</p>
+    <p style="margin: 0px"><b>State:</b> {attributes?.payload?.body?.state}</p>
     <br />
-    <p style="margin: 0px"><b>Body:</b> {attributes.body}</p>
+    <p style="margin: 0px"><b>Body:</b> {attributes?.payload?.body?.body}</p>
   </div>
 {:else if resource_type === ResourceType.json}
     <div class="h-full w-full">

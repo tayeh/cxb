@@ -27,6 +27,7 @@
     import MetaPermissionForm from "@/components/management/forms/MetaPermissionForm.svelte";
     import {untrack} from "svelte";
     import {goto} from "@roxi/routify";
+    $goto
     import HistoryListView from "@/components/management/HistoryListView.svelte";
     import SchemaForm from "@/components/management/forms/SchemaForm.svelte";
     import FolderForm from "@/components/management/forms/FolderForm.svelte";
@@ -40,7 +41,6 @@
     import TranslationForm from "@/components/management/forms/TranslationForm.svelte";
     import {searchListView} from "@/stores/management/triggers";
 
-    $goto
 
     enum TabMode {
         list = 0,
@@ -76,7 +76,6 @@
 
     let jeContent: any = $state({ json: structuredClone(entry) });
 
-    let payloadSchemaContent: any = $state(null);
     let ticketData: any = $state({
         action: null,
         resolution: null,
@@ -93,8 +92,6 @@
         }
         return checkAccess("delete", space_name, subpath, resource_type);
     })();
-
-    let allowedResourceTypes = $state([ResourceType.content]);
 
     let activeTab: TabMode = $state(TabMode.list);
     let isActionLoading = $state(false);
@@ -276,9 +273,9 @@
 
     async function getPayloadSchema() {
         if(schemaShortname === "folder_rendering"){
-            return Dmart.retrieve_entry(ResourceType.schema,"management","schema",schemaShortname,true,false)
+            return await Dmart.retrieve_entry(ResourceType.schema,"management","schema",schemaShortname,true,false)
         }
-        return Dmart.retrieve_entry(ResourceType.schema,space_name,"schema",schemaShortname,true,false)
+        return await Dmart.retrieve_entry(ResourceType.schema,space_name,"schema",schemaShortname,true,false)
     }
 </script>
 

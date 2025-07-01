@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {Button, Fileupload, Input, Label, Modal, Select, Textarea} from "flowbite-svelte";
+    import {Alert, Button, Fileupload, Input, Label, Modal, Select, Textarea} from "flowbite-svelte";
     import {ContentType, Dmart, QueryType, RequestType, ResourceAttachmentType, ResourceType} from "@edraj/tsdmart";
     import {JSONEditor, Mode} from "svelte-jsoneditor";
     import HtmlEditor from "@/components/management/editors/HtmlEditor.svelte";
@@ -8,6 +8,7 @@
     import {jsonToFile} from "@/utils/jsonToFile";
     import {currentEntry} from "@/stores/global";
     import {jsonEditorContentParser} from "@/utils/jsonEditor";
+    import Prism from "@/components/Prism.svelte";
 
     let {
         meta = $bindable({}),
@@ -33,6 +34,8 @@
     let isModalInUpdateMode = $state(false);
     let trueResourceType = $state(null);
     let isLoading = $state(false);
+    let errorModalMessage = $state(null);
+    let errorContent = $state(null);
 
     $effect(() => {
         isModalInUpdateMode = isUpdateMode;
@@ -99,6 +102,8 @@
     async function upload(event) {
         event.preventDefault();
         isLoading = true;
+        errorModalMessage = null;
+        errorContent = null;
 
         try {
             if (isUpdateMode && resourceType === ResourceAttachmentType.json && trueResourceType !== null) {
@@ -220,7 +225,8 @@
                 showToast(Level.warn);
             }
         } catch (e) {
-            showToast(Level.warn, e.response.data)
+            showToast(Level.warn, e.response.data);
+            errorContent = e.response.data;
         } finally {
             isLoading = false;
         }
@@ -231,6 +237,8 @@
     }
 
     async function updateMeta() {
+        errorModalMessage = null;
+        errorContent = null;
         let _payloadContent = jsonEditorContentParser($state.snapshot(payloadContent));
 
         _payloadContent.subpath = parentResourceType === ResourceType.folder ? subpath : `${subpath}/${parent_shortname}`;
@@ -254,6 +262,7 @@
             }
         } catch (e) {
             showToast(Level.warn, e.response?.data || "Error updating metadata");
+            errorContent = e.response?.data || "Error updating metadata";
         } finally {
             isLoading = false;
         }
@@ -290,6 +299,11 @@
         </div>
 
         <div class="p-4 max-h-[75vh] overflow-y-auto">
+            {#if errorModalMessage}
+            <Alert color="red">
+                <span class="font-medium">{errorModalMessage}</span>
+            </Alert>
+            {/if}
             <div class="flex flex-col space-y-4">
                 <div>
                     <Label for="shortname">Attachment shortname</Label>
@@ -457,6 +471,12 @@
                     </div>
                 {/if}
             </div>
+
+            {#if errorContent}
+            <div class="mt-3">
+                <Prism code={errorContent} language={"json"} />
+            </div>
+            {/if}
         </div>
 
         <div class="flex justify-end space-x-2 p-4 border-t">
