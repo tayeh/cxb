@@ -405,42 +405,43 @@
   })
 </script>
 
-{#key open}
-  <Modal
-    bind:open={open}
-    size={"lg"}
-  >
+<Modal
+  bind:open={open}
+  size={"lg"}
+>
 <!--    <ModalHeader toggle={toggleModal}>{}</ModalHeader>-->
 
-    <div class="modal-header">
-      <h5 class="modal-title">
-        {modalData.shortname}
-      </h5>
-      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <button type="button" onclick={toggleModal} class="btn-close" aria-label="Close">
-      </button>
-    </div>
+  <div class="modal-header">
+    <h5 class="modal-title">
+      {modalData.shortname}
+    </h5>
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <button type="button" onclick={toggleModal} class="btn-close" aria-label="Close">
+    </button>
+  </div>
 
-    <div>
-      <Prism code={modalData} />
-    </div>
-    <div>
-      <Button color="secondary" onclick={() => (open = false)}>Close</Button>
-      <Button
-        color="primary"
-        onclick={() => {
-          open = false;
-          redirectToEntry(modalData);
-        }}>Entry</Button
-      >
-    </div>
-  </Modal>
-{/key}
+  <div>
+    <Prism code={modalData} />
+  </div>
+  <div>
+    <Button color="secondary" onclick={() => (open = false)}>Close</Button>
+    <Button
+      color="primary"
+      onclick={() => {
+        open = false;
+        redirectToEntry(modalData);
+      }}>Entry</Button
+    >
+  </div>
+</Modal>
 
 <svelte:window bind:innerHeight={height} />
 
-<ListViewActionBar {space_name} {subpath} />
+{#if type !== QueryType.events}
+  <ListViewActionBar {space_name} {subpath} />
+{/if}
+
 
 {#await fetchPageRecords()}
   <div class="flex flex-col w-full">

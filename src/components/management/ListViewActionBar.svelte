@@ -11,7 +11,6 @@ import {bulkBucket} from "@/stores/management/bulk_bucket";
 import {Dmart,RequestType} from "@edraj/tsdmart";
 import {Level, showToast} from "@/utils/toast";
 import {searchListView} from "@/stores/management/triggers";
-import downloadFile from "@/utils/downloadFile";
 
 let {space_name,subpath}:{space_name:string,subpath:string} = $props();
 

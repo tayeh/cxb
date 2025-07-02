@@ -23,7 +23,9 @@
             </div>
         </Card>
 
-        <Card class="p-4 hover:shadow-lg transition-shadow cursor-pointer">
+        <Card class="p-4 hover:shadow-lg transition-shadow cursor-pointer"
+              onclick={()=>$goto('/management/tools/events')}
+        >
             <div class="flex flex-col items-center text-center">
                 <div class="p-3 bg-secondary-100 rounded-full mb-4">
                     <CalendarMonthOutline class="w-12 h-12 text-secondary-600" />
