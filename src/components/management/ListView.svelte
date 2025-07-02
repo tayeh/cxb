@@ -482,13 +482,23 @@
                 <TableBodyRow class="hover:bg-gray-200" onclick={(e) => onListClick(e, row)}>
                   <div style="all: unset;display: contents;">
                     {#if canDelete}
-                      <TableBodyCell class="p-2 border border-gray-300">
-                        <Checkbox class="bg-white" id={row.shortname} name={index.toString()}
-                                  checked={$bulkBucket.some(e => e.shortname === row.shortname)}
-                                  onchange={handleBulk}
-                                  onclick={(e) => e.stopPropagation()}
-                        />
-                      </TableBodyCell>
+                      <span style="all: unset;display: contents;" onclick={(e) => {
+                          e.stopPropagation();
+                          const checkbox = e.currentTarget.querySelector('input[type="checkbox"]');
+                          if (checkbox) {
+                            checkbox.checked = !checkbox.checked;
+                            const event = new Event('change', { bubbles: true });
+                            checkbox.dispatchEvent(event);
+                          }
+                        }}>
+                        <TableBodyCell class="p-2 border border-gray-300">
+                          <Checkbox class="bg-white" id={row.shortname} name={index.toString()}
+                                    checked={$bulkBucket.some(e => e.shortname === row.shortname)}
+                                    onchange={handleBulk}
+                                    onclick={(e) => e.stopPropagation()}
+                          />
+                        </TableBodyCell>
+                      </span>
                     {/if}
                     {#each Object.keys(columns) as col}
                       <TableBodyCell class="p-2 border border-gray-300 cursor-pointer">
