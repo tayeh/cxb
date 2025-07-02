@@ -3,6 +3,7 @@ import {FileCirclePlusOutline,UploadOutline, DownloadOutline,TrashBinOutline,Sea
 import {Button, Input,ButtonGroup,InputAddon} from "flowbite-svelte";
 import ModalCreateEntry from "@/components/management/Modals/ModalCreateEntry.svelte";
 import ModalCSVUpload from "@/components/management/Modals/ModalCSVUpload.svelte";
+import ModalCSVDownload from "@/components/management/Modals/ModalCSVDownload.svelte";
 import {onMount} from "svelte";
 import {checkAccess} from "@/utils/checkAccess";
 import {currentEntry, currentListView, subpathInManagementNoAction} from "@/stores/global";
@@ -18,6 +19,7 @@ let canCreate = $state(false);
 let canUploadCSV = $state(false);
 let canDownloadCSV = $state(false);
 let canDelete = $state(false);
+let isCSVDownloadModalOpen = $state(false);
 
 onMount(() => {
     if($currentEntry.entry?.payload?.body?.allow_csv){
@@ -93,24 +95,6 @@ async function handleSearch(e){
     await $currentListView.fetchPageRecords()
 }
 
-let isCSVDownloadInProgress = $state(false);
-async function handleDownloadCSV(){
-    // if (startDateCSVDownload) {
-    //     body.from_date = startDateCSVDownload;
-    // }
-    // if (endDateCSVDownload) {
-    //     body.to_date = endDateCSVDownload;
-    // }
-    try {
-        isCSVDownloadInProgress = true;
-        const data = await Dmart.csv($currentListView.query);
-        downloadFile(data, `${space_name}/${subpath}.csv`, "text/csv");
-    } catch (e) {
-        showToast(Level.warn);
-    } finally {
-        isCSVDownloadInProgress = false;
-    }
-}
 
 let isCSVUploadModalOpen = $state(false);
 function handleCSVUploadModal() {
@@ -143,7 +127,7 @@ function handleCSVUploadModal() {
         {/if}
         {#if canDownloadCSV}
             <Button class="text-primary cursor-pointer hover:text-primary" size="xs" outline
-                    onclick={handleDownloadCSV} disabled={isCSVDownloadInProgress}>
+                    onclick={() => isCSVDownloadModalOpen = true}>
                 <DownloadOutline size="md"/> Download
             </Button>
         {/if}
@@ -167,4 +151,12 @@ function handleCSVUploadModal() {
 
 {#if canUploadCSV}
     <ModalCSVUpload {space_name} {subpath} bind:isOpen={isCSVUploadModalOpen} />
+{/if}
+
+{#if canDownloadCSV}
+    <ModalCSVDownload
+        {space_name}
+        {subpath}
+        bind:isOpen={isCSVDownloadModalOpen}
+    />
 {/if}
