@@ -98,7 +98,8 @@
     let validateMetaForm;
     let validateRTForm;
 
-    async function progressTicket(){
+    async function progressTicket(e){
+        e.preventDefault();
         try {
             await Dmart.progress_ticket(
                 space_name,
@@ -114,6 +115,7 @@
                 comment: null,
             }
             showToast(Level.info, `Ticket has been updated successfully!`);
+            $currentEntry.refreshEntry();
         } catch (error) {
             showToast(Level.warn, `Failed to update the ticket!`);
             isActionLoading = false;
