@@ -50,7 +50,7 @@
     }
     let selectedInputMode = $state(InputMode.form);
 
-    function prepareResourceTypes() {
+    function setAllowedResourceTypes(){
         if (space_name === "management"){
             if (subpath === "users") {
                 if(checkAccess('create', "management", "users", ResourceType.user)) {
@@ -60,6 +60,7 @@
                             value: ResourceType.user,
                         }
                     ];
+                    return;
                 }
             }
             else if (subpath === "roles") {
@@ -70,6 +71,7 @@
                             value: ResourceType.role,
                         }
                     ];
+                    return;
                 }
             }
             else if (subpath === "permissions") {
@@ -80,6 +82,7 @@
                             value: ResourceType.permission,
                         }
                     ];
+                    return;
                 }
             }
             else {
@@ -99,6 +102,7 @@
                         value: ResourceType.schema,
                     }
                 ];
+                return;
             }
         }
         else if (subpath === "workflows") {
@@ -109,9 +113,11 @@
                         value: ResourceType.content,
                     }
                 ];
+                return;
             }
         }
         else {
+            allowedResourceTypes = [];
             if(checkAccess('create', space_name, subpath, ResourceType.content)) {
                 allowedResourceTypes = [
                     ...allowedResourceTypes,
@@ -140,6 +146,9 @@
                 ];
             }
         }
+    }
+    function prepareResourceTypes() {
+        setAllowedResourceTypes()
 
         if(folderPreference && folderPreference?.content_resource_types?.length) {
             allowedResourceTypes = allowedResourceTypes.filter(rt => folderPreference.content_resource_types.includes(rt.value));
