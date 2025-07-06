@@ -11,7 +11,8 @@
         ListOutline,
         PaperClipOutline,
         RectangleListOutline,
-        TrashBinOutline
+        TrashBinOutline,
+        RefreshOutline,
     } from "flowbite-svelte-icons";
     import {JSONEditor, Mode} from "svelte-jsoneditor";
     import {jsonEditorContentParser} from "@/utils/jsonEditor";
@@ -20,7 +21,7 @@
     import Table2Cols from "@/components/management/Table2Cols.svelte";
     import Attachments from "@/components/management/renderers/Attachments.svelte";
     import BreadCrumbLite from "@/components/management/BreadCrumbLite.svelte";
-    import {currentEntry} from "@/stores/global";
+    import {currentEntry, currentListView} from "@/stores/global";
     import MetaForm from "@/components/management/forms/MetaForm.svelte";
     import MetaUserForm from "@/components/management/forms/MetaUserForm.svelte";
     import MetaRoleForm from "@/components/management/forms/MetaRoleForm.svelte";
@@ -279,6 +280,23 @@
         }
         return await Dmart.retrieve_entry(ResourceType.schema,space_name,"schema",schemaShortname,true,false)
     }
+
+    let isRefreshLoading = $state(false);
+    async function handleRefresh(e){
+        e.preventDefault();
+        try {
+            isRefreshLoading = true;
+            if(resource_type === ResourceType.folder || resource_type === ResourceType.space) {
+                await $currentListView.fetchPageRecords();
+            } else {
+                await $currentEntry.refreshEntry();
+            }
+        } catch (e) {
+            showToast(Level.warn, `Failed to refresh the entry!`);
+        } finally {
+            isRefreshLoading = false;
+        }
+    }
 </script>
 
 
@@ -416,6 +434,20 @@
                     </button>
                 </li>
             {/if}
+            <li role="presentation">
+                <button
+                        class="inline-flex items-center p-4 border-b-2 rounded-t-lg border-transparent hover:text-primary hover:border-primary"
+                        type="button"
+                        onclick={handleRefresh}
+                        disabled={isRefreshLoading}
+                        style={isRefreshLoading ? "cursor: not-allowed" : "cursor: pointer"}
+                        title="Save changes">
+                    <div class="flex items-center gap-2">
+                        <RefreshOutline size="md" class="text-primary" />
+                        <p class="text-primary">Refresh</p>
+                    </div>
+                </button>
+            </li>
         </ul>
     </div>
 
