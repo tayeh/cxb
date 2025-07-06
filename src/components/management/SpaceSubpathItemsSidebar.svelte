@@ -10,11 +10,7 @@
     } from "flowbite-svelte";
     import {
         CodeForkSolid,
-        ChevronDownOutline,
-        ChevronRightOutline,
-        PlusOutline,
     } from "flowbite-svelte-icons";
-    import {spaces} from "@/stores/management/spaces";
     import {JSONEditor, Mode} from "svelte-jsoneditor";
     import Prism from "@/components/Prism.svelte";
     import {Dmart, RequestType, ResourceType} from "@edraj/tsdmart";
@@ -22,8 +18,9 @@
     import {getSpaces, getChildren} from "@/lib/dmart_services";
     import {jsonEditorContentParser} from "@/utils/jsonEditor";
     import SpacesSubpathItemsSidebar from "./SpacesSubpathItemsSidebar.svelte";
-    import {activeRoute, params} from "@roxi/routify";
+    import {params} from "@roxi/routify";
     import MetaForm from "./forms/MetaForm.svelte";
+    import {spaces} from "@/stores/management/spaces";
 
     let spaceChildren = $state(new Map());
     let expandedSpaces = $state(new Set());
@@ -64,21 +61,6 @@
         return spaceChildren.get(`${spaceName}:${subpath}`) || [];
     }
 
-    export function preventAndToggleExpanded(node: HTMLElement, spaceShortname: string) {
-        const handleEvent = (event: Event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            toggleExpanded(spaceShortname)
-        };
-
-        node.addEventListener('click', handleEvent);
-
-        return {
-            destroy() {
-                node.removeEventListener('click', handleEvent);
-            }
-        };
-    }
 
     let viewMetaModal = $state(false);
     let editModal = $state(false);
@@ -108,25 +90,6 @@
 
     let jeContent = { json: undefined };
 
-    function showAddSpaceModal() {
-        modelError = null;
-        spaceFormData = {
-            shortname: "",
-            is_active: true,
-            slug: "",
-            displayname: {
-                en: "",
-                ar: "",
-                ku: ""
-            },
-            description: {
-                en: "",
-                ar: "",
-                ku: ""
-            }
-        };
-        addSpaceModal = true;
-    }
 
     async function createSpace() {
         if (!validateSpaceForm()) {
@@ -165,26 +128,6 @@
         }
     }
 
-    function viewMeta(event, space) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        modelError = null;
-        selectedSpace = structuredClone(space);
-        jeContent = { json: selectedSpace };
-        viewMetaModal = true;
-    }
-
-    function editSpace(event, space) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        modelError = null;
-        selectedSpace = structuredClone(space);
-        jeContent = { json: selectedSpace };
-        editModal = true;
-    }
-
     async function saveChanges() {
         if (selectedSpace) {
             const record = jsonEditorContentParser(jeContent);
@@ -215,15 +158,6 @@
         }
     }
 
-    function confirmDelete(event, space) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        modelError = null;
-        selectedSpace = space;
-        deleteModal = true;
-    }
-
     async function deleteSpace() {
         if (selectedSpace) {
 
@@ -251,16 +185,25 @@
             }
         }
     }
-    function isCurrentSpace(shortname) {
-        return $activeRoute.params.space_name === shortname;
+
+    let currentSpaceNameLabel = $state($params.space_name);
+    async function getCurrentSpaceNameLabel() {
+        const currentSpace = $spaces.filter(space => space.shortname === $params.space_name);
+        currentSpaceNameLabel = currentSpace.length === 1
+            ? currentSpace[0].attributes.displayname.en
+            : $params.space_name;
+        console.log({currentSpaceNameLabel})
     }
-    $params
+    $effect(() => {
+        if ($spaces) {
+            getCurrentSpaceNameLabel();
+        }
+    });
 </script>
 
 <Sidebar position="static" class="h-full">
-
     <SidebarGroup>
-        <SidebarItem label={$params.space_name} href={"/management/content/"+$params.space_name}>
+        <SidebarItem label={currentSpaceNameLabel} href={"/management/content/"+$params.space_name}>
             {#snippet icon()}
                 <div class="flex items-center gap-2">
                     <CodeForkSolid
