@@ -489,9 +489,7 @@
                     {:else if resource_type === ResourceType.permission}
                         <MetaPermissionForm bind:formData={jeContent.json} bind:validateFn={validateRTForm} />
                     {:else if resource_type === ResourceType.ticket}
-                        {#if entry.is_open}
-                            <MetaTicketForm {space_name} meta={jeContent.json} bind:formData={ticketData} {progressTicket} />
-                        {/if}
+                        <MetaTicketForm {space_name} meta={jeContent.json} bind:formData={ticketData} {progressTicket} />
                     {/if}
                     {#if jeContent?.json?.payload?.body}
                         {#if resource_type === ResourceType.schema}
