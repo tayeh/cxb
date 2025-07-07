@@ -190,9 +190,8 @@
     async function getCurrentSpaceNameLabel() {
         const currentSpace = $spaces.filter(space => space.shortname === $params.space_name);
         currentSpaceNameLabel = currentSpace.length === 1
-            ? currentSpace[0].attributes.displayname.en
+            ? currentSpace[0].attributes?.displayname?.en || $params.space_name
             : $params.space_name;
-        console.log({currentSpaceNameLabel})
     }
     $effect(() => {
         if ($spaces) {
