@@ -72,6 +72,7 @@
                     <div class="mb-4">
                         <Label for="status" class="block mb-2">State</Label>
                         <Select id="status" bind:value={ticket_status}>
+                            <option value={null}>Select an action</option>
                             {#each ticketStates as e}
                                 <option
                                     value={e.state}
