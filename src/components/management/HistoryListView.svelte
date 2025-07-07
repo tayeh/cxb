@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Dmart, QueryType } from "@edraj/tsdmart";
-  import { ListPlaceholder, Pagination, Button, Modal, Table } from "flowbite-svelte";
-  import { onMount } from "svelte";
+  import {Dmart, QueryType, SortyType} from "@edraj/tsdmart";
+  import {ListPlaceholder, Modal, Table} from "flowbite-svelte";
+  import {onMount} from "svelte";
   import Prism from "../Prism.svelte";
 
   let { space_name, subpath, shortname }: { space_name:string, subpath:string, shortname:string } = $props();
@@ -25,6 +25,8 @@
         search: '',
         limit,
         offset,
+        sort_by: 'timestamp',
+        sort_type: SortyType.descending
       });
       records = response.records || [];
       // Fix for total_count error
