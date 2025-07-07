@@ -1,6 +1,7 @@
 <script lang="ts">
     import { createEventDispatcher } from "svelte";
     import { Button, Card, Checkbox, Input, Label, Select, } from "flowbite-svelte";
+    import {Dmart,ResourceType, QueryType} from "@edraj/tsdmart";
 
     const dispatch = createEventDispatcher();
 
@@ -139,7 +140,6 @@
                 <div>
                     <Label for="query_type">Query Type</Label>
                     <Select id="query_type" bind:value={content.query.type}>
-                        <option value="">Select type</option>
                         <option value="subpath">Subpath</option>
                         <option value="search">Search</option>
                     </Select>
@@ -238,7 +238,6 @@
             <div>
                 <Label for="sort_type">Sort Order</Label>
                 <Select id="sort_type" bind:value={content.sort_type}>
-                    <option value="">Select order</option>
                     <option value="ascending">Ascending</option>
                     <option value="descending">Descending</option>
                 </Select>
@@ -249,29 +248,67 @@
             <div class="border p-3 rounded-md">
                 <h3 class="font-semibold mb-2">Content Resource Types</h3>
 
-                {#if content.content_resource_types?.length > 0}
-                    {#each content.content_resource_types as type, index}
-                        <div class="flex items-center gap-2 mt-1">
-                            <Input bind:value={content.content_resource_types[index]} placeholder="Resource type" />
-                            <Button size="xs" color="red" onclick={() => removeItem('content_resource_types', index)}>×</Button>
+                <div class="mb-3">
+                    <div class="flex flex-wrap gap-1 mt-1">
+                        {#each content.content_resource_types as type}
+                <span class="bg-blue-100 text-blue-800 px-2 py-1 text-xs rounded-md flex items-center gap-1">
+                    {type}
+                    <button type="button" class="text-xs" onclick={() => {
+                        content.content_resource_types = content.content_resource_types.filter(t => t !== type);
+                    }}>×</button>
+                </span>
+                        {/each}
+                    </div>
+                </div>
+
+                <div class="border rounded-md p-2 max-h-48 overflow-y-auto bg-white">
+                    {#each Object.values(ResourceType) as type}
+                        <div class="flex items-center mb-2">
+                            <Checkbox
+                                    id={`resource-type-${type}`}
+                                    checked={content.content_resource_types.includes(type)}
+                                    onclick={() => {
+                        if (content.content_resource_types.includes(type)) {
+                            content.content_resource_types = content.content_resource_types.filter(t => t !== type);
+                        } else {
+                            content.content_resource_types = [...content.content_resource_types, type];
+                        }
+                    }}
+                            />
+                            <Label for={`resource-type-${type}`} class="ml-2">{type}</Label>
                         </div>
                     {/each}
-                {/if}
-                <Button size="xs" class="mt-2 text-gray hover:text-gray cursor-pointer" outline onclick={() => addItem('content_resource_types', '')}>Add Resource Type</Button>
+                </div>
             </div>
 
             <div class="border p-3 rounded-md">
                 <h3 class="font-semibold mb-2">Schema Shortnames</h3>
 
-                {#if content.content_schema_shortnames?.length > 0}
-                    {#each content.content_schema_shortnames as shortname, index}
-                        <div class="flex items-center gap-2 mt-1">
-                            <Input bind:value={content.content_schema_shortnames[index]} placeholder="Schema shortname" />
-                            <Button size="xs" color="red" onclick={() => removeItem('content_schema_shortnames', index)}>×</Button>
-                        </div>
-                    {/each}
-                {/if}
-                <Button size="xs" class="mt-2 text-gray hover:text-gray cursor-pointer" outline onclick={() => addItem('content_schema_shortnames', '')}>Add Schema Shortname</Button>
+                <div class="mb-3">
+                    <div class="flex flex-wrap gap-1 mt-1">
+                        {#each content.content_schema_shortnames as schema}
+                <span class="bg-blue-100 text-blue-800 px-2 py-1 text-xs rounded-md flex items-center gap-1">
+                    {schema}
+                    <button type="button" class="text-xs" onclick={() => {
+                        content.content_schema_shortnames = content.content_schema_shortnames.filter(s => s !== schema);
+                    }}>×</button>
+                </span>
+                        {/each}
+                    </div>
+                </div>
+
+                <Select class="mb-2" onclick={(e) => {
+                    if (e.target.value && !content.content_schema_shortnames.includes(e.target.value)) {
+                        content.content_schema_shortnames = [...content.content_schema_shortnames, e.target.value];
+                        e.target.value = "";
+                    }
+                }}>
+                    {#await Dmart.query({ space_name: "management", type: QueryType.search, subpath: "/schema", search: "", retrieve_json_payload: true, limit: 99 }) then schemas}
+                        {#each schemas.records.map(e => e.shortname) as schema}
+                            <option value={schema}>{schema}</option>
+                        {/each}
+                    {/await}
+                </Select>
             </div>
         </div>
 
@@ -279,15 +316,31 @@
             <div class="border p-3 rounded-md">
                 <h3 class="font-semibold mb-2">Workflow Shortnames</h3>
 
-                {#if content.workflow_shortnames?.length > 0}
-                    {#each content.workflow_shortnames as shortname, index}
-                        <div class="flex items-center gap-2 mt-1">
-                            <Input bind:value={content.workflow_shortnames[index]} placeholder="Workflow shortname" />
-                            <Button size="xs" color="red" onclick={() => removeItem('workflow_shortnames', index)}>×</Button>
-                        </div>
-                    {/each}
-                {/if}
-                <Button size="xs" class="mt-2 text-gray hover:text-gray cursor-pointer" outline onclick={() => addItem('workflow_shortnames', '')}>Add Workflow Shortname</Button>
+                <div class="mb-3">
+                    <div class="flex flex-wrap gap-1 mt-1">
+                        {#each content.workflow_shortnames as workflow}
+                <span class="bg-blue-100 text-blue-800 px-2 py-1 text-xs rounded-md flex items-center gap-1">
+                    {workflow}
+                    <button type="button" class="text-xs" onclick={() => {
+                        content.workflow_shortnames = content.workflow_shortnames.filter(w => w !== workflow);
+                    }}>×</button>
+                </span>
+                        {/each}
+                    </div>
+                </div>
+
+                <Select class="mb-2" onclick={(e) => {
+                        if (e.target.value && !content.workflow_shortnames.includes(e.target.value)) {
+                            content.workflow_shortnames = [...content.workflow_shortnames, e.target.value];
+                            e.target.value = "";
+                        }
+                    }}>
+                    {#await Dmart.query({ space_name: "management", type: QueryType.search, subpath: "/workflow", search: "", retrieve_json_payload: true, limit: 99 }) then workflows}
+                        {#each workflows.records.map(e => e.shortname) as workflow}
+                            <option value={workflow}>{workflow}</option>
+                        {/each}
+                    {/await}
+                </Select>
             </div>
 
             <div class="border p-3 rounded-md">
