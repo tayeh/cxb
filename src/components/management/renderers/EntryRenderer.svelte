@@ -41,6 +41,7 @@
     import DynamicSchemaBasedForms from "@/components/management/forms/DynamicSchemaBasedForms.svelte";
     import TranslationForm from "@/components/management/forms/TranslationForm.svelte";
     import {searchListView} from "@/stores/management/triggers";
+    import {isDeepEqual} from "@/utils/compare";
 
 
     enum TabMode {
@@ -76,6 +77,8 @@
     let coinTriggerRefresh = $state(false);
 
     let jeContent: any = $state({ json: structuredClone(entry) });
+    let originalJeContent: any = structuredClone(entry);
+    let isJEDirty = $state(false);
 
     let ticketData: any = $state({
         action: null,
@@ -284,6 +287,13 @@
     let isRefreshLoading = $state(false);
     async function handleRefresh(e){
         e.preventDefault();
+
+        if(isJEDirty){
+            if(!confirm("You have unsaved changes. Do you want to discard them and refresh?")) {
+                return;
+            }
+        }
+
         try {
             isRefreshLoading = true;
             if(resource_type === ResourceType.folder || resource_type === ResourceType.space) {
@@ -291,12 +301,20 @@
             } else {
                 await $currentEntry.refreshEntry();
             }
+            jeContent = { json: $state.snapshot($currentEntry.entry) };
+            originalJeContent = structuredClone($state.snapshot(jeContent.json));
         } catch (e) {
             showToast(Level.warn, `Failed to refresh the entry!`);
         } finally {
             isRefreshLoading = false;
         }
     }
+
+    $effect(() => {
+        if (jeContent) {
+            isJEDirty = !isDeepEqual(jsonEditorContentParser($state.snapshot(jeContent)), originalJeContent);
+        }
+    });
 </script>
 
 
@@ -408,8 +426,8 @@
                             class="inline-flex items-center p-4 border-b-2 rounded-t-lg border-transparent hover:text-primary hover:border-primary"
                             type="button"
                             onclick={handleSave}
-                            disabled={isActionLoading}
-                            style={isActionLoading ? "cursor: not-allowed" : "cursor: pointer"}
+                            disabled={isActionLoading || !isJEDirty}
+                            style={isActionLoading || !isJEDirty ? "cursor: not-allowed" : "cursor: pointer"}
                             title="Save changes">
                         <div class="flex items-center gap-2">
                             <FloppyDiskOutline size="md" class="text-primary" />
