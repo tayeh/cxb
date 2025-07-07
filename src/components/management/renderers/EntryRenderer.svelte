@@ -77,7 +77,12 @@
     let coinTriggerRefresh = $state(false);
 
     let jeContent: any = $state({ json: structuredClone(entry) });
-    let originalJeContent: any = structuredClone(entry);
+    let originalJeContent: any = $state({});
+    setTimeout(() => {
+        originalJeContent = jsonEditorContentParser(
+            $state.snapshot(jeContent)
+        );
+    }, 64);
     let isJEDirty = $state(false);
 
     let ticketData: any = $state({
@@ -303,7 +308,7 @@
                 await $currentEntry.refreshEntry();
             }
             jeContent = { json: $state.snapshot($currentEntry.entry) };
-            originalJeContent = structuredClone($state.snapshot(jeContent.json));
+            originalJeContent = $state.snapshot($currentEntry.entry);
         } catch (e) {
             showToast(Level.warn, `Failed to refresh the entry!`);
         } finally {
@@ -313,7 +318,10 @@
 
     $effect(() => {
         if (jeContent) {
-            isJEDirty = !isDeepEqual(jsonEditorContentParser($state.snapshot(jeContent)), originalJeContent);
+            isJEDirty = !isDeepEqual(
+                jsonEditorContentParser($state.snapshot(jeContent)),
+                originalJeContent
+            );
         }
     });
 </script>
