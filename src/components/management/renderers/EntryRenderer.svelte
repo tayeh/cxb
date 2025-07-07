@@ -575,11 +575,9 @@
         </div>
 
         <div class={activeTab === TabMode.history ? '' : 'hidden'} role="tabpanel">
-            <HistoryListView
-                {space_name}
-                {subpath}
-                shortname={entry.shortname}
-            />
+            {#key coinTriggerRefresh}
+                <HistoryListView {space_name} {subpath} shortname={entry.shortname} />
+            {/key}
         </div>
     </div>
 </div>
