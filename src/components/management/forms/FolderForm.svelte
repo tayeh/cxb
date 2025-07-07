@@ -309,11 +309,9 @@
                         {/each}
                     {/await}
                 </Select>
-            </div>
-        </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="border p-3 rounded-md">
+                <hr class="my-4" />
+
                 <h3 class="font-semibold mb-2">Workflow Shortnames</h3>
 
                 <div class="mb-3">
@@ -343,6 +341,8 @@
                 </Select>
             </div>
 
+        </div>
+
             <div class="border p-3 rounded-md">
                 <h3 class="font-semibold mb-2">PDF Schema Shortnames</h3>
 
@@ -356,7 +356,6 @@
                 {/if}
                 <Button size="xs" class="mt-2 text-gray hover:text-gray cursor-pointer" outline onclick={() => addItem('enable_pdf_schema_shortnames', '')}>Add PDF Schema Shortname</Button>
             </div>
-        </div>
 
         <div class="border p-4 rounded-lg">
             <h3 class="font-semibold mb-2">Folder Options</h3>
