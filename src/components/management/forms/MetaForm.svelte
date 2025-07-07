@@ -13,6 +13,7 @@
     import {onMount} from "svelte";
 
     let {
+        isCreate,
         formData = $bindable(),
         validateFn = $bindable()
     } = $props();
@@ -55,10 +56,21 @@
         <h2 class="text-2xl font-bold mb-4">Meta Information</h2>
         <div class="mb-4">
             <Label for="shortname" class="mb-2">
-                {#if !formData.shortname}<span class="text-red-500 text-lg" style="vertical-align: center">*</span>{/if}
+                {#if isCreate}<span class="text-red-500 text-lg" style="vertical-align: center">*</span>{/if}
                 Shortname
             </Label>
-            <Input required id="shortname" placeholder="Short name" bind:value={formData.shortname} disabled={formData.shortname} />
+            <div class="flex">
+                <Input required id="shortname"
+                       class="rounded-l-none"
+                       placeholder="Short name"
+                       bind:value={formData.shortname}
+                       disabled={!isCreate} />
+                <Button color="alternative" class="rounded-l-none border-l-0"
+                        disabled={!formData.shortname}
+                        onclick={() => formData.shortname = "auto"}>
+                    Auto
+                </Button>
+            </div>
             <p class="text-xs text-gray-500 mt-1">A shortname (use 'auto' for auto generated shortname)</p>
         </div>
 

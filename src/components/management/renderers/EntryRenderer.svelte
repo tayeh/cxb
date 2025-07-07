@@ -498,7 +498,7 @@
         <div class={activeTab === TabMode.form ? '' : 'hidden'} role="tabpanel">
             {#key coinTriggerRefresh}
                 {#if jeContent.json}
-                    <MetaForm bind:formData={jeContent.json} bind:validateFn={validateMetaForm} />
+                    <MetaForm bind:formData={jeContent.json} bind:validateFn={validateMetaForm} isCreate={false}/>
                     {#if resource_type === ResourceType.user}
                         <MetaUserForm bind:formData={jeContent.json} bind:validateFn={validateRTForm}/>
                     {:else if resource_type === ResourceType.role}

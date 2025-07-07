@@ -244,7 +244,7 @@
 
 <Modal bind:open={addSpaceModal} size="xl" title="Add New Space">
     <div class="space-y-4">
-        <MetaForm bind:formData={spaceFormData} bind:validateFn={validateSpaceForm} />
+        <MetaForm bind:formData={spaceFormData} bind:validateFn={validateSpaceForm} isCreate={true}/>
 
         {#if modelError}
             <div class="mt-4">

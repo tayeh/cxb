@@ -444,7 +444,7 @@
             />
         </Label>
 
-        <MetaForm bind:formData={metaContent} bind:validateFn={validateMetaForm} />
+        <MetaForm bind:formData={metaContent} bind:validateFn={validateMetaForm} isCreate={true}/>
 
         {#if selectedResourceType === ResourceType.user}
             <MetaUserForm bind:formData={metaContent} bind:validateFn={validateRTForm}/>
