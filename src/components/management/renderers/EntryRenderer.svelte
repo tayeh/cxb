@@ -21,7 +21,7 @@
     import Table2Cols from "@/components/management/Table2Cols.svelte";
     import Attachments from "@/components/management/renderers/Attachments.svelte";
     import BreadCrumbLite from "@/components/management/BreadCrumbLite.svelte";
-    import {currentEntry, currentListView} from "@/stores/global";
+    import {currentEntry} from "@/stores/global";
     import MetaForm from "@/components/management/forms/MetaForm.svelte";
     import MetaUserForm from "@/components/management/forms/MetaUserForm.svelte";
     import MetaRoleForm from "@/components/management/forms/MetaRoleForm.svelte";
@@ -124,7 +124,7 @@
                 comment: null,
             }
             showToast(Level.info, `Ticket has been updated successfully!`);
-            $currentEntry.refreshEntry();
+            refreshEntry();
         } catch (error) {
             showToast(Level.warn, `Failed to update the ticket!`);
             isActionLoading = false;
@@ -262,6 +262,7 @@
             entry = await Dmart.retrieve_entry(resource_type, space_name, subpath, entry.shortname, true, true);
         }
         jeContent = { json: $state.snapshot(entry) };
+        originalJeContent = jsonEditorContentParser($state.snapshot(jeContent));
         currentEntry.set({
             entry,
             refreshEntry
@@ -292,7 +293,9 @@
 
     let isRefreshLoading = $state(false);
     async function handleRefresh(e){
-        e.preventDefault();
+        if(e){
+            e.preventDefault();
+        }
 
         if(isJEDirty){
             if(!confirm("You have unsaved changes. Do you want to discard them and refresh?")) {
@@ -300,20 +303,7 @@
             }
         }
 
-        try {
-            isRefreshLoading = true;
-            if(resource_type === ResourceType.folder || resource_type === ResourceType.space) {
-                await $currentListView.fetchPageRecords();
-            } else {
-                await $currentEntry.refreshEntry();
-            }
-            jeContent = { json: $state.snapshot($currentEntry.entry) };
-            originalJeContent = $state.snapshot($currentEntry.entry);
-        } catch (e) {
-            showToast(Level.warn, `Failed to refresh the entry!`);
-        } finally {
-            isRefreshLoading = false;
-        }
+        await refreshEntry();
     }
 
     $effect(() => {
