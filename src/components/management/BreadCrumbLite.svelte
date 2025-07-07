@@ -11,13 +11,15 @@
         subpath,
         shortname,
         resource_type,
-        schema_name
+        schema_name,
+        payloadContentType,
     } : {
         space_name: string,
         subpath: string,
         shortname?: string,
         resource_type: ResourceType,
-        schema_name?: string
+        schema_name?: string,
+        payloadContentType?: string,
     } = $props();
 
     let items = $state([]);
@@ -55,7 +57,7 @@
 
     {#if ![ResourceType.folder, ResourceType.space].includes(resource_type)}
         <BreadcrumbItem>
-            <strong>{shortname} </strong>&nbsp;({resource_type}{#if schema_name}&nbsp;: {schema_name}{/if})
+            <strong>{shortname} </strong>&nbsp;(&nbsp;{resource_type} {#if payloadContentType} {`| ${payloadContentType}`}{/if}{#if schema_name}:{schema_name}{/if}&nbsp;)
         </BreadcrumbItem>
     {/if}
 </Breadcrumb>

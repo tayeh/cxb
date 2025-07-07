@@ -325,6 +325,7 @@
         {resource_type}
         schema_name={schemaShortname}
         shortname={entry.shortname}
+        payloadContentType={entry?.payload?.content_type}
     />
 
     <div class="border-b border-gray-200">

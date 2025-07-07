@@ -66,7 +66,7 @@
                        bind:value={formData.shortname}
                        disabled={!isCreate} />
                 <Button color="alternative" class="rounded-l-none border-l-0"
-                        disabled={!formData.shortname}
+                        disabled={!isCreate}
                         onclick={() => formData.shortname = "auto"}>
                     Auto
                 </Button>
