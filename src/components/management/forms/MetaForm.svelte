@@ -55,10 +55,10 @@
         <h2 class="text-2xl font-bold mb-4">Meta Information</h2>
         <div class="mb-4">
             <Label for="shortname" class="mb-2">
-                <span class="text-red-500 text-lg" style="vertical-align: center">*</span>
+                {#if !formData.shortname}<span class="text-red-500 text-lg" style="vertical-align: center">*</span>{/if}
                 Shortname
             </Label>
-            <Input required id="shortname" placeholder="Short name" bind:value={formData.shortname} />
+            <Input required id="shortname" placeholder="Short name" bind:value={formData.shortname} disabled={formData.shortname} />
             <p class="text-xs text-gray-500 mt-1">A shortname (use 'auto' for auto generated shortname)</p>
         </div>
 
