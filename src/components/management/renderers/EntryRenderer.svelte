@@ -37,7 +37,7 @@
     import MetaTicketForm from "@/components/management/forms/MetaTicketForm.svelte";
     import WorkflowDiagram from "@/components/management/diagram/WorkflowDiagram.svelte";
     import SchemaDiagram from "@/components/management/diagram/SchemaDiagram.svelte";
-    import {CardPlaceholder, TextPlaceholder} from "flowbite-svelte";
+    import {CardPlaceholder, TextPlaceholder,Modal,Button} from "flowbite-svelte";
     import DynamicSchemaBasedForms from "@/components/management/forms/DynamicSchemaBasedForms.svelte";
     import TranslationForm from "@/components/management/forms/TranslationForm.svelte";
     import {searchListView} from "@/stores/management/triggers";
@@ -174,11 +174,12 @@
         }
     }
 
+    let openDeleteModal = $state(false);
+    function deleteCurrentEntryModal() {
+        openDeleteModal = true;
+    }
     async function deleteCurrentEntry() {
         isActionLoading = true;
-        if (!confirm(`Are you sure you want to delete '${entry.shortname}' (${resource_type})?`)) {
-            return;
-        }
 
         let targetSubpath: string;
         if (resource_type === ResourceType.folder) {
@@ -443,7 +444,7 @@
                             type="button"
                             disabled={isActionLoading}
                             style={isActionLoading ? "cursor: not-allowed" : "cursor: pointer"}
-                            onclick={deleteCurrentEntry}
+                            onclick={deleteCurrentEntryModal}
                             title="Delete this entry">
                         <div class="flex items-center gap-2">
                             <TrashBinOutline size="md" class="text-red-500" />
@@ -584,3 +585,15 @@
         </div>
     </div>
 </div>
+
+<Modal bind:open={openDeleteModal} size="md" title="Confirm Deletion">
+    <p class="text-center mb-6">
+        Are you sure you want to delete <span class="font-bold">{entry.shortname}</span> ({resource_type})?<br>
+        This action cannot be undone.
+    </p>
+
+    <div class="flex justify-between w-full">
+        <Button color="alternative" onclick={() => openDeleteModal = false}>Cancel</Button>
+        <Button color="red" onclick={deleteCurrentEntry} disabled={isActionLoading}>{isActionLoading ? "Deleting..." : "Delete"}</Button>
+    </div>
+</Modal>

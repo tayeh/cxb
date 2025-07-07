@@ -1,6 +1,6 @@
 <script lang="ts">
 import {FileCirclePlusOutline,UploadOutline, DownloadOutline,TrashBinOutline,SearchOutline} from "flowbite-svelte-icons";
-import {Button, Input,ButtonGroup,InputAddon} from "flowbite-svelte";
+import {Button, Input, ButtonGroup, InputAddon, Modal} from "flowbite-svelte";
 import ModalCreateEntry from "@/components/management/Modals/ModalCreateEntry.svelte";
 import ModalCSVUpload from "@/components/management/Modals/ModalCSVUpload.svelte";
 import ModalCSVDownload from "@/components/management/Modals/ModalCSVDownload.svelte";
@@ -52,39 +52,46 @@ onMount(() => {
 
 let isOpen = $state(false);
 
+
+let isActionLoading = $state(false);
+let openDeleteModal = $state(false);
+function deleteCurrentEntry() {
+    openDeleteModal = true;
+}
 async function handleBulkDelete() {
     if ($bulkBucket.length) {
-        if (
-            confirm(`Are you sure want to delete (${$bulkBucket.map(e => e.shortname).join(", ")}) ${$bulkBucket.length === 1 ? "entry" : "entries"} ?`) ===
-            false
-        ) {
-            return;
-        }
-
-        const records = []
-        $bulkBucket.map(b => {
-            records.push({
-                resource_type: b.resource_type,
-                shortname: b.shortname,
-                subpath: subpath || "/",
-                attributes: {},
+        try {
+            isActionLoading = true;
+            const records = []
+            $bulkBucket.map(b => {
+                records.push({
+                    resource_type: b.resource_type,
+                    shortname: b.shortname,
+                    subpath: subpath || "/",
+                    attributes: {},
+                });
             });
-        });
 
-        const request_body = {
-            space_name,
-            request_type: RequestType.delete,
-            records: records,
-        };
-        const response = await Dmart.request(request_body);
+            const request_body = {
+                space_name,
+                request_type: RequestType.delete,
+                records: records,
+            };
+            const response = await Dmart.request(request_body);
 
-        if (response?.status === "success") {
-            showToast(Level.info);
-        } else {
-            showToast(Level.warn);
+            if (response?.status === "success") {
+                showToast(Level.info);
+            } else {
+                showToast(Level.warn);
+            }
+            await $currentListView.fetchPageRecords();
+            bulkBucket.set([]);
+        } catch (e) {
+            showToast(Level.warn, "Failed to delete entries. Please try again later.");
+        } finally {
+            isActionLoading = false;
+            openDeleteModal = false;
         }
-        await $currentListView.fetchPageRecords();
-        bulkBucket.set([]);
     }
 }
 
@@ -136,7 +143,7 @@ function handleCSVUploadModal() {
             </Button>
         {/if}
         {#if $bulkBucket.length}
-            <Button class="text-red-600 cursor-pointer hover:text-red-600" size="xs" outline onclick={handleBulkDelete}>
+            <Button class="text-red-600 cursor-pointer hover:text-red-600" size="xs" outline onclick={deleteCurrentEntry}>
                 <TrashBinOutline size="md"/> Bulk delete
             </Button>
         {/if}
@@ -159,3 +166,15 @@ function handleCSVUploadModal() {
         bind:isOpen={isCSVDownloadModalOpen}
     />
 {/if}
+
+<Modal bind:open={openDeleteModal} size="md" title="Confirm Deletion">
+    <p class="text-center mb-6">
+        Are you sure you want to delete <span class="font-bold">{$bulkBucket.map(e => e.shortname).join(", ")}</span> {$bulkBucket.length === 1 ? "entry" : "entries"}?<br>
+        This action cannot be undone.
+    </p>
+
+    <div class="flex justify-between w-full">
+        <Button color="alternative" onclick={() => openDeleteModal = false}>Cancel</Button>
+        <Button color="red" onclick={handleBulkDelete} disabled={isActionLoading}>{isActionLoading ? "Deleting..." : "Delete"}</Button>
+    </div>
+</Modal>
