@@ -51,13 +51,11 @@
   >
     <p>For some reason PDF is not rendered here properly.</p>
   </object>
-{:else if content_type === ContentType.markdown}
-
-    <iframe class="min-h-dvh w-full p-3 prose font-mono" srcdoc={marked(body)}></iframe>
-
-{:else if ["html", "text"].includes(content_type)}
+{:else if ["markdown", "html", "text"].includes(content_type)}
   <div class="w-full h-full">
-    {@html body}
+    <article class="prose">
+      {@html marked(body)}
+    </article>
   </div>
 {:else}
   <a href={url} title={displayname}

@@ -101,7 +101,7 @@
 
 <Card class="h-full max-w-full pt-1">
 
-  <div class="flex flex-wrap justify-end mt-2 border-t pt-2">
+  <div class="flex flex-wrap justify-end mt-2 pt-2">
     <Button size="xs" color="light" class="mx-1" onclick={() => handleFormatting("**")}>
       <strong>B</strong>
     </Button>
@@ -155,7 +155,9 @@
     </TabItem>
     <TabItem title="Preview">
       <div class="w-full">
-        <iframe class="h-full w-full p-3 prose font-mono" srcdoc={marked(content)}></iframe>
+        <article class="prose">
+          {@html marked(content)}
+        </article>
       </div>
     </TabItem>
   </Tabs>

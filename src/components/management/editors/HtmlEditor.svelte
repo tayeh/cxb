@@ -2,6 +2,7 @@
     import {mount, onMount} from "svelte";
     import { createEventDispatcher } from "svelte";
     import Editor from "cl-editor";
+    import {marked} from "marked";
 
     const dispatch = createEventDispatcher();
 
@@ -88,6 +89,19 @@
         }
     });
 </script>
+<article class="prose">
+    <div class="h-100 pt-1" bind:this="{maindiv}" id="htmleditor-{uid}"></div>
+</article>
 
-<div class="h-100 pt-1" bind:this="{maindiv}" id="htmleditor-{uid}"></div>
+
+<style>
+    :global(.cl) {
+        height: 100%;
+        padding: 20px;
+    }
+    :global(.cl-content) {
+        font-family: "uthmantn";
+        font-size: 1rem !important;
+    }
+</style>
 
