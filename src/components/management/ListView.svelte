@@ -28,6 +28,7 @@
   import ListViewActionBar from "@/components/management/ListViewActionBar.svelte";
   import {currentListView} from "@/stores/global";
   import {untrack} from "svelte";
+  import {user} from "@/stores/user";
   $goto
 
   $bulkBucket = [];
@@ -42,6 +43,7 @@
     sort_order = $bindable(null),
     is_clickable = $bindable(true),
     canDelete = $bindable(false),
+    exact_subpath = $bindable(true),
     scope = $bindable("managed"),
   } : {
     space_name?: string,
@@ -53,6 +55,7 @@
     sort_order?: string,
     is_clickable?: boolean,
     canDelete?: boolean,
+    exact_subpath?: boolean,
     scope?: string,
   } = $props();
 
@@ -165,7 +168,7 @@
       type,
       space_name: space_name,
       subpath: subpath,
-      exact_subpath: true,
+      exact_subpath: exact_subpath,
       limit: objectDatatable.numberRowsPerPage,
       sort_by: objectDatatable.stringSortBy.toString(),
       sort_type: SortyType[objectDatatable.stringSortOrder],
@@ -338,7 +341,7 @@
           const _shortname = objectDatatable.arrayRawData[name].shortname;
           if (checked) {
               const _resource_type = objectDatatable.arrayRawData[name].resource_type;
-              $bulkBucket = [...$bulkBucket, {shortname: _shortname, resource_type: _resource_type}];
+              $bulkBucket = [...$bulkBucket, {shortname: _shortname, resource_type: _resource_type, subpath: objectDatatable.arrayRawData[name].subpath}];
           }
           else {
               $bulkBucket = $bulkBucket.filter(e=> e.shortname !== objectDatatable.arrayRawData[name].shortname);
@@ -382,7 +385,7 @@
         const children = Array.from(spanButton.childNodes);
         spanButton.innerHTML = '';
 
-        children.reverse().forEach(child => {
+        children.reverse().forEach((child:any) => {
           if (child.nodeName === 'svg') {
             child.classList.add('mr-2');
           }

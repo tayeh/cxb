@@ -69,8 +69,10 @@
                 : $params.subpath;
 
             const moveAttrb = {
+                src_space_name: $params.space_name,
                 src_subpath: newSubpath,
                 src_shortname: formData.shortname,
+                dest_space_name: $params.space_name,
                 dest_subpath: newSubpath,
                 dest_shortname: newShortname,
             };

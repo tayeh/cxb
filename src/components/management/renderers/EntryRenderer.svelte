@@ -12,6 +12,7 @@
         PaperClipOutline,
         RectangleListOutline,
         TrashBinOutline,
+        TrashBinSolid,
         RefreshOutline,
     } from "flowbite-svelte-icons";
     import {JSONEditor, Mode} from "svelte-jsoneditor";
@@ -21,13 +22,13 @@
     import Table2Cols from "@/components/management/Table2Cols.svelte";
     import Attachments from "@/components/management/renderers/Attachments.svelte";
     import BreadCrumbLite from "@/components/management/BreadCrumbLite.svelte";
-    import {currentEntry} from "@/stores/global";
+    import {currentEntry, currentListView} from "@/stores/global";
     import MetaForm from "@/components/management/forms/MetaForm.svelte";
     import MetaUserForm from "@/components/management/forms/MetaUserForm.svelte";
     import MetaRoleForm from "@/components/management/forms/MetaRoleForm.svelte";
     import MetaPermissionForm from "@/components/management/forms/MetaPermissionForm.svelte";
     import {untrack} from "svelte";
-    import {goto} from "@roxi/routify";
+    import {goto,params} from "@roxi/routify";
     $goto
     import HistoryListView from "@/components/management/HistoryListView.svelte";
     import SchemaForm from "@/components/management/forms/SchemaForm.svelte";
@@ -42,6 +43,7 @@
     import TranslationForm from "@/components/management/forms/TranslationForm.svelte";
     import {searchListView} from "@/stores/management/triggers";
     import {isDeepEqual} from "@/utils/compare";
+    import {user} from "@/stores/user";
 
 
     enum TabMode {
@@ -91,6 +93,8 @@
         comment: null,
     });
     let errorMessage = $state(null);
+
+    const isEntryTrash = space_name === "personal" && subpath.startsWith(`people/${$user.shortname}/trash`)
 
     const canUpdate = checkAccess("update", space_name, subpath, resource_type);
     const canDelete = (()=>{
@@ -229,6 +233,59 @@
         }
     }
 
+    async function moveToTrash() {
+        isActionLoading = true;
+
+        try {
+            const moveResourceType = $params.resource_type
+                || ($params.subpath && ResourceType.folder)
+                || ResourceType.space;
+            const moveNewSubpath = moveResourceType === ResourceType.folder
+                ? ($params.subpath.split("/").slice(0, -1).join("-") || '/')
+                : $params.subpath;
+            const moveAttrb = {
+                src_space_name: $params.space_name,
+                src_subpath: moveNewSubpath,
+                src_shortname: entry.shortname,
+                dest_space_name: 'personal',
+                dest_subpath: `/people/${$user.shortname}/trash/${$params.space_name}/${moveNewSubpath}`.replaceAll('//', '/'),
+                dest_shortname: entry.shortname,
+            };
+            await Dmart.request({
+                space_name: $params.space_name,
+                request_type: RequestType.move,
+                records: [
+                    {
+                        resource_type: moveResourceType,
+                        shortname: entry.shortname,
+                        subpath: moveNewSubpath,
+                        attributes: moveAttrb,
+                    },
+                ],
+            });
+            showToast(Level.info, `Entry deleted successfully`);
+            if(resource_type === ResourceType.space) {
+                $goto(`/management/content`);
+            } else if(resource_type === ResourceType.folder) {
+                const _subpath = subpath.split("/").slice(0, -1).join("-") || "";
+                $goto(`/management/content/[space_name]/[subpath]`, {
+                    space_name: space_name,
+                    subpath: _subpath
+                });
+            } else {
+                $goto(`/management/content/[space_name]/[subpath]`, {
+                    space_name: space_name,
+                    subpath: subpath
+                });
+            }
+        } catch (error) {
+            errorMessage = error.message;
+            showToast(Level.warn, `Failed to delete the entry!`);
+        } finally {
+            isActionLoading = false;
+        }
+    }
+
     // function handleRenderMenu(
     //     items: any,
     //     context: { mode: "tree" | "text" | "table"; modal: boolean }
@@ -254,10 +311,7 @@
 
     async function refreshEntry() {
         if (resource_type === ResourceType.folder) {
-            const _subpath = subpath.split("/");
-            let parent_subpath: string = _subpath.slice(0, _subpath.length - 1).join("/") || "__root__";
-            let _shortname: string = _subpath[_subpath.length - 1];
-            entry = await Dmart.retrieve_entry(ResourceType.folder, space_name, parent_subpath, _shortname, true, true);
+            await $currentListView.fetchPageRecords();
         } else {
             entry = await Dmart.retrieve_entry(resource_type, space_name, subpath, entry.shortname, true, true);
         }
@@ -314,6 +368,17 @@
             );
         }
     });
+
+    function getExactSubpathValue(){
+        if(
+            space_name === 'personal'
+            && subpath.startsWith('people/')
+            && subpath.endsWith('/trash')
+        ){
+            return false;
+        }
+        return true;
+    }
 </script>
 
 
@@ -436,7 +501,7 @@
                     </button>
                 </li>
             {/if}
-            {#if canDelete}
+            {#if canDelete && !isEntryTrash}
                 <li role="presentation">
                     <button
                             class="inline-flex items-center p-4 border-b-2 rounded-t-lg border-transparent hover:text-red-600 hover:border-red-600"
@@ -446,11 +511,27 @@
                             onclick={deleteCurrentEntryModal}
                             title="Delete this entry">
                         <div class="flex items-center gap-2">
-                            <TrashBinOutline size="md" class="text-red-500" />
+                            <TrashBinSolid size="md" class="text-red-500" />
                             <p class="text-red-500">Delete</p>
                         </div>
                     </button>
                 </li>
+                {#if ![ResourceType.space, ResourceType.folder].includes(resource_type)}
+                    <li role="presentation">
+                        <button
+                                class="inline-flex items-center p-4 border-b-2 rounded-t-lg border-transparent hover:text-red-600 hover:border-red-600"
+                                type="button"
+                                disabled={isActionLoading}
+                                style={isActionLoading ? "cursor: not-allowed" : "cursor: pointer"}
+                                onclick={moveToTrash}
+                                title="Delete this entry">
+                            <div class="flex items-center gap-2">
+                                <TrashBinOutline size="md" class="text-red-500" />
+                                <p class="text-red-500">Trash</p>
+                            </div>
+                        </button>
+                    </li>
+                {/if}
             {/if}
             <li role="presentation">
                 <button
@@ -479,6 +560,7 @@
                     sort_by={entry?.payload?.body?.sort_by ?? null}
                     sort_order={entry?.payload?.body?.sort_type ?? null}
                     {canDelete}
+                    exact_subpath={getExactSubpathValue()}
                 />
             {:else}
                 <Table2Cols entry={{ "Resource type": resource_type, ...entry }}/>

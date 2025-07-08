@@ -1,5 +1,5 @@
 <script lang="ts">
-import {FileCirclePlusOutline,UploadOutline, DownloadOutline,TrashBinOutline,SearchOutline} from "flowbite-svelte-icons";
+import {FileCirclePlusOutline,UploadOutline, DownloadOutline,TrashBinOutline,SearchOutline,ClockArrowOutline} from "flowbite-svelte-icons";
 import {Button, Input, ButtonGroup, InputAddon, Modal} from "flowbite-svelte";
 import ModalCreateEntry from "@/components/management/Modals/ModalCreateEntry.svelte";
 import ModalCSVUpload from "@/components/management/Modals/ModalCSVUpload.svelte";
@@ -8,9 +8,10 @@ import {onMount} from "svelte";
 import {checkAccess} from "@/utils/checkAccess";
 import {currentEntry, currentListView, subpathInManagementNoAction} from "@/stores/global";
 import {bulkBucket} from "@/stores/management/bulk_bucket";
-import {Dmart,RequestType} from "@edraj/tsdmart";
+import {Dmart,RequestType,ResourceType} from "@edraj/tsdmart";
 import {Level, showToast} from "@/utils/toast";
 import {searchListView} from "@/stores/management/triggers";
+import {user} from "@/stores/user";
 
 let {space_name,subpath}:{space_name:string,subpath:string} = $props();
 
@@ -19,6 +20,8 @@ let canUploadCSV = $state(false);
 let canDownloadCSV = $state(false);
 let canDelete = $state(false);
 let isCSVDownloadModalOpen = $state(false);
+
+const isEntryTrash = space_name === "personal" && subpath.startsWith(`people/${$user.shortname}/trash`)
 
 onMount(() => {
     if($currentEntry.entry?.payload?.body?.allow_csv){
@@ -106,6 +109,55 @@ let isCSVUploadModalOpen = $state(false);
 function handleCSVUploadModal() {
     isCSVUploadModalOpen = true;
 }
+
+async function restoreEntries() {
+    isActionLoading = true;
+
+    try {
+        const records = [];
+
+        $bulkBucket.map(b => {
+            const scr_subpaths: string[] = b.subpath.split('/');
+            const remaining: string[] = scr_subpaths.slice(3);
+
+            const distSpacename = remaining[0];
+            const distSubpath = remaining.slice(1).join('/') ;
+
+            const moveResourceType = b.resource_type
+                || (b.subpath && ResourceType.folder)
+                || ResourceType.space;
+
+            const moveAttrb = {
+                src_space_name: 'personal',
+                src_subpath: b.subpath,
+                src_shortname: b.shortname,
+
+                dest_space_name: distSpacename,
+                dest_subpath: distSubpath,
+                dest_shortname: b.shortname
+            };
+
+            records.push({
+                resource_type: moveResourceType,
+                shortname: b.shortname,
+                subpath: b.subpath,
+                attributes: moveAttrb,
+            });
+        });
+
+        await Dmart.request({
+            space_name: 'personal',
+            request_type: RequestType.move,
+            records: records,
+        });
+        await $currentListView.fetchPageRecords();
+        showToast(Level.info, `Entries restored successfully`);
+    } catch (error) {
+        showToast(Level.warn, `Failed to restore the entries!`);
+    } finally {
+        isActionLoading = false;
+    }
+}
 </script>
 
 <div class="flex flex-col md:flex-row justify-between items-center my-2 mx-3">
@@ -143,11 +195,16 @@ function handleCSVUploadModal() {
             </Button>
         {/if}
         {#if $bulkBucket.length}
-            <Button class="text-red-600 cursor-pointer hover:text-red-600" size="xs" outline onclick={deleteCurrentEntry}>
-                <TrashBinOutline size="md"/> Bulk delete
-            </Button>
+            {#if isEntryTrash}
+                <Button class="text-primary cursor-pointer hover:text-primary" size="xs" outline onclick={restoreEntries}>
+                    <ClockArrowOutline size="md"/> Restore
+                </Button>
+            {:else}
+                <Button class="text-red-600 cursor-pointer hover:text-red-600" size="xs" outline onclick={deleteCurrentEntry}>
+                    <TrashBinOutline size="md"/> Bulk delete
+                </Button>
+            {/if}
         {/if}
-
     </div>
 </div>
 
@@ -160,11 +217,7 @@ function handleCSVUploadModal() {
 {/if}
 
 {#if canDownloadCSV}
-    <ModalCSVDownload
-        {space_name}
-        {subpath}
-        bind:isOpen={isCSVDownloadModalOpen}
-    />
+    <ModalCSVDownload {space_name} {subpath} bind:isOpen={isCSVDownloadModalOpen}/>
 {/if}
 
 <Modal bind:open={openDeleteModal} size="md" title="Confirm Deletion">

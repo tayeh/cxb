@@ -11,8 +11,6 @@
   import { EyeSolid, EyeSlashSolid } from 'flowbite-svelte-icons';
   import { signin } from "@/stores/user";
   import { _ } from "@/i18n";
-  import { goto } from "@roxi/routify";
-  $goto
 
   let username: string;
   let password: string;
