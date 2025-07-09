@@ -1,17 +1,17 @@
 <script lang="ts">
-import {FolderSolid} from 'flowbite-svelte-icons';
+import {FolderSolid,BriefcaseSolid,LayersSolid,StarSolid,CubesStackedSolid} from 'flowbite-svelte-icons';
 </script>
+<div class="prose">
+<div class="flex flex-row" style="width: 98vw">
+<div class="flex-col p-6">
 
-<div class="flex flex-row">
-<div class="flex-col p-4">
-
-> #### What is DMART?
+# What is DMART?
 > DMART is an open-source general-purpose low-code data platform that is capable of assimilating and servcing a wide variety of data.
 > DMART offers a number of unique features that simplify the setup of your backend.
 
 ----
 
-# <FolderSolid size="md"/> Features
+# <span class="flex"><StarSolid class="mx-2" size="xl"/>Features</span>
 
 - Unified API (Data-as-a-Service) that can readily and directly service Web and mobile frontends. OpenAPI-compatible [JSON API](https://api.dmart.cc/docs)
 - Built-in user management
@@ -22,7 +22,7 @@ import {FolderSolid} from 'flowbite-svelte-icons';
 
 ----
 
-# <FolderSolid size="md"/> Design principals
+# <span class="flex"><FolderSolid class="mx-2" size="xl"/> Design principals</span>
 
 - Entry-based, business-oriented data definitions (no need for relational modeling and physical RDBMS table structure).
 - Entries are extensible by meta-data and arbitrary attachments
@@ -31,10 +31,11 @@ import {FolderSolid} from 'flowbite-svelte-icons';
 - Entries are represented using file-based Json that is optionally schema-enabled
 - Operational store that can be reconstructed from the file-based data.
 
-</div><div class="flex-col">
+</div>
+<div class="flex-col p-6">
 
 
-# <FolderSolid size="md"/> Usecases
+# <span class="flex"><BriefcaseSolid class="mx-2" size="xl"/> Usecases</span>
 
 One initial category of usecases targets organizations and individuals to establish their online presence: Provision a website that is indexed by search engines, manage users, be able to recieve/send messages/emails and allow users to ineract with published content.
 
@@ -42,7 +43,7 @@ One initial category of usecases targets organizations and individuals to establ
 
 ----
 
-# <FolderSolid size="md"/> Technology stack
+# <span class="flex"><LayersSolid class="mx-2" size="xl"/> Technology stack</span>
 
 ## Backend
 
@@ -68,4 +69,6 @@ One initial category of usecases targets organizations and individuals to establ
 - Full compliance with pyright, ruff and mypi (pylint.sh)
 - Load testing with locust vegeta ab appache
 
-</div></div>
+</div>
+</div>
+</div>
