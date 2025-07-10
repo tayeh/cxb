@@ -3,6 +3,7 @@
     import { createEventDispatcher } from "svelte";
     import Editor from "cl-editor";
     import {marked} from "marked";
+    import {Card} from "flowbite-svelte";
 
     const dispatch = createEventDispatcher();
 
@@ -76,7 +77,7 @@
                 }
             });
         }
-
+        console.log({content})
         editor.setHtml(content, true);
     });
 
@@ -89,9 +90,11 @@
         }
     });
 </script>
-<article class="prose">
+<Card class="h-full max-w-full pt-1">
+<article class="prose max-w-full">
     <div class="h-100 pt-1" bind:this="{maindiv}" id="htmleditor-{uid}"></div>
 </article>
+</Card>
 
 
 <style>

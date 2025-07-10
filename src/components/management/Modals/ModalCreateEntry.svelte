@@ -21,6 +21,8 @@
     import DynamicSchemaBasedForms from "@/components/management/forms/DynamicSchemaBasedForms.svelte";
     import TranslationForm from "@/components/management/forms/TranslationForm.svelte";
     import ConfigForm from "@/components/management/forms/ConfigForm.svelte";
+    import HtmlEditor from "@/components/management/editors/HtmlEditor.svelte";
+    import MarkdownEditor from "@/components/management/editors/MarkdownEditor.svelte";
 
     let {
         space_name,
@@ -198,6 +200,12 @@
         json: {}
     });
     let metaContent: any = $state({});
+    let contentType = $state("json");
+    let contentTypeOptions = [
+        { name: "JSON", value: "json" },
+        { name: "HTML", value: "html" },
+        { name: "Markdown", value: "markdown" }
+    ];
     let errorContent: any = $state(null);
     let validateMetaForm;
     let validateRTForm;
@@ -256,7 +264,16 @@
                     }
                 };
             }
-            else if(selectedSchema) {
+            else if(selectedResourceType === ResourceType.content) {
+                requestCreate.attributes = {
+                    ...requestCreate.attributes,
+                    payload: {
+                        body: jsonEditorContentParser($state.snapshot(content)),
+                        schema_shortname: contentType === "json" ? selectedSchema : null,
+                        content_type: contentType
+                    }
+                };
+            } else if(selectedSchema) {
                 requestCreate.attributes = {
                     ...requestCreate.attributes,
                     payload: {
@@ -456,23 +473,39 @@
 
         {#if !resourceTypeWithNoPayload.includes(selectedResourceType)}
             {#if !["workflows", "schema"].includes(subpath) && ![ResourceType.folder, ResourceType.role, ResourceType.permission].includes(selectedResourceType)}
-                <Label class="mt-3">
-                    Schema
-                    {#await Dmart.query({
-                        space_name,
-                        type: QueryType.search,
-                        subpath: "/schema",
-                        search: "",
-                        retrieve_json_payload: true,
-                        limit: 100
-                    })}
-                        <div role="status" class="max-w-sm animate-pulse">
-                            <div class="h-3 bg-gray-200 rounded-full dark:bg-gray-700 mx-2 my-2.5"></div>
-                        </div>
-                    {:then schemas}
-                        <Select class="mt-2" items={parseQuerySchemaResponse(schemas)} bind:value={selectedSchema} />
-                    {/await}
-                </Label>
+                {#if selectedResourceType === ResourceType.content}
+                    <Label class="mt-3">
+                        Content Type
+                        <Select class="mt-2" items={contentTypeOptions} value={contentType} onchange={(e: any) => {
+                            if(e.target.value !== "json") {
+                                content = "";
+                            } else {
+                                content = { json: {} };
+                            }
+                            contentType = e.target.value;
+                        }} />
+                    </Label>
+                {/if}
+
+                {#if contentType === "json" || selectedResourceType !== ResourceType.content}
+                    <Label class="mt-3">
+                        Schema
+                        {#await Dmart.query({
+                            space_name,
+                            type: QueryType.search,
+                            subpath: "/schema",
+                            search: "",
+                            retrieve_json_payload: true,
+                            limit: 100
+                        })}
+                            <div role="status" class="max-w-sm animate-pulse">
+                                <div class="h-3 bg-gray-200 rounded-full dark:bg-gray-700 mx-2 my-2.5"></div>
+                            </div>
+                        {:then schemas}
+                            <Select class="mt-2" items={parseQuerySchemaResponse(schemas)} bind:value={selectedSchema} />
+                        {/await}
+                    </Label>
+                {/if}
             {/if}
             {#if selectedResourceType === ResourceType.folder && isFolderFormReady}
                 {#if selectedInputMode === InputMode.form}
@@ -535,6 +568,10 @@
                         columns={Object.keys(selectedSchemaContent.properties.items.items.properties)}
                     />
                 {/if}
+            {:else if selectedResourceType === ResourceType.content && contentType === "html"}
+                <HtmlEditor bind:content={content} />
+            {:else if selectedResourceType === ResourceType.content && contentType === "markdown"}
+                <MarkdownEditor bind:content={content} />
             {:else}
                 <div class="my-2">
                     {#if resourcesWithFormAndJson.includes(selectedResourceType) || subpath === "workflows"}
@@ -567,7 +604,8 @@
 
     {#snippet footer()}
         <div class="w-full flex flex-row justify-between">
-            {#if [ResourceType.schema, ...resourcesWithFormAndJson].includes(selectedResourceType) || subpath === "workflows"}
+            {#if ([ResourceType.schema, ...resourcesWithFormAndJson].includes(selectedResourceType) || subpath === "workflows") && 
+                 (selectedResourceType !== ResourceType.content || contentType === "json")}
                 <Button class="cursor-pointer text-green-700 hover:text-green-500 mx-1" outline
                         onclick={() => selectedInputMode = selectedInputMode === InputMode.form ? InputMode.json : InputMode.form}>
                     {#if selectedInputMode === InputMode.form}
