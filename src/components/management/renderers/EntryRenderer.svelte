@@ -383,8 +383,20 @@
         }
         return true;
     }
+
+    function beforeUnload() {
+        if (!isJEDirty) {
+            if( !confirm("You have unsaved changes. Do you want to leave without saving?")) {
+                return false;
+            }
+        }
+        event.preventDefault();
+        event.returnValue = '';
+        return '...';
+    }
 </script>
 
+<svelte:window on:beforeunload={beforeUnload}/>
 
 
 <div class="flex flex-col w-full">
