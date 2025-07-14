@@ -7,6 +7,7 @@ import {
     ResourceType,
 } from "@edraj/tsdmart";
 import {spaces} from "@/stores/management/spaces";
+import {Level, showToast} from "@/utils/toast";
 
 
 export async function getAvatar(shortname: string){
@@ -101,5 +102,19 @@ export async function getChildrenAndSubChildren(subpathsPTR: any,spacename, base
             await getChildrenAndSubChildren(subpathsPTR, spacename, `${base}/${_subpath.shortname}`, childSubpaths);
             subpathsPTR.push(`${base}/${_subpath.shortname}`);
         }
+    }
+}
+
+export async function fetchWorkflows(space_name: string ){
+    try {
+        const result = await Dmart.query({
+            search: '',
+            type: QueryType.search,
+            space_name,
+            subpath: '/workflows'
+        });
+        return result.records || [];
+    } catch (e) {
+        showToast(Level.warn, "Failed to fetch workflows");
     }
 }

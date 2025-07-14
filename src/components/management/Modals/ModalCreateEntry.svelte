@@ -1,28 +1,24 @@
 <script lang="ts">
     import {Alert, Button, Label, Modal, Select, Spinner} from "flowbite-svelte";
     import {CodeOutline, FileCodeOutline} from "flowbite-svelte-icons";
-    import {Dmart, QueryType, RequestType, ResourceType} from "@edraj/tsdmart";
-    import FolderForm from "@/components/management/forms/FolderForm.svelte";
-    import {onMount, tick, untrack} from "svelte";
+    import {Dmart, RequestType, ResourceType} from "@edraj/tsdmart";
+    import {tick, untrack} from "svelte";
     import {generateObjectFromSchema, scrollToElById} from "@/utils/renderer/rendererUtils";
     import Prism from "@/components/Prism.svelte";
     import MetaForm from "@/components/management/forms/MetaForm.svelte";
     import MetaUserForm from "@/components/management/forms/MetaUserForm.svelte";
     import {jsonEditorContentParser} from "@/utils/jsonEditor";
-    import {JSONEditor, Mode} from "svelte-jsoneditor";
-    import {currentEntry, currentListView, resourceTypeWithNoPayload} from "@/stores/global";
+    import {
+        currentEntry,
+        currentListView,
+        InputMode,
+        resourcesWithFormAndJson,
+    } from "@/stores/global";
     import MetaRoleForm from "@/components/management/forms/MetaRoleForm.svelte";
     import MetaPermissionForm from "@/components/management/forms/MetaPermissionForm.svelte";
     import {Level, showToast} from "@/utils/toast";
-    import SchemaForm from "@/components/management/forms/SchemaForm.svelte";
-    import {removeEmpty} from "@/utils/renderer/schemaEntryRenderer";
-    import WorkflowForm from "@/components/management/forms/WorkflowForm.svelte";
     import {checkAccess} from "@/utils/checkAccess";
-    import DynamicSchemaBasedForms from "@/components/management/forms/DynamicSchemaBasedForms.svelte";
-    import TranslationForm from "@/components/management/forms/TranslationForm.svelte";
-    import ConfigForm from "@/components/management/forms/ConfigForm.svelte";
-    import HtmlEditor from "@/components/management/editors/HtmlEditor.svelte";
-    import MarkdownEditor from "@/components/management/editors/MarkdownEditor.svelte";
+    import PayloadFrom from "@/components/management/forms/PayloadFrom.svelte";
 
     let {
         space_name,
@@ -39,17 +35,6 @@
     let selectedResourceType = $state(ResourceType.content);
     let allowedResourceTypes = $state([]);
 
-    const resourcesWithFormAndJson = [
-        ResourceType.user,
-        ResourceType.content,
-        ResourceType.folder,
-        ResourceType.ticket,
-    ];
-
-    enum InputMode {
-        form = "form",
-        json = "json"
-    }
     let selectedInputMode = $state(InputMode.form);
 
     function setAllowedResourceTypes(){
@@ -160,52 +145,15 @@
 
     prepareResourceTypes();
 
-
     let selectedSchema = $state(null);
-    let tmpSchemas = [];
-    function parseQuerySchemaResponse(schemas){
-        tmpSchemas = schemas.records;
-        if (schemas === null) {
-            return [{
-                name: "None",
-                value: null
-            }];
-        }
-        let result = [];
-        const _schemas = schemas.records.map((e) => e.shortname);
-        if (selectedResourceType === ResourceType.folder) {
-            result = ["folder_rendering", ..._schemas];
-        } else {
-            result = _schemas.filter(
-                (e: any) => !["meta_schema", "folder_rendering"].includes(e)
-            );
-        }
-        let r = result.map((e: any) => ({
-            name: e,
-            value: e
-        }));
 
-        if(folderPreference && folderPreference?.content_schema_shortnames?.length) {
-            r.filter(s => folderPreference.content_schema_shortnames.includes(s.value));
-        }
-
-        r.unshift({
-            name: "None",
-            value: null
-        });
-        return r;
-    }
 
     let content: any = $state({
         json: {}
     });
     let metaContent: any = $state({});
     let contentType = $state("json");
-    let contentTypeOptions = [
-        { name: "JSON", value: "json" },
-        { name: "HTML", value: "html" },
-        { name: "Markdown", value: "markdown" }
-    ];
+
     let errorContent: any = $state(null);
     let validateMetaForm;
     let validateRTForm;
@@ -326,110 +274,7 @@
         isHandleCreateEntryLoading = false;
     }
 
-    let isFolderFormReady = $state(false);
-    async function setFolderSchemaContent(){
-        try {
-            isFolderFormReady = false;
-            const _schemaContent = await Dmart.retrieve_entry(
-                ResourceType.schema,
-                "management",
-                "schema",
-                "folder_rendering",
-                true
-            );
-            content = {
-                json: _schemaContent && generateObjectFromSchema(_schemaContent.payload.body)
-            }
-        } catch (e) {
-            errorContent = e.response.data;
-            isFolderFormReady = false;
-        } finally {
-            isFolderFormReady = true;
-        }
-    }
-
-    function handleRenderMenu(items: any, _context: any) {
-        items = items.filter(
-            (item) => !["tree", "text", "table"].includes(item.text)
-        );
-        const separator = {
-            separator: true,
-        };
-
-        const itemsWithoutSpace = items.slice(0, items.length - 2);
-        return itemsWithoutSpace.concat([
-            separator,
-            {
-                space: true,
-            },
-        ]);
-    }
-
     let selectedWorkflow = $state(null);
-    async function fetchWorkflows(){
-        try {
-            const result = await Dmart.query({
-                search: '',
-                type: QueryType.search,
-                space_name,
-                subpath: '/workflows'
-            });
-            return result.records || [];
-        } catch (e) {
-            showToast(Level.warn, "Failed to fetch workflows");
-        }
-    }
-
-    $effect(()=>{
-        if(selectedResourceType) {
-            untrack(() => {
-                isFolderFormReady = false;
-                if(selectedResourceType === ResourceType.folder) {
-                    setFolderSchemaContent();
-                } else {
-                    selectedSchema = null;
-                    content = {json: {}}
-                }
-            });
-        }
-    });
-    let selectedSchemaContent = $state(null);
-    $effect(()=>{
-        if(selectedSchema){
-            untrack(() => {
-                const _schemaContent = tmpSchemas.find(t => t.shortname === selectedSchema);
-                selectedSchemaContent = _schemaContent.attributes.payload.body;
-
-                if(selectedResourceType === ResourceType.content && selectedSchema === "translation"){
-                    content = {
-                        json: []
-                    }
-                } else {
-                    content = {
-                        json: _schemaContent && generateObjectFromSchema(_schemaContent.attributes.payload.body)
-                    }
-                }
-            });
-        } else {
-            untrack(() => {
-                selectedSchemaContent = null;
-                content = { json: {} };
-            })
-        }
-    });
-
-    $effect(()=>{
-        if(selectedInputMode === InputMode.json){
-            untrack(()=>{
-                content = { text: JSON.stringify(jsonEditorContentParser($state.snapshot(content)), null, 2) };
-            });
-        } else if(selectedInputMode === InputMode.form){
-            untrack(()=>{
-                content = { json: jsonEditorContentParser($state.snapshot(content)) };
-            });
-        }
-
-    });
 
     $effect(()=>{
        if(allowedResourceTypes.length === 1) {
@@ -471,129 +316,15 @@
             <MetaPermissionForm bind:formData={metaContent} bind:validateFn={validateRTForm} />
         {/if}
 
-        {#if !resourceTypeWithNoPayload.includes(selectedResourceType)}
-            {#if !["workflows", "schema"].includes(subpath) && ![ResourceType.folder, ResourceType.role, ResourceType.permission].includes(selectedResourceType)}
-                {#if selectedResourceType === ResourceType.content}
-                    <Label class="mt-3">
-                        Content Type
-                        <Select class="mt-2" items={contentTypeOptions} value={contentType} onchange={(e: any) => {
-                            if(e.target.value !== "json") {
-                                content = "";
-                            } else {
-                                content = { json: {} };
-                            }
-                            contentType = e.target.value;
-                        }} />
-                    </Label>
-                {/if}
-
-                {#if contentType === "json" || selectedResourceType !== ResourceType.content}
-                    <Label class="mt-3">
-                        Schema
-                        {#await Dmart.query({
-                            space_name,
-                            type: QueryType.search,
-                            subpath: "/schema",
-                            search: "",
-                            retrieve_json_payload: true,
-                            limit: 100
-                        })}
-                            <div role="status" class="max-w-sm animate-pulse">
-                                <div class="h-3 bg-gray-200 rounded-full dark:bg-gray-700 mx-2 my-2.5"></div>
-                            </div>
-                        {:then schemas}
-                            <Select class="mt-2" items={parseQuerySchemaResponse(schemas)} bind:value={selectedSchema} />
-                        {/await}
-                    </Label>
-                {/if}
-            {/if}
-            {#if selectedResourceType === ResourceType.folder && isFolderFormReady}
-                {#if selectedInputMode === InputMode.form}
-                    <FolderForm bind:content={content.json} />
-                {:else if selectedInputMode === InputMode.json}
-                    <JSONEditor
-                        onRenderMenu={handleRenderMenu}
-                        mode={Mode.text}
-                        bind:content={content}
-                    />
-                {/if}
-            {/if}
-
-            {#if selectedResourceType === ResourceType.ticket}
-                <Label class="mt-3">
-                    Workflow shortname
-                    {#await fetchWorkflows()}
-                        <div role="status" class="max-w-sm animate-pulse">
-                            <div class="h-3 bg-gray-200 rounded-full dark:bg-gray-700 mx-2 my-2.5"></div>
-                        </div>
-                    {:then workflows}
-                        <Select class="mt-2" items={workflows.map(w => ({name: w.shortname, value: w.shortname}))}
-                                bind:value={selectedWorkflow}
-                                placeholder="Select Workflow" />
-                    {/await}
-                </Label>
-            {/if}
-
-            {#if selectedResourceType === ResourceType.schema}
-                {#if selectedInputMode === InputMode.form}
-                    {#if content.json}
-                        <SchemaForm bind:content={content.json}/>
-                    {/if}
-                {:else if selectedInputMode === InputMode.json}
-                    <JSONEditor
-                        onRenderMenu={handleRenderMenu}
-                        mode={Mode.text}
-                        bind:content={content}
-                    />
-                {/if}
-            {/if}
-
-            {#if subpath === "workflows"}
-                {#if selectedInputMode === InputMode.form}
-                    <WorkflowForm bind:content={content.json}/>
-                {:else if selectedInputMode === InputMode.json}
-                    <JSONEditor
-                        onRenderMenu={handleRenderMenu}
-                        mode={Mode.text}
-                        bind:content={content} />
-                {/if}
-            {/if}
-
-            <!--{#if selectedResourceType === ResourceType.content && selectedSchema === "configuration"}-->
-            <!--    <ConfigForm bind:entries={content.json.items}/>-->
-            {#if selectedResourceType === ResourceType.content && selectedSchema === "translation"}
-                {#if selectedSchemaContent}
-                    <TranslationForm
-                        bind:entries={content.json}
-                        columns={Object.keys(selectedSchemaContent.properties.items.items.properties)}
-                    />
-                {/if}
-            {:else if selectedResourceType === ResourceType.content && contentType === "html"}
-                <HtmlEditor bind:content={content} />
-            {:else if selectedResourceType === ResourceType.content && contentType === "markdown"}
-                <MarkdownEditor bind:content={content} />
-            {:else}
-                <div class="my-2">
-                    {#if resourcesWithFormAndJson.includes(selectedResourceType) || subpath === "workflows"}
-                        {#if selectedInputMode === InputMode.form}
-                            {#if selectedSchemaContent}
-                                {#if content.json}
-                                    <DynamicSchemaBasedForms schema={selectedSchemaContent} bind:content={content.json} />
-                                {/if}
-                            {:else}
-                                <p class="content-center">Nothing to render.</p>
-                            {/if}
-                        {:else if selectedInputMode === InputMode.json}
-                            <JSONEditor
-                                onRenderMenu={handleRenderMenu}
-                                mode={Mode.text}
-                                bind:content={content}
-                            />
-                        {/if}
-                    {/if}
-                </div>
-            {/if}
-        {/if}
+        <PayloadFrom
+            bind:selectedResourceType={selectedResourceType}
+            bind:selectedSchema={selectedSchema}
+            bind:selectedWorkflow={selectedWorkflow}
+            bind:selectedInputMode={selectedInputMode}
+            bind:contentType={contentType}
+            bind:content={content}
+            bind:errorContent={errorContent}
+        />
 
         {#if errorContent}
             <div id="error-content" class="mt-3">

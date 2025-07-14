@@ -12,3 +12,15 @@ export const subpathInManagementNoAction = [
     "permissions",
     "groups",
 ];
+
+export const resourcesWithFormAndJson = [
+    ResourceType.user,
+    ResourceType.content,
+    ResourceType.folder,
+    ResourceType.ticket,
+];
+
+export enum InputMode {
+    form = "form",
+    json = "json"
+}

@@ -1,6 +1,4 @@
 <script lang="ts">
-    import { user } from "@/stores/user.js";
-    import { onMount } from "svelte";
     import { Dmart } from "@edraj/tsdmart";
     import {
         Card,

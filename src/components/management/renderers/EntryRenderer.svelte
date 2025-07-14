@@ -22,7 +22,7 @@
     import Table2Cols from "@/components/management/Table2Cols.svelte";
     import Attachments from "@/components/management/renderers/Attachments.svelte";
     import BreadCrumbLite from "@/components/management/BreadCrumbLite.svelte";
-    import {currentEntry, currentListView} from "@/stores/global";
+    import {currentEntry, currentListView, InputMode} from "@/stores/global";
     import MetaForm from "@/components/management/forms/MetaForm.svelte";
     import MetaUserForm from "@/components/management/forms/MetaUserForm.svelte";
     import MetaRoleForm from "@/components/management/forms/MetaRoleForm.svelte";
@@ -31,19 +31,16 @@
     import {goto,params} from "@roxi/routify";
     $goto
     import HistoryListView from "@/components/management/HistoryListView.svelte";
-    import SchemaForm from "@/components/management/forms/SchemaForm.svelte";
-    import FolderForm from "@/components/management/forms/FolderForm.svelte";
     import {removeEmpty} from "@/utils/renderer/schemaEntryRenderer";
-    import WorkflowForm from "@/components/management/forms/WorkflowForm.svelte";
     import MetaTicketForm from "@/components/management/forms/MetaTicketForm.svelte";
     import WorkflowDiagram from "@/components/management/diagram/WorkflowDiagram.svelte";
     import SchemaDiagram from "@/components/management/diagram/SchemaDiagram.svelte";
-    import {CardPlaceholder, TextPlaceholder,Modal,Button} from "flowbite-svelte";
-    import DynamicSchemaBasedForms from "@/components/management/forms/DynamicSchemaBasedForms.svelte";
-    import TranslationForm from "@/components/management/forms/TranslationForm.svelte";
+    import {Modal, Button, Card} from "flowbite-svelte";
     import {searchListView} from "@/stores/management/triggers";
     import {isDeepEqual} from "@/utils/compare";
     import {user} from "@/stores/user";
+    import PayloadFrom from "@/components/management/forms/PayloadFrom.svelte";
+    import {getParentPath} from "@/utils/helpers";
 
 
     enum TabMode {
@@ -70,7 +67,7 @@
     $searchListView = "";
     
     const schemaShortname = entry?.payload?.schema_shortname || null;
-    
+    let selectedInputMode = $state(InputMode.form);
     currentEntry.set({
         entry,
         refreshEntry
@@ -286,31 +283,11 @@
         }
     }
 
-    // function handleRenderMenu(
-    //     items: any,
-    //     context: { mode: "tree" | "text" | "table"; modal: boolean }
-    // ) {
-    //     return items.concat([
-    //         {
-    //             onClick: handleSave,
-    //             icon: {
-    //                 prefix: 'prefix',
-    //                 iconName: 'iconName',
-    //                 icon: [
-    //                     448,
-    //                     512,
-    //                     [128190,128426,"save"],
-    //                     'f0c7',
-    //                     'M64 32C28.7 32 0 60.7 0 96L0 416c0 35.3 28.7 64 64 64l320 0c35.3 0 64-28.7 64-64l0-242.7c0-17-6.7-33.3-18.7-45.3L352 50.7C340 38.7 323.7 32 306.7 32L64 32zm0 96c0-17.7 14.3-32 32-32l192 0c17.7 0 32 14.3 32 32l0 64c0 17.7-14.3 32-32 32L96 224c-17.7 0-32-14.3-32-32l0-64zM224 288a64 64 0 1 1 0 128 64 64 0 1 1 0-128z'
-    //                 ]
-    //             },
-    //             title: "Save",
-    //         }
-    //     ]);
-    // }
-
     async function refreshEntry() {
         if (resource_type === ResourceType.folder) {
+            if(isJEDirty){
+                entry = await Dmart.retrieve_entry(resource_type, space_name, getParentPath(subpath), entry.shortname, true, true);
+            }
             await $currentListView.fetchPageRecords();
         } else {
             entry = await Dmart.retrieve_entry(resource_type, space_name, subpath, entry.shortname, true, true);
@@ -394,6 +371,10 @@
         event.returnValue = '';
         return '...';
     }
+
+    $effect(()=>{
+        console.log({jeContent})
+    })
 </script>
 
 <svelte:window on:beforeunload={beforeUnload}/>
@@ -489,11 +470,11 @@
             </li>
             <li role="presentation">
                 <button
-                        class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === TabMode.history ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
-                        type="button"
-                        role="tab"
-                        aria-selected={activeTab === TabMode.history}
-                        onclick={() => activeTab = TabMode.history}
+                    class="inline-flex items-center p-4 border-b-2 rounded-t-lg {activeTab === TabMode.history ? 'text-blue-600 border-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === TabMode.history}
+                    onclick={() => activeTab = TabMode.history}
                 >
                     <div class="flex items-center gap-2">
                         <ClockOutline size="md" />
@@ -608,37 +589,49 @@
                         <MetaTicketForm {space_name} meta={jeContent.json} bind:formData={ticketData} {progressTicket} />
                     {/if}
                     {#if jeContent?.json?.payload?.body}
-                        {#if resource_type === ResourceType.schema}
-                            <SchemaForm bind:content={jeContent.json.payload.body}  />
-                        {:else if resource_type === ResourceType.folder}
-                            <FolderForm bind:content={jeContent.json.payload.body} />
-                        {:else if resource_type === ResourceType.content && subpath === "workflows"}
-                            <WorkflowForm bind:content={jeContent.json.payload.body} />
-                        {:else}
-                            {#if schemaShortname}
-                                <!--{#if resource_type === ResourceType.content && schemaShortname === "configuration"}-->
-                                <!--    <ConfigForm bind:entries={jeContent.json.payload.body.items}/>-->
-                                {#if resource_type === ResourceType.content && schemaShortname === "translation"}
-                                    {#await getPayloadSchema()}
-                                        <TextPlaceholder class="m-5" size="lg" style="width: 100vw"/>
-                                    {:then schema}
-                                        <TranslationForm
-                                            bind:entries={jeContent.json.payload.body}
-                                            columns={Object.keys(schema.payload.body.properties.items.items.properties)}
-                                        />
-                                    {/await}
-                                {:else}
-                                    {#await getPayloadSchema()}
-                                        <CardPlaceholder size="md" class="mt-8" />
-                                    {:then schema}
-                                        <DynamicSchemaBasedForms
-                                                schema={schema.payload.body}
-                                                bind:content={jeContent.json.payload.body}
-                                        />
-                                    {/await}
-                                {/if}
-                            {/if}
-                        {/if}
+                        <Card class="p-4 max-w-4xl mx-auto my-2">
+                            <h1 class="text-2xl font-bold mb-4">Payload</h1>
+                            <PayloadFrom
+                                isCreate={false}
+                                bind:selectedResourceType={resource_type}
+                                selectedSchema={schemaShortname}
+                                bind:selectedWorkflow={jeContent.json.workflow_shortname}
+                                bind:selectedInputMode={selectedInputMode}
+                                bind:contentType={jeContent.json.payload.content_type}
+                                bind:content={jeContent.json.payload.body}
+                            />
+                        </Card>
+                        <!--{#if resource_type === ResourceType.schema}-->
+                        <!--    <SchemaForm bind:content={jeContent.json.payload.body}  />-->
+                        <!--{:else if resource_type === ResourceType.folder}-->
+                        <!--    <FolderForm bind:content={jeContent.json.payload.body} />-->
+                        <!--{:else if resource_type === ResourceType.content && subpath === "workflows"}-->
+                        <!--    <WorkflowForm bind:content={jeContent.json.payload.body} />-->
+                        <!--{:else}-->
+                        <!--    {#if schemaShortname}-->
+                        <!--        &lt;!&ndash;{#if resource_type === ResourceType.content && schemaShortname === "configuration"}&ndash;&gt;-->
+                        <!--        &lt;!&ndash;    <ConfigForm bind:entries={jeContent.json.payload.body.items}/>&ndash;&gt;-->
+                        <!--        {#if resource_type === ResourceType.content && schemaShortname === "translation"}-->
+                        <!--            {#await getPayloadSchema()}-->
+                        <!--                <TextPlaceholder class="m-5" size="lg" style="width: 100vw"/>-->
+                        <!--            {:then schema}-->
+                        <!--                <TranslationForm-->
+                        <!--                    bind:entries={jeContent.json.payload.body}-->
+                        <!--                    columns={Object.keys(schema.payload.body.properties.items.items.properties)}-->
+                        <!--                />-->
+                        <!--            {/await}-->
+                        <!--        {:else}-->
+                        <!--            {#await getPayloadSchema()}-->
+                        <!--                <CardPlaceholder size="md" class="mt-8" />-->
+                        <!--            {:then schema}-->
+                        <!--                <DynamicSchemaBasedForms-->
+                        <!--                        schema={schema.payload.body}-->
+                        <!--                        bind:content={jeContent.json.payload.body}-->
+                        <!--                />-->
+                        <!--            {/await}-->
+                        <!--        {/if}-->
+                        <!--    {/if}-->
+                        <!--{/if}-->
                     {/if}
                 {/if}
                 {#if errorMessage}
