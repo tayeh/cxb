@@ -409,12 +409,13 @@
             Updated: {new Date(attachment?.attributes.updated_at).toLocaleDateString()}
           </div>
         </div>
-
-        <div class="absolute top-2 right-2" onclick={() => handleViewContentModal(attachment)}>
-          <Button class="!p-1" color="light">
-            <EyeOutline />
-          </Button>
-        </div>
+        {#if attachment.resource_type !== ResourceType.reaction}
+          <div class="absolute top-2 right-2" onclick={() => handleViewContentModal(attachment)}>
+            <Button class="!p-1" color="light">
+              <EyeOutline />
+            </Button>
+          </div>
+        {/if}
       </Card>
     {/each}
     </div>

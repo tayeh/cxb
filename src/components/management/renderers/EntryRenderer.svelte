@@ -316,7 +316,11 @@
             entry = await Dmart.retrieve_entry(resource_type, space_name, subpath, entry.shortname, true, true);
         }
         jeContent = { json: $state.snapshot(entry) };
-        originalJeContent = jsonEditorContentParser($state.snapshot(jeContent));
+        setTimeout(() => {
+            originalJeContent = jsonEditorContentParser(
+                $state.snapshot(jeContent)
+            );
+        }, 64);
         currentEntry.set({
             entry,
             refreshEntry
