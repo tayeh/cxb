@@ -2,6 +2,7 @@ import { writable } from "svelte/store";
 import {ResourceType} from "@edraj/tsdmart";
 export const currentEntry = writable(null);
 export const currentListView = writable(null);
+export const spaceChildren = writable(new Map());
 
 export const resourceTypeWithNoPayload = [
     ResourceType.role,

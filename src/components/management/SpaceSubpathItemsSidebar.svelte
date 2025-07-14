@@ -21,25 +21,25 @@
     import {params} from "@roxi/routify";
     import MetaForm from "./forms/MetaForm.svelte";
     import {spaces} from "@/stores/management/spaces";
+    import {spaceChildren} from "@/stores/global";
 
-    let spaceChildren = $state(new Map());
+
     let expandedSpaces = $state(new Set());
 
-
-    async function loadChildren(spaceName, subpath = "/") {
+    export async function loadChildren(spaceName, subpath = "/") {
         const cacheKey = `${spaceName}:${subpath}`;
-        if (!spaceChildren.has(cacheKey)) {
+
+        if (!$spaceChildren.has(cacheKey)) {
             try {
                 const children = await getChildren(spaceName, subpath, 50, 0, [ResourceType.folder]);
 
-                spaceChildren.set(cacheKey, children.records || []);
-                spaceChildren = spaceChildren; // Trigger reactivity
+                $spaceChildren.set(cacheKey, children.records || []);
             } catch (error) {
                 console.error(`Failed to load children for ${spaceName}${subpath}:`, error);
-                spaceChildren.set(cacheKey, []);
+                $spaceChildren.set(cacheKey, []);
             }
         }
-        return spaceChildren.get(cacheKey) || [];
+        return $spaceChildren.get(cacheKey) || [];
     }
 
     async function toggleExpanded(spaceName, subpath = "/", forceExpand = null) {
@@ -64,7 +64,7 @@
     }
 
     function getChildrenForSpace(spaceName, subpath = "/") {
-        return spaceChildren.get(`${spaceName}:${subpath}`) || [];
+        return $spaceChildren.get(`${spaceName}:${subpath}`) || [];
     }
 
 
@@ -204,6 +204,8 @@
             getCurrentSpaceNameLabel();
         }
     });
+
+    loadChildren($params.space_name)
 </script>
 
 <Sidebar position="static" class="h-full">
@@ -224,18 +226,17 @@
                 <ListPlaceholder />
             </div>
         {:then children}
-            {#each getChildrenForSpace($params.space_name) as child (child.shortname)}
+            {#each $spaceChildren.get(`${$params.space_name}:/`) as child (child.shortname)}
                 <SpacesSubpathItemsSidebar
-                        spaceName={$params.space_name}
-                        parentPath="/"
-                        item={child}
-                        depth={1}
-                        {spaceChildren}
-                        {expandedSpaces}
-                        {loadChildren}
-                        {toggleExpanded}
-                        {isExpanded}
-                        {getChildrenForSpace}
+                    spaceName={$params.space_name}
+                    parentPath="/"
+                    item={child}
+                    depth={1}
+                    {expandedSpaces}
+                    {loadChildren}
+                    {toggleExpanded}
+                    {isExpanded}
+                    {getChildrenForSpace}
                 />
             {/each}
         {/await}

@@ -22,7 +22,7 @@
     import Table2Cols from "@/components/management/Table2Cols.svelte";
     import Attachments from "@/components/management/renderers/Attachments.svelte";
     import BreadCrumbLite from "@/components/management/BreadCrumbLite.svelte";
-    import {currentEntry, currentListView, InputMode} from "@/stores/global";
+    import {currentEntry, currentListView, InputMode, spaceChildren} from "@/stores/global";
     import MetaForm from "@/components/management/forms/MetaForm.svelte";
     import MetaUserForm from "@/components/management/forms/MetaUserForm.svelte";
     import MetaRoleForm from "@/components/management/forms/MetaRoleForm.svelte";
@@ -41,6 +41,7 @@
     import {user} from "@/stores/user";
     import PayloadFrom from "@/components/management/forms/PayloadFrom.svelte";
     import {getParentPath} from "@/utils/helpers";
+    import {getChildren} from "@/lib/dmart_services";
 
 
     enum TabMode {
@@ -287,6 +288,9 @@
         if (resource_type === ResourceType.folder) {
             if(isJEDirty){
                 entry = await Dmart.retrieve_entry(resource_type, space_name, getParentPath(subpath), entry.shortname, true, true);
+                const children = await getChildren(space_name, getParentPath(subpath), 50, 0, [ResourceType.folder]);
+                $spaceChildren.set(`${space_name}:/${getParentPath(subpath)}`.replaceAll('//', '/'), children.records || []);
+                $spaceChildren = $spaceChildren;
             }
             await $currentListView.fetchPageRecords();
         } else {

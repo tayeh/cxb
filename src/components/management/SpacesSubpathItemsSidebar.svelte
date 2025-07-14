@@ -11,13 +11,13 @@
     import SpacesSubpathItemsSidebar from "./SpacesSubpathItemsSidebar.svelte";
     import {activeRoute} from "@roxi/routify";
     import {untrack} from "svelte";
+    import {spaceChildren} from "@/stores/global";
 
     let {
         spaceName,
         parentPath,
         item,
         depth = 0,
-        spaceChildren,
         expandedSpaces,
         loadChildren,
         toggleExpanded,
@@ -50,10 +50,6 @@
 
     function getIsExpanded() {
         return isExpanded(spaceName, getCurrentPath());
-    }
-
-    function getCurrentChildren() {
-        return getChildrenForSpace(spaceName, getCurrentPath());
     }
 
     export function preventAndHandleToggleExpanded(node: HTMLElement) {
@@ -109,13 +105,12 @@
             <ListPlaceholder />
         </div>
     {:then children}
-        {#each getCurrentChildren() as child (child.shortname)}
+        {#each $spaceChildren.get(`${spaceName}:${getCurrentPath()}`) as child (child.shortname)}
             <SpacesSubpathItemsSidebar
                 {spaceName}
                 parentPath={getCurrentPath()}
                 item={child}
                 depth={depth + 1}
-                {spaceChildren}
                 {expandedSpaces}
                 {loadChildren}
                 {toggleExpanded}
