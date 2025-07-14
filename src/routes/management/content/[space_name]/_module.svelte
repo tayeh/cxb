@@ -1,5 +1,4 @@
 <script>
-    import SpacesSidebar from "@/components/management/SpacesSidebar.svelte";
     import SpaceSubpathItemsSidebar from "@/components/management/SpaceSubpathItemsSidebar.svelte";
 </script>
 

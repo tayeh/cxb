@@ -10,6 +10,7 @@
     } from "flowbite-svelte-icons";
     import SpacesSubpathItemsSidebar from "./SpacesSubpathItemsSidebar.svelte";
     import {activeRoute} from "@roxi/routify";
+    import {untrack} from "svelte";
 
     let {
         spaceName,
@@ -23,6 +24,14 @@
         isExpanded,
         getChildrenForSpace,
     } = $props();
+
+    $effect(() => {
+        if (`/-${$activeRoute.params.subpath}` === `${parentPath}-${item.shortname}`) {
+            untrack(()=>{
+                toggleExpanded(spaceName, getCurrentPath(), true);
+            })
+        }
+    });
 
     function getCurrentPath() {
         let urll = `${parentPath}-${item.shortname}`.replace('/', '-').replace('--', '-');

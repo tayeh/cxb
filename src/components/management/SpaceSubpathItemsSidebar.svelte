@@ -42,11 +42,17 @@
         return spaceChildren.get(cacheKey) || [];
     }
 
-    async function toggleExpanded(spaceName, subpath = "/") {
+    async function toggleExpanded(spaceName, subpath = "/", forceExpand = null) {
         const key = `${spaceName}:${subpath}`;
         if (expandedSpaces.has(key)) {
+            if (forceExpand === true) {
+                return;
+            }
             expandedSpaces.delete(key);
         } else {
+            if(forceExpand === false) {
+                return;
+            }
             expandedSpaces.add(key);
             await loadChildren(spaceName, subpath);
         }
