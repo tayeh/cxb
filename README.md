@@ -1,6 +1,12 @@
-# Svelte + TS + Vite
+# CXB - DMART Unified Data Platform
 
-This template should help get you started developing with Svelte and TypeScript in Vite.
+This project is built with Svelte + TypeScript + Vite.
+
+## Configuration
+
+This project uses a dynamic configuration system that loads settings from a JSON file at runtime. Configuration values are read from `public/config.json` on each session, allowing you to change settings without rebuilding the application.
+
+For detailed information about the configuration system, see [CONFIG.md](CONFIG.md).
 
 ## Recommended IDE Setup
 

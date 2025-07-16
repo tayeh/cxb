@@ -27,6 +27,10 @@ export default defineConfig({
     svelteMd(),
     viteStaticCopy({
       targets: [
+        {
+          src: 'public/config.json',
+          dest: ''
+        }
       ]
     }),
     routify({

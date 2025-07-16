@@ -1,45 +1,59 @@
 # Dynamic Configuration System
 
-This project now uses a dynamic configuration system that allows you to override configuration values using environment variables.
+This project uses a dynamic configuration system that loads settings from a JSON file at runtime, allowing you to change configuration without rebuilding the application.
 
 ## How It Works
 
-1. The `src/config.ts` file loads these values and applies any overrides from environment variables
-2. Environment variables take precedence over values in the JSON file
+1. Configuration values are stored in `public/config.json`
+2. The `src/config.ts` file loads these values dynamically at runtime using the fetch API
+3. Changes to `config.json` are reflected immediately on page refresh without requiring a rebuild
 
-## Using Environment Variables
+## Modifying Configuration
 
-To override configuration values:
+To change configuration values:
 
-1. Create a `.env` file in the project root (you can copy from `.env.example`)
-2. Set the desired environment variables with the `VITE_` prefix
+1. Edit the `public/config.json` file
+2. Save your changes
+3. Refresh the application in your browser
 
-Example `.env` file:
-```
-VITE_TITLE="My Custom Title"
-VITE_BACKEND="https://api.example.com"
-```
+No rebuild is required - the configuration is loaded fresh on each session.
 
 ## Available Configuration Options
 
-| JSON Key | Environment Variable | Description |
-|----------|---------------------|-------------|
-| title | VITE_TITLE | Website title |
-| footer | VITE_FOOTER | Footer text |
-| short_name | VITE_SHORT_NAME | Short name for the application |
-| display_name | VITE_DISPLAY_NAME | Display name for the application |
-| description | VITE_DESCRIPTION | Website description |
-| default_language | VITE_DEFAULT_LANGUAGE | Default language code (e.g., "en", "ar") |
-| backend | VITE_BACKEND | Backend API URL |
-| websocket | VITE_WEBSOCKET | WebSocket URL (optional) |
+| JSON Key | Description |
+|----------|-------------|
+| title | Website title |
+| footer | Footer text |
+| short_name | Short name for the application |
+| display_name | Display name for the application |
+| description | Website description |
+| default_language | Default language code (e.g., "en", "ar") |
+| languages | Object mapping language codes to display names |
+| backend | Backend API URL |
+| websocket | WebSocket URL (optional) |
+
+## Example Configuration
+
+```json
+{
+  "title": "DMART Unified Data Platform",
+  "footer": "dmart.cc unified data platform",
+  "short_name": "dmart",
+  "display_name": "dmart",
+  "description": "dmart unified data platform",
+  "default_language": "ar",
+  "languages": { "ar": "العربية", "en": "English" },
+  "backend": "http://localhost:8282",
+  "websocket": "ws://0.0.0.0:8484/ws"
+}
+```
 
 ## Development vs Production
 
-The configuration values will be applied during build time, so any changes to the `.env` file will be reflected in the built version of the application.
+For different environments, you can maintain different versions of the config.json file and deploy the appropriate one:
 
-For development:
-- Use `.env.development` or `.env.local` for development-specific settings
+- For development: Use a local config.json with development settings
+- For production: Deploy with a production-ready config.json
+- For testing: Use a config.json with test environment settings
 
-For production:
-- Use `.env.production` for production settings
-- Or set environment variables directly in your deployment environment
+Since the configuration is loaded at runtime, you can even change settings on a live production server by updating the config.json file without redeploying the application.

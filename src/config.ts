@@ -10,27 +10,42 @@ interface WebsiteConfig {
   websocket?: string;
 }
 
-const getEnvVar = (key: string, defaultValue: string): string => {
-  const envKey = `VITE_${key.toUpperCase()}`;
-  return (import.meta.env[envKey] as string) || defaultValue;
-};
-
-const parseLanguages = (envValue: string): Record<string, string> => {
+const loadConfig = async (): Promise<WebsiteConfig> => {
   try {
-    return JSON.parse(envValue);
-  } catch {
-    return { ar: "العربية", en: "English" };
+    const response = await fetch('/config.json');
+    if (!response.ok) {
+      throw new Error(`Failed to load config: ${response.status} ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error loading configuration:', error);
+    return {
+      title: "DMART Unified Data Platform",
+      footer: "dmart.cc unified data platform",
+      short_name: "dmart",
+      display_name: "dmart",
+      description: "dmart unified data platform",
+      default_language: "ar",
+      languages: { ar: "العربية", en: "English" },
+      backend: "http://localhost:8282",
+      websocket: "ws://0.0.0.0:8484/ws"
+    };
   }
 };
 
-export const website: WebsiteConfig = {
-  title: getEnvVar('TITLE', "DMART Unified Data Platform"),
-  footer: getEnvVar('FOOTER', "dmart.cc unified data platform"),
-  short_name: getEnvVar('SHORT_NAME', "dmart"),
-  display_name: getEnvVar('DISPLAY_NAME', "dmart"),
-  description: getEnvVar('DESCRIPTION', "dmart unified data platform"),
-  default_language: getEnvVar('DEFAULT_LANGUAGE', "ar"),
-  languages: parseLanguages(getEnvVar('LANGUAGES', '{"ar": "العربية", "en": "English"}')),
-  backend: getEnvVar('BACKEND', "http://localhost:8282"),
-  websocket: getEnvVar('WEBSOCKET', "ws://0.0.0.0:8484/ws"),
+export let website: WebsiteConfig = {
+  title: "DMART Unified Data Platform",
+  footer: "dmart.cc unified data platform",
+  short_name: "dmart",
+  display_name: "dmart",
+  description: "dmart unified data platform",
+  default_language: "ar",
+  languages: { ar: "العربية", en: "English" },
+  backend: "http://localhost:8282",
+  websocket: "ws://0.0.0.0:8484/ws"
 };
+
+loadConfig().then(config => {
+  website = config;
+  console.log('Configuration loaded:', website);
+});
