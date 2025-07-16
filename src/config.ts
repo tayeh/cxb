@@ -12,7 +12,9 @@ interface WebsiteConfig {
 
 const loadConfig = async (): Promise<WebsiteConfig> => {
   try {
-    const response = await fetch('/config.json');
+    const basePath = import.meta.env.BASE_URL || '/';
+    const configPath = `${basePath}/config.json`.replace('//', '/');
+    const response = await fetch(configPath);
     if (!response.ok) {
       throw new Error(`Failed to load config: ${response.status} ${response.statusText}`);
     }
@@ -47,5 +49,4 @@ export let website: WebsiteConfig = {
 
 loadConfig().then(config => {
   website = config;
-  console.log('Configuration loaded:', website);
 });

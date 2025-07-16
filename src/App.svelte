@@ -4,7 +4,7 @@
   import {SvelteToast, type SvelteToastOptions} from "@zerodevx/svelte-toast";
   import './app.css'
 
-  const prefix="sysadmin"; // ""
+  const prefix='cxb'; // ""
 
   const options: SvelteToastOptions = {
     duration: 2500, // duration of progress bar tween to the `next` value

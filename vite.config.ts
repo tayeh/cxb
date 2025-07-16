@@ -14,7 +14,7 @@ import tailwindcss from "@tailwindcss/vite"
 const production = process.env.NODE_ENV === "production";
 
 export default defineConfig({
-  base: "/",  // "/"
+  base: "/cxb",  // "/"
   clearScreen: false,
   resolve: {
     alias: {
