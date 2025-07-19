@@ -337,9 +337,11 @@
         }
 
         if(isJEDirty){
-            if(!confirm("You have unsaved changes. Do you want to discard them and refresh?")) {
-                return;
-            }
+            pendingRefreshAction = async () => {
+                await refreshEntry();
+            };
+            showUnsavedChangesModal = true;
+            return;
         }
 
         await refreshEntry();
@@ -365,15 +367,27 @@
         return true;
     }
 
-    function beforeUnload() {
-        if (!isJEDirty) {
-            if( !confirm("You have unsaved changes. Do you want to leave without saving?")) {
-                return false;
-            }
+    let showUnsavedChangesModal = $state(false);
+    let pendingRefreshAction: (() => void) | null = $state(null);
+
+    function confirmDiscardChanges() {
+        showUnsavedChangesModal = false;
+        if (pendingRefreshAction) {
+            pendingRefreshAction();
+            pendingRefreshAction = null;
         }
-        event.preventDefault();
-        event.returnValue = '';
-        return '...';
+    }
+
+    function cancelDiscardChanges() {
+        showUnsavedChangesModal = false;
+        pendingRefreshAction = null;
+    }
+
+    function beforeUnload(event: BeforeUnloadEvent) {
+        if (isJEDirty) {
+            event.preventDefault();
+            event.returnValue = true;
+        }
     }
 </script>
 
@@ -683,5 +697,16 @@
     <div class="flex justify-between w-full">
         <Button color="alternative" onclick={() => openDeleteModal = false}>Cancel</Button>
         <Button color="red" onclick={deleteCurrentEntry} disabled={isActionLoading}>{isActionLoading ? "Deleting..." : "Delete"}</Button>
+    </div>
+</Modal>
+
+<Modal bind:open={showUnsavedChangesModal} size="md" title="Unsaved Changes">
+    <p class="text-center mb-6">
+        You have unsaved changes. Do you want to discard them and refresh?
+    </p>
+
+    <div class="flex justify-between w-full">
+        <Button color="alternative" onclick={cancelDiscardChanges}>Cancel</Button>
+        <Button color="red" onclick={confirmDiscardChanges}>Discard Changes</Button>
     </div>
 </Modal>
