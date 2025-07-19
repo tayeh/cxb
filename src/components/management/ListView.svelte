@@ -28,7 +28,6 @@
   import ListViewActionBar from "@/components/management/ListViewActionBar.svelte";
   import {currentListView} from "@/stores/global";
   import {untrack} from "svelte";
-  import {user} from "@/stores/user";
   $goto
 
   $bulkBucket = [];

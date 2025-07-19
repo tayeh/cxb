@@ -23,8 +23,6 @@ function pyTOjs(string){
 }
 
 export function parseJSONL(data) {
-    // console.log({data})
     const lines = data.split('\n');
-    // console.log({lines: lines.filter(Boolean)})
     return lines.filter(Boolean).map(line => JSON.parse(pyTOjs(line)));
 }

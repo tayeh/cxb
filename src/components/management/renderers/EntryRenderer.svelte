@@ -82,7 +82,7 @@
         originalJeContent = jsonEditorContentParser(
             $state.snapshot(jeContent)
         );
-    }, 64);
+    }, 512);
     let isJEDirty = $state(false);
 
     let ticketData: any = $state({
@@ -96,7 +96,7 @@
 
     const canUpdate = checkAccess("update", space_name, subpath, resource_type);
     const canDelete = (()=>{
-        if(space_name=== "management"){
+        if(space_name=== "management" && subpath === "/"){
             if(resource_type === ResourceType.space || resource_type === ResourceType.folder) {
                 return false;
             }
@@ -301,7 +301,7 @@
             originalJeContent = jsonEditorContentParser(
                 $state.snapshot(jeContent)
             );
-        }, 64);
+        }, 512);
         currentEntry.set({
             entry,
             refreshEntry
@@ -349,7 +349,7 @@
         if (jeContent) {
             isJEDirty = !isDeepEqual(
                 jsonEditorContentParser($state.snapshot(jeContent)),
-                originalJeContent
+                $state.snapshot(originalJeContent)
             );
         }
     });
@@ -375,10 +375,6 @@
         event.returnValue = '';
         return '...';
     }
-
-    $effect(()=>{
-        console.log({jeContent})
-    })
 </script>
 
 <svelte:window on:beforeunload={beforeUnload}/>
