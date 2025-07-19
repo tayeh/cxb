@@ -47,12 +47,12 @@ One initial category of usecases targets organizations and individuals to establ
 
 ## Backend
 
-- Programming language : Python 3.11 (latest revision)
+- Programming language : Python 3.13 (latest revision)
 - Microframework : FastAPI (microframework for python) with full leverage of async programming paradigm
 - API validation : Pydantic v2 (rust-based)
 - Live-update : Web socket
-- Operational store : Redis 7.2.x with RediSearch 2.8.x and ReJson 2.6.x modules (based on C/C++ and rust)
-- Viewing logs and building dashboards (optional): Grafana/Loki/Promtail (based on golang)
+- Operational store : PostgreSQL 16
+- Viewing logs and building dashboards (optional): Grafana/Loki/Alloy (based on golang)
 - Container : Podman (or Docker) for fast setup using light-wieght Alpine linux and OpenRC.
 - System/User level OS service management : Systemd.
 - Reverse-proxy : Caddy (with automatic SSL/Let's encrypt integration)
@@ -60,7 +60,7 @@ One initial category of usecases targets organizations and individuals to establ
 ## Frontend
 
 - Single-Page-Application : Svelte with Typescript (compiled as static files)
-- CSS/UI framework : Bootstrap 5.3 with full RTL support
+- CSS/UI framework : Flowbite with Tailwind and full RTL support
 
 ## High-quality code
 
