@@ -69,6 +69,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 512,
     cssMinify: 'lightningcss',
     rollupOptions: {
+      external: ['$app/environment', '$app/stores', '$app/navigation'],
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
