@@ -19,6 +19,7 @@
     import {Level, showToast} from "@/utils/toast";
     import {checkAccess} from "@/utils/checkAccess";
     import PayloadFrom from "@/components/management/forms/PayloadFrom.svelte";
+    import {removeEmpty} from "@/utils/compare";
 
     let {
         space_name,
@@ -251,7 +252,7 @@
                     resource_type: selectedResourceType,
                     subpath: subpath,
                     shortname: metaContent.shortname,
-                    attributes: requestCreate.attributes
+                    attributes: removeEmpty(requestCreate.attributes)
                 }]
             }
             response = await Dmart.request(request);
