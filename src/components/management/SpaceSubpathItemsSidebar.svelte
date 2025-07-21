@@ -22,6 +22,7 @@
     import MetaForm from "./forms/MetaForm.svelte";
     import {spaces} from "@/stores/management/spaces";
     import {spaceChildren} from "@/stores/global";
+    import {removeEmpty} from "@/utils/compare";
 
 
     let expandedSpaces = $state(new Set());
@@ -106,6 +107,12 @@
             try {
                 isActionLoading = true;
                 modelError = null;
+                const attributes = {
+                    is_active: spaceFormData.is_active,
+                    slug: spaceFormData.slug,
+                    displayname: spaceFormData.displayname,
+                    description: spaceFormData.description
+                };
                 await Dmart.space({
                     space_name: spaceFormData.shortname.trim(),
                     request_type: RequestType.create,
@@ -114,12 +121,7 @@
                             resource_type: ResourceType.space,
                             shortname: spaceFormData.shortname.trim(),
                             subpath: '/',
-                            attributes: {
-                                is_active: spaceFormData.is_active,
-                                slug: spaceFormData.slug,
-                                displayname: spaceFormData.displayname,
-                                description: spaceFormData.description
-                            }
+                            attributes: removeEmpty(attributes)
                         }
                     ]
                 });

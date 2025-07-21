@@ -32,12 +32,42 @@ export const removeEmpty = (obj) => {
   Object.keys(obj).forEach((key) => {
     if (obj[key] === Object(obj[key])) newObj[key] = removeEmpty(obj[key]);
     else if (
-      obj[key] !== undefined &&
-      typeof obj[key] === "string" &&
-      obj[key].trim().length != 0
+        obj[key] !== undefined &&
+        obj[key] !== null &&
+        typeof obj[key] === "string" &&
+        obj[key].trim().length != 0
+    ) {
+      newObj[key] = obj[key];
+    } else if (
+        obj[key] !== undefined &&
+        obj[key] !== null &&
+        typeof obj[key] !== "string"
     ) {
       newObj[key] = obj[key];
     }
   });
   return newObj;
 };
+
+const d = [
+  {
+    "resource_type": "space",
+    "shortname": "website",
+    "subpath": "/",
+    "attributes": {
+      "is_active": true,
+      "slug": null,
+      "displayname": {
+        "en": null,
+        "ar": null,
+        "ku": null
+      },
+      "description": {
+        "en": null,
+        "ar": null,
+        "ku": null
+      }
+    }
+  }
+]
+console.log(removeEmpty(d));

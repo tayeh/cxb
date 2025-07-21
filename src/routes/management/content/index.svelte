@@ -10,6 +10,7 @@
     import Prism from "@/components/Prism.svelte";
     import {goto} from "@roxi/routify";
     import MetaForm from "@/components/management/forms/MetaForm.svelte";
+    import {removeEmpty} from "@/utils/compare.js";
     $goto
 
     let viewMetaModal = $state(false);
@@ -69,6 +70,12 @@
             try {
                 isActionLoading = true;
                 modelError = null;
+                const attributes = {
+                    is_active: spaceFormData.is_active,
+                    slug: spaceFormData.slug,
+                    displayname: spaceFormData.displayname,
+                    description: spaceFormData.description
+                };
                 await Dmart.space({
                     space_name: spaceFormData.shortname.trim(),
                     request_type: RequestType.create,
@@ -77,12 +84,7 @@
                             resource_type: ResourceType.space,
                             shortname: spaceFormData.shortname.trim(),
                             subpath: '/',
-                            attributes: {
-                                is_active: spaceFormData.is_active,
-                                slug: spaceFormData.slug,
-                                displayname: spaceFormData.displayname,
-                                description: spaceFormData.description
-                            }
+                            attributes: removeEmpty(attributes)
                         }
                     ]
                 });
