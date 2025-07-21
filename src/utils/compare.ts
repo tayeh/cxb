@@ -28,10 +28,24 @@ export function isDeepEqual(x, y) {
 }
 
 export const removeEmpty = (obj) => {
+  // Handle arrays specifically
+  if (Array.isArray(obj)) {
+    return obj.map(item =>
+        typeof item === 'object' && item !== null ? removeEmpty(item) : item
+    );
+  }
+
   let newObj = {};
   Object.keys(obj).forEach((key) => {
-    if (obj[key] === Object(obj[key])) newObj[key] = removeEmpty(obj[key]);
-    else if (
+    if (Array.isArray(obj[key])) {
+      // Preserve arrays (including empty arrays)
+      newObj[key] = obj[key].map(item =>
+          typeof item === 'object' && item !== null ? removeEmpty(item) : item
+      );
+    } else if (obj[key] === Object(obj[key]) && obj[key] !== null) {
+      // Handle nested objects
+      newObj[key] = removeEmpty(obj[key]);
+    } else if (
         obj[key] !== undefined &&
         obj[key] !== null &&
         typeof obj[key] === "string" &&
@@ -57,6 +71,7 @@ const d = [
     "attributes": {
       "is_active": true,
       "slug": null,
+      xx:[],
       "displayname": {
         "en": null,
         "ar": null,
