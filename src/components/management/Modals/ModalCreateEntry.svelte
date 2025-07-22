@@ -191,7 +191,15 @@
                 },
             }
             if(selectedResourceType === ResourceType.ticket) {
-                requestCreate.attributes.workflow_shortname = selectedWorkflow;
+                requestCreate.attributes = {
+                    ...requestCreate.attributes,
+                    workflow_shortname: selectedWorkflow,
+                    payload: {
+                        body: jsonEditorContentParser($state.snapshot(content)),
+                        schema_shortname: 'meta_schema',
+                        content_type: "json"
+                    }
+                };
             }
             else if(selectedResourceType === ResourceType.schema) {
                 requestCreate.attributes = {

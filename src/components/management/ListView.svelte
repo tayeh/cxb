@@ -67,6 +67,17 @@
   } else {
       columns = folderRenderingColsToListCols(folderColumns);
   }
+  if (Object.keys(columns).includes('undefined')) {
+    columns = {
+      "shortname": {
+        "path": "shortname",
+        "title": "shortname",
+        "type": "string",
+        "width": "20%"
+      }
+    }
+  }
+  console.log({d: $state.snapshot(columns)})
 
   let total: number = $state(null);
   const { sortBy, sortOrder, page } = $params;
