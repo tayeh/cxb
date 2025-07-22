@@ -180,7 +180,7 @@
         }));
 
         if(folderPreference && folderPreference?.content_schema_shortnames?.length) {
-            r.filter(s => folderPreference.content_schema_shortnames.includes(s.value));
+            r = r.filter(s => folderPreference.content_schema_shortnames.includes(s.value));
         }
 
         r.unshift({

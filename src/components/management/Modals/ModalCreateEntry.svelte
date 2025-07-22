@@ -143,7 +143,6 @@
         }
         selectedResourceType = allowedResourceTypes[0].value;
     }
-
     prepareResourceTypes();
 
     let selectedSchema = $state(null);
