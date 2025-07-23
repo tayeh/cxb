@@ -62,27 +62,3 @@ export const removeEmpty = (obj) => {
   });
   return newObj;
 };
-
-const d = [
-  {
-    "resource_type": "space",
-    "shortname": "website",
-    "subpath": "/",
-    "attributes": {
-      "is_active": true,
-      "slug": null,
-      xx:[],
-      "displayname": {
-        "en": null,
-        "ar": null,
-        "ku": null
-      },
-      "description": {
-        "en": null,
-        "ar": null,
-        "ku": null
-      }
-    }
-  }
-]
-console.log(removeEmpty(d));

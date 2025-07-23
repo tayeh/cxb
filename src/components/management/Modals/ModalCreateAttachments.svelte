@@ -9,6 +9,7 @@
     import {currentEntry} from "@/stores/global";
     import {jsonEditorContentParser} from "@/utils/jsonEditor";
     import Prism from "@/components/Prism.svelte";
+    import {removeEmpty} from "@/utils/compare";
 
     let {
         meta = $bindable({}),
@@ -119,7 +120,7 @@
                         ? RequestType.replace
                         : RequestType.create,
                     records: [
-                        {
+                        removeEmpty({
                             resource_type: ResourceType.comment,
                             shortname: shortname,
                             subpath: `${subpath}/${parent_shortname}`.replaceAll("//", "/"),
@@ -135,7 +136,7 @@
                                     }
                                 }
                             },
-                        },
+                        }),
                     ],
                 });
             } else if (
@@ -191,7 +192,7 @@
                         ? RequestType.replace
                         : RequestType.create,
                     records: [
-                        {
+                        removeEmpty({
                             resource_type: ResourceType[resourceType],
                             shortname: shortname,
                             subpath: parentResourceType === ResourceType.folder ? subpath : `${subpath}/${parent_shortname}`,
@@ -211,7 +212,7 @@
                                             : payloadData,
                                 },
                             },
-                        },
+                        }),
                     ],
                 });
             }
@@ -247,7 +248,7 @@
         const request_dict = {
             space_name,
             request_type: RequestType.replace,
-            records: [_payloadContent],
+            records: [removeEmpty(_payloadContent)],
         };
 
         try {

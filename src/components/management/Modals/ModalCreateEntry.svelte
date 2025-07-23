@@ -195,7 +195,7 @@
                     workflow_shortname: selectedWorkflow,
                     payload: {
                         body: jsonEditorContentParser($state.snapshot(content)),
-                        schema_shortname: 'meta_schema',
+                        schema_shortname: selectedSchema,
                         content_type: "json"
                     }
                 };
