@@ -155,8 +155,16 @@
                     ResourceType[resourceType] === ResourceType.json
                         ? jsonToFile(payloadContent)
                         : payloadFiles[0],
-                    ContentType[resourceType],
-                    selectedSchema
+                    {
+                        displayname: displayname,
+                        description: description,
+                        is_active: true,
+                        payload: {
+                            content_type: ContentType[resourceType],
+                            schema_shortname: selectedSchema,
+                            body: {}
+                        },
+                    }
                 );
             } else if (
                 [
@@ -174,8 +182,15 @@
                     ResourceType[resourceType] === ResourceType.json
                         ? jsonToFile(payloadContent)
                         : payloadFiles[0],
-                    contentType,
-                    null
+                    {
+                        displayname: displayname,
+                            description: description,
+                        is_active: true,
+                        payload: {
+                            content_type: contentType,
+                            body: {}
+                        },
+                    }
                 );
             } else if (
                 [
