@@ -167,7 +167,7 @@
                     resource_type: resource_type,
                     shortname: shortname,
                     subpath: resource_type === ResourceType.folder ? getParentSubpath(subpath)  : subpath,
-                    attributes: content
+                    attributes: removeEmpty(content)
                 }]
             })
             showToast(Level.info, `Entry has been updated successfully!`);
