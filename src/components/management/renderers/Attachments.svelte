@@ -146,8 +146,8 @@
 
   function handleEditModal(attachment) {
     selectedAttachment = attachment;
-    openCreateAttachmentModal = true;
     isModalInUpdateMode = true;
+    openCreateAttachmentModal = true;
   }
 
   function handleRenderMenu(items: any, _context: any) {
@@ -198,7 +198,6 @@
   }
 
   let openDeleteModal = $state(false);
-
   let openViewContentModal = $state(false);
   let openCreateAttachmentModal = $state(false);
   let selectedAttachment = $state(null);
@@ -439,8 +438,8 @@
   space_name={space_name}
   subpath={subpath}
   parent_shortname={parent_shortname}
-  meta={createMetaContent}
-  payload={createPayloadContent}
+  bind:meta={createMetaContent}
+  bind:payload={createPayloadContent}
 />
 
 <Modal bind:open={openDeleteModal} size="md" title="Confirm Deletion">

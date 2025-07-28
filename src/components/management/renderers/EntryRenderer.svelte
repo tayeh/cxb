@@ -135,8 +135,14 @@
     }
 
     function getParentSubpath(path: string): string {
-        const parts = path.replace(/^\/+|\/+$/g, "").split("/");
-        return parts.length > 1 ? "/" + parts.slice(1).join("/") : "/";
+        const normalizedPath = path.replace(/^\/+|\/+$/g, "");
+        const parts = normalizedPath.split("/");
+
+        if (parts.length <= 1 || (parts.length === 1 && parts[0] === "")) {
+            return "/";
+        }
+
+        return "/" + parts.slice(0, -1).join("/");
     }
 
     async function handleSave(){

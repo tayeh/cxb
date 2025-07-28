@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {Alert, Button, Fileupload, Input, Label, Modal, Select, Textarea} from "flowbite-svelte";
+    import {Alert, Button, Fileupload, Label, Modal, Select, Textarea} from "flowbite-svelte";
     import {ContentType, Dmart, QueryType, RequestType, ResourceAttachmentType, ResourceType} from "@edraj/tsdmart";
     import {JSONEditor, Mode} from "svelte-jsoneditor";
     import HtmlEditor from "@/components/management/editors/HtmlEditor.svelte";
@@ -10,6 +10,7 @@
     import {jsonEditorContentParser} from "@/utils/jsonEditor";
     import Prism from "@/components/Prism.svelte";
     import {removeEmpty} from "@/utils/compare";
+    import MetaForm from "@/components/management/forms/MetaForm.svelte";
 
     let {
         meta = $bindable({}),
@@ -23,24 +24,16 @@
         parent_shortname = $bindable(""),
     } = $props();
 
-    let shortname = $state("");
-    let displayname = $state({ en: "", ar: "", ku: "" });
-    let description = $state({ en: "", ar: "", ku: "" });
     let resourceType = $state(ResourceAttachmentType.media);
     let contentType = $state(ContentType.image);
     let payloadFiles = $state<FileList | null>(null);
-    let payloadData = $state(payload);
-    let payloadContent: any = $state(payload);
+    let content: any = $state(payload);
     let selectedSchema = $state("");
-    let isModalInUpdateMode = $state(false);
     let trueResourceType = $state(null);
     let isLoading = $state(false);
     let errorModalMessage = $state(null);
     let errorContent = $state(null);
 
-    $effect(() => {
-        isModalInUpdateMode = isUpdateMode;
-    });
 
     $effect(() => {
         if (isOpen && selectedAttachment && isUpdateMode) {
@@ -54,50 +47,63 @@
         if (!attachment) return;
 
         const _attachment = structuredClone($state.snapshot(attachment));
-        shortname = _attachment.shortname;
 
-        if (_attachment.attributes?.displayname) {
-            displayname = _attachment.attributes.displayname;
-        }
-
-        if (_attachment.attributes?.description) {
-            description = _attachment.attributes.description;
-        }
+        meta = {
+            shortname: _attachment.shortname,
+            is_active: _attachment.attributes.is_active,
+            displayname: _attachment.attributes.displayname,
+            description: _attachment.attributes.description,
+        };
 
         if (_attachment.resource_type === ResourceType.json || 
             (_attachment.resource_type === ResourceType.media && 
              [ContentType.text, ContentType.json, ContentType.markdown, ContentType.html].includes(_attachment?.attributes?.payload?.content_type)) ||
             _attachment.resource_type === ResourceType.comment) {
+
             resourceType = ResourceAttachmentType[_attachment.resource_type];
             contentType = _attachment?.attributes?.payload?.content_type;
 
             if (_attachment.resource_type === ResourceType.json) {
-                payloadContent = { json: _attachment.attributes.payload.body };
+                content = { json: _attachment.attributes.payload.body };
             } else {
-                payloadData = _attachment.attributes.payload.body;
+                if (typeof _attachment.attributes.payload.body === 'string') {
+                    content = _attachment.attributes.payload.body;
+                } else {
+                    content = { body: _attachment.attributes.payload.body };
+                }
             }
         } else {
             trueResourceType = ResourceAttachmentType[_attachment.resource_type];
-            resourceType = ResourceAttachmentType.json;
+            resourceType = trueResourceType;
 
             const metaAttachment = structuredClone(_attachment);
             if (metaAttachment?.attributes?.payload?.body) {
                 delete metaAttachment.attributes.payload.body;
             }
-            payloadContent = { json: metaAttachment, text: undefined };
+            content = { json: metaAttachment, text: undefined };
         }
     }
 
     function resetModal() {
-        shortname = "";
-        displayname = { en: "", ar: "", ku: "" };
-        description = { en: "", ar: "", ku: "" };
         resourceType = ResourceAttachmentType.media;
         contentType = ContentType.image;
         payloadFiles = null;
-        payloadData = "";
-        payloadContent = {};
+        content = {};
         selectedSchema = "";
+        meta = {
+            shortname: "",
+            is_active: true,
+            displayname: {
+                en: "",
+                ar: "",
+                ku: ""
+            },
+            description: {
+                en: "",
+                ar: "",
+                ku: ""
+            }
+        };
     }
 
     async function upload(event) {
@@ -116,23 +122,23 @@
             if (resourceType == ResourceAttachmentType.comment) {
                 response = await Dmart.request({
                     space_name,
-                    request_type: isModalInUpdateMode
+                    request_type: isUpdateMode
                         ? RequestType.replace
                         : RequestType.create,
                     records: [
                         removeEmpty({
                             resource_type: ResourceType.comment,
-                            shortname: shortname,
+                            shortname: meta.shortname,
                             subpath: `${subpath}/${parent_shortname}`.replaceAll("//", "/"),
                             attributes: {
-                                displayname: displayname,
-                                description: description,
+                                displayname: meta.displayname,
+                                description: meta.description,
                                 is_active: true,
                                 payload: {
                                     content_type: ContentType.json,
                                     body: {
                                         state: "commented",
-                                        body: isUpdateMode ? payloadData.body : payloadData
+                                        body: isUpdateMode ? content.body : content
                                     }
                                 }
                             },
@@ -147,25 +153,49 @@
                     ResourceAttachmentType.parquet,
                 ].includes(resourceType)
             ) {
-                response = await Dmart.upload_with_payload(
-                    space_name,
-                    parentResourceType === ResourceType.folder ? subpath : subpath + "/" + parent_shortname,
-                    shortname,
-                    ResourceType[resourceType],
-                    ResourceType[resourceType] === ResourceType.json
-                        ? jsonToFile(payloadContent)
-                        : payloadFiles[0],
-                    {
-                        displayname: displayname,
-                        description: description,
-                        is_active: true,
-                        payload: {
-                            content_type: ContentType[resourceType],
-                            schema_shortname: selectedSchema,
-                            body: {}
-                        },
-                    }
-                );
+                if (isUpdateMode) {
+                    response = await Dmart.request({
+                        space_name,
+                        request_type: RequestType.replace,
+                        records: [
+                            removeEmpty({
+                                resource_type: ResourceType[resourceType],
+                                shortname: meta.shortname,
+                                subpath: parentResourceType === ResourceType.folder ? subpath : `${subpath}/${parent_shortname}`,
+                                attributes: {
+                                    displayname: meta.displayname,
+                                    description: meta.description,
+                                    is_active: true,
+                                    payload: {
+                                        content_type: ContentType[resourceType],
+                                        schema_shortname: selectedSchema,
+                                        body: {}
+                                    },
+                                },
+                            }),
+                        ],
+                    });
+                } else {
+                    response = await Dmart.upload_with_payload(
+                        space_name,
+                        parentResourceType === ResourceType.folder ? subpath : subpath + "/" + parent_shortname,
+                        meta.shortname,
+                        ResourceType[resourceType],
+                        ResourceType[resourceType] === ResourceType.json
+                            ? jsonToFile(content)
+                            : payloadFiles[0],
+                        {
+                            displayname: meta.displayname,
+                            description: meta.description,
+                            is_active: true,
+                            payload: {
+                                content_type: ContentType[resourceType],
+                                schema_shortname: selectedSchema,
+                                body: {}
+                            },
+                        }
+                    );
+                }
             } else if (
                 [
                     ContentType.image,
@@ -174,24 +204,47 @@
                     ContentType.video,
                 ].includes(contentType)
             ) {
-                response = await Dmart.upload_with_payload(
-                    space_name,
-                    parentResourceType === ResourceType.folder ? subpath : subpath + "/" + parent_shortname,
-                    shortname,
-                    ResourceType[resourceType],
-                    ResourceType[resourceType] === ResourceType.json
-                        ? jsonToFile(payloadContent)
-                        : payloadFiles[0],
-                    {
-                        displayname: displayname,
-                            description: description,
-                        is_active: true,
-                        payload: {
-                            content_type: contentType,
-                            body: {}
-                        },
-                    }
-                );
+                if (isUpdateMode) {
+                    response = await Dmart.request({
+                        space_name,
+                        request_type: RequestType.replace,
+                        records: [
+                            removeEmpty({
+                                resource_type: ResourceType[resourceType],
+                                shortname: meta.shortname,
+                                subpath: parentResourceType === ResourceType.folder ? subpath : `${subpath}/${parent_shortname}`,
+                                attributes: {
+                                    displayname: meta.displayname,
+                                    description: meta.description,
+                                    is_active: true,
+                                    payload: {
+                                        content_type: contentType,
+                                        body: {}
+                                    },
+                                },
+                            }),
+                        ],
+                    });
+                } else {
+                    response = await Dmart.upload_with_payload(
+                        space_name,
+                        parentResourceType === ResourceType.folder ? subpath : subpath + "/" + parent_shortname,
+                        meta.shortname,
+                        ResourceType[resourceType],
+                        ResourceType[resourceType] === ResourceType.json
+                            ? jsonToFile(content)
+                            : payloadFiles[0],
+                        removeEmpty({
+                            displayname: meta.displayname,
+                            description: meta.description,
+                            is_active: true,
+                            payload: {
+                                content_type: contentType,
+                                body: {}
+                            },
+                        })
+                    );
+                }
             } else if (
                 [
                     ContentType.json,
@@ -203,17 +256,17 @@
             ) {
                 response = await Dmart.request({
                     space_name,
-                    request_type: isModalInUpdateMode
+                    request_type: isUpdateMode
                         ? RequestType.replace
                         : RequestType.create,
                     records: [
                         removeEmpty({
                             resource_type: ResourceType[resourceType],
-                            shortname: shortname,
+                            shortname: meta.shortname,
                             subpath: parentResourceType === ResourceType.folder ? subpath : `${subpath}/${parent_shortname}`,
                             attributes: {
-                                displayname: displayname,
-                                description: description,
+                                displayname: meta.displayname,
+                                description: meta.description,
                                 is_active: true,
                                 payload: {
                                     content_type: contentType,
@@ -223,8 +276,8 @@
                                             : null,
                                     body:
                                         resourceType == ResourceAttachmentType.json
-                                            ? jsonEditorContentParser($state.snapshot(payloadContent))
-                                            : payloadData,
+                                            ? jsonEditorContentParser($state.snapshot(content))
+                                            : content,
                                 },
                             },
                         }),
@@ -252,14 +305,15 @@
         return menuItems;
     }
 
+    let validateMetaForm;
     async function updateMeta() {
         errorModalMessage = null;
         errorContent = null;
-        let _payloadContent = jsonEditorContentParser($state.snapshot(payloadContent));
+        let _payloadContent = jsonEditorContentParser($state.snapshot(content));
 
         _payloadContent.subpath = parentResourceType === ResourceType.folder ? subpath : `${subpath}/${parent_shortname}`;
-        _payloadContent.attributes.displayname= displayname
-        _payloadContent.attributes.description= description
+        _payloadContent.attributes.displayname= meta.displayname
+        _payloadContent.attributes.description= meta.description
         const request_dict = {
             space_name,
             request_type: RequestType.replace,
@@ -283,16 +337,6 @@
             isLoading = false;
         }
     }
-
-    $effect(()=>{
-        if(resourceType === ResourceAttachmentType.json && isUpdateMode === false){
-            contentType = ContentType.json;
-            payloadContent = { json: {} };
-        }
-        if(resourceType === ResourceAttachmentType.comment){
-
-        }
-    });
 </script>
 
 <Modal
@@ -321,69 +365,7 @@
             </Alert>
             {/if}
             <div class="flex flex-col space-y-4">
-                <div>
-                    <Label for="shortname">Attachment shortname</Label>
-                    <Input
-                            id="shortname"
-                            bind:value={shortname}
-                            disabled={isUpdateMode}
-                            required
-                    />
-                </div>
-
-                <div class="space-y-2">
-                    <Label>Displayname</Label>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <Input
-                                type="text"
-                                bind:value={displayname.en}
-                                placeholder="English..."
-                            />
-                        </div>
-                        <div>
-                            <Input
-                                type="text"
-                                bind:value={displayname.ar}
-                                placeholder="Arabic..."
-                            />
-                        </div>
-                        <div>
-                            <Input
-                                type="text"
-                                bind:value={displayname.ku}
-                                placeholder="Kurdish..."
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <div class="space-y-2">
-                    <Label>Description</Label>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <Input
-                                type="text"
-                                bind:value={description.en}
-                                placeholder="English..."
-                            />
-                        </div>
-                        <div>
-                            <Input
-                                type="text"
-                                bind:value={description.ar}
-                                placeholder="Arabic..."
-                            />
-                        </div>
-                        <div>
-                            <Input
-                                type="text"
-                                bind:value={description.ku}
-                                placeholder="Kurdish..."
-                            />
-                        </div>
-                    </div>
-                </div>
+                <MetaForm bind:formData={meta} bind:validateFn={validateMetaForm} isCreate={!isUpdateMode}/>
 
                 <div>
                     <Label for="resourceType">Attachment Type</Label>
@@ -393,7 +375,7 @@
                         {/each}
                     </Select>
                 </div>
-
+                {resourceType}
                 {#if resourceType === ResourceAttachmentType.media}
                     <div>
                         <Label for="contentType">Content Type</Label>
@@ -428,29 +410,29 @@
                         </div>
                     {:else if contentType === ContentType.markdown}
                         <div>
-                            <MarkdownEditor bind:content={payloadData} />
+                            <MarkdownEditor bind:content={content} />
                         </div>
                     {:else if contentType === ContentType.html}
                         <div>
-                            <HtmlEditor bind:content={payloadData} />
+                            <HtmlEditor bind:content={content} />
                         </div>
                     {:else}
                         <div>
-                            <Textarea bind:value={payloadData} />
+                            <Textarea bind:value={content} />
                         </div>
                     {/if}
                 {:else if resourceType === ResourceAttachmentType.json}
-                    {#if payloadContent.json || payloadContent.text}
+                    {#if content.json || content.text}
                         <div>
-                            <JSONEditor onRenderMenu={handleRenderMenu} mode={Mode.text} bind:content={payloadContent} />
+                            <JSONEditor onRenderMenu={handleRenderMenu} mode={Mode.text} bind:content={content} />
                         </div>
                     {/if}
                 {:else if resourceType === ResourceAttachmentType.comment}
                     <div>
                         {#if isUpdateMode}
-                            <Textarea bind:value={payloadData.body} />
+                            <Textarea bind:value={content.body} />
                         {:else }
-                            <Textarea bind:value={payloadData} />
+                            <Textarea bind:value={content} />
                         {/if}
                     </div>
                 {:else if resourceType === ResourceAttachmentType.csv}

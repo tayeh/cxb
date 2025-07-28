@@ -5,7 +5,7 @@
   import cols from "@/utils/jsons/list_cols.json";
   import {searchListView} from "@/stores/management/triggers";
   import Prism from "@/components/Prism.svelte";
-  import {goto, params} from "@roxi/routify";
+  import {goto, params, url} from "@roxi/routify";
   import {fade} from "svelte/transition";
   import {isDeepEqual} from "@/utils/compare";
   import {folderRenderingColsToListCols} from "@/utils/columnsUtils";
@@ -77,7 +77,6 @@
       }
     }
   }
-  console.log({d: $state.snapshot(columns)})
 
   let total: number = $state(null);
   const { sortBy, sortOrder, page } = $params;
@@ -130,25 +129,7 @@
   );
 
   function setQueryParam(pair: any) {
-    const urlSearchParams = new URLSearchParams(window.location.search);
-    let href = window.location.pathname + "?";
-
-    for (const [k, v] of Object.entries(pair)) {
-      if (urlSearchParams.has(k)) {
-        urlSearchParams.delete(k);
-      }
-      if (typeof(v)==="string") {
-        urlSearchParams.set(k, v);
-      }
-    }
-
-    if (window.location.search === "") {
-        href += urlSearchParams.toString();
-      } else {
-        href += "&" + urlSearchParams.toString();
-      }
-    //TODO: Fix this, url not being updated
-    window.history.replaceState(history.state, '', href)
+    $goto('$leaf', pair)
   }
 
   function setNumberOfPages() {

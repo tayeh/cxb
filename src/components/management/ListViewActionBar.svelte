@@ -129,18 +129,18 @@ async function restoreEntries() {
 
             const moveAttrb = {
                 src_space_name: 'personal',
-                src_subpath: b.subpath,
+                src_subpath: b.subpath.replaceAll("-", "/"),
                 src_shortname: b.shortname,
 
                 dest_space_name: distSpacename,
-                dest_subpath: distSubpath,
+                dest_subpath: distSubpath.replaceAll("-", "/"),
                 dest_shortname: b.shortname
             };
 
             records.push({
                 resource_type: moveResourceType,
                 shortname: b.shortname,
-                subpath: b.subpath,
+                subpath: b.subpath.replaceAll("-", "/"),
                 attributes: moveAttrb,
             });
         });
