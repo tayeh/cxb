@@ -23,7 +23,7 @@ function switchLocale(_locale: string) {
 }
 
 function getPreferredLocale(): string {
-  let preferred_locale = '"ar"';
+  let preferred_locale = '"en"';
   if (typeof localStorage !== 'undefined')
     preferred_locale = localStorage.getItem("preferred_locale");
   if (typeof preferred_locale === "string") {

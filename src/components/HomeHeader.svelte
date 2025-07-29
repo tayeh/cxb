@@ -15,12 +15,11 @@
     $goto
     import {signout, user} from "@/stores/user";
     import {getAvatar} from "@/lib/dmart_services";
+    import {switchLocale, locale} from "@/i18n";
 
     function setLanguage(lang: string) {
-        currentLang = lang;
+        switchLocale(lang);
     }
-
-    let currentLang = "EN";
 
     function goToProfile(e: Event) {
         e.preventDefault();
@@ -46,19 +45,18 @@
     </ul>
 
     <div class="flex items-center gap-4">
-<!--        TODO-->
-<!--        <div class="flex rounded-full bg-gray-100 p-1">-->
-<!--            <button class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium transition-all-->
-<!--                    {currentLang === 'EN' ? 'bg-white border-2 border-primary shadow-sm' : 'text-gray-600 hover:color-primary'}"-->
-<!--                    onclick={() => setLanguage('EN')}>-->
-<!--                EN-->
-<!--            </button>-->
-<!--            <button class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium transition-all-->
-<!--                    {currentLang === 'AR' ? 'bg-white border-2 border-primary shadow-sm' : 'text-gray-600 hover:color-primary'}"-->
-<!--                    onclick={() => setLanguage('AR')}>-->
-<!--                AR-->
-<!--            </button>-->
-<!--        </div>-->
+        <div class="flex rounded-full bg-gray-100 p-1">
+            <button class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium transition-all
+                    {$locale === 'en' ? 'bg-white border-2 border-primary shadow-sm' : 'text-gray-600 hover:color-primary'}"
+                    onclick={() => setLanguage('en')}>
+                EN
+            </button>
+            <button class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium transition-all
+                    {$locale === 'ar' ? 'bg-white border-2 border-primary shadow-sm' : 'text-gray-600 hover:color-primary'}"
+                    onclick={() => setLanguage('ar')}>
+                AR
+            </button>
+        </div>
         {#if !$user || !$user.signedin}
             <Button class="bg-primary" onclick={()=>$goto('/management')} >Login</Button>
         {:else}
@@ -93,5 +91,7 @@
                 </Dropdown>
             </Button>
         {/if}
+    <!-- TODO add lang switcher en,ar   -->
+
     </div>
 </div>
