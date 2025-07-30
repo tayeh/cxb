@@ -70,6 +70,35 @@
         render: (attributes, children) => h('sub', null, children),
     });
 
+    // Add these custom format definitions in your script before onMount
+    const alignLeft = format({
+        name: 'align-left',
+        selector: '[style*="text-align:left"], [style*="text-align: left"]',
+        commands: editor => () => editor.formatLine({ align: 'left' }),
+        render: (attributes, children) => h('div', { style: 'text-align: left' }, children),
+    });
+
+    const alignCenter = format({
+        name: 'align-center',
+        selector: '[style*="text-align:center"], [style*="text-align: center"]',
+        commands: editor => () => editor.formatLine({ align: 'center' }),
+        render: (attributes, children) => h('div', { style: 'text-align: center' }, children),
+    });
+
+    const alignRight = format({
+        name: 'align-right',
+        selector: '[style*="text-align:right"], [style*="text-align: right"]',
+        commands: editor => () => editor.formatLine({ align: 'right' }),
+        render: (attributes, children) => h('div', { style: 'text-align: right' }, children),
+    });
+
+    const alignJustify = format({
+        name: 'align-justify',
+        selector: '[style*="text-align:justify"], [style*="text-align: justify"]',
+        commands: editor => () => editor.formatLine({ align: 'justify' }),
+        render: (attributes, children) => h('div', { style: 'text-align: justify' }, children),
+    });
+
     onMount(async () => {
         // Create editor with full options
         editor = new Editor({
@@ -83,7 +112,11 @@
                     'list', 
                     'blockquote', 
                     'code-block', 
-                    'hr'
+                    'hr',
+                    alignLeft,     // Add these
+                    alignCenter,   // alignment
+                    alignRight,    // formats
+                    alignJustify   // here
                 ],
                 // Text formats
                 formats: [
@@ -94,9 +127,9 @@
                     superscript, 
                     subscript, 
                     'code', 
-                    'link'
+                    'link',
+                    'clear'
                 ],
-                // Embeds
                 embeds: [
                     'image', 
                     'br'
@@ -104,24 +137,20 @@
             }
         });
 
-        // Add event listener for content changes
         editor.on('change', () => {
             content = editor.getHTML();
             dispatch("changed");
         });
 
-        // Add custom toolbar buttons
         setupToolbar();
     });
 
     function setupToolbar() {
-        // Create toolbar if it doesn't exist
         if (!document.getElementById(`toolbar-${uid}`)) {
             const toolbar = document.createElement('div');
             toolbar.id = `toolbar-${uid}`;
             toolbar.className = 'editor-toolbar';
-            
-            // Create button groups for better organization
+
             const textFormatGroup = document.createElement('div');
             textFormatGroup.className = 'toolbar-group';
             
@@ -140,7 +169,6 @@
             const directionGroup = document.createElement('div');
             directionGroup.className = 'toolbar-group';
 
-            // Text formatting buttons
             addToolbarButton(textFormatGroup, 'Bold', 'B', () => editor.formatText('bold'));
             addToolbarButton(textFormatGroup, 'Italic', 'I', () => editor.formatText('italic'));
             addToolbarButton(textFormatGroup, 'Underline', 'U', () => editor.formatText('underline'));
@@ -149,7 +177,6 @@
             addToolbarButton(textFormatGroup, 'Subscript', 'x₂', () => editor.formatText('subscript'));
             addToolbarButton(textFormatGroup, 'Remove Format', 'X', () => editor.removeFormat());
 
-// Line formatting buttons
             addToolbarButton(lineFormatGroup, 'Heading 1', 'H1', () => editor.formatLine({ header: 1 }));
             addToolbarButton(lineFormatGroup, 'Heading 2', 'H2', () => editor.formatLine({ header: 2 }));
             addToolbarButton(lineFormatGroup, 'Paragraph', '¶', () => editor.formatLine('paragraph'));
@@ -158,13 +185,11 @@
             addToolbarButton(lineFormatGroup, 'Unordered List', '•', () => editor.formatLine({ list: 'bullet' }));
             addToolbarButton(lineFormatGroup, 'Horizontal Rule', '—', () => editor.formatLine('hr'));
 
-// Alignment buttons
-            addToolbarButton(alignmentGroup, 'Align Left', '⫷', () => editor.formatLine({ align: 'left' }));
-            addToolbarButton(alignmentGroup, 'Align Center', '⫸', () => editor.formatLine({ align: 'center' }));
-            addToolbarButton(alignmentGroup, 'Align Right', '⫹', () => editor.formatLine({ align: 'right' }));
-            addToolbarButton(alignmentGroup, 'Justify', '⫹', () => editor.formatLine({ align: 'justify' }));
+            addToolbarButton(alignmentGroup, 'Align Left', '↤', () => editor.formatLine('align-left'));
+            addToolbarButton(alignmentGroup, 'Align Center', '↔', () => editor.formatLine('align-center'));
+            addToolbarButton(alignmentGroup, 'Align Right', '↦', () => editor.formatLine('align-right'));
+            addToolbarButton(alignmentGroup, 'Justify', '☰', () => editor.formatLine('align-justify'));
 
-// Link and image buttons
             addToolbarButton(insertGroup, 'Link', '🔗', () => {
                 const url = prompt('Enter URL:');
                 if (url) editor.formatText({ link: url });
@@ -175,30 +200,28 @@
                 if (url) editor.insert({ image: url });
             });
 
-// Undo/Redo buttons
             addToolbarButton(historyGroup, 'Undo', '↶', () => editor.modules.history.undo());
             addToolbarButton(historyGroup, 'Redo', '↷', () => editor.modules.history.redo());
 
-// RTL/LTR buttons
-            addToolbarButton(directionGroup, 'RTL', 'RTL', () => {
-                maindiv.dir = 'rtl';
-                editor.formatLine({ direction: 'rtl' });
-            });
+
+
 
             addToolbarButton(directionGroup, 'LTR', 'LTR', () => {
                 maindiv.dir = 'ltr';
                 editor.formatLine({ direction: 'ltr' });
             });
-            
-            // Add groups to toolbar
+            addToolbarButton(directionGroup, 'RTL', 'RTL', () => {
+                maindiv.dir = 'rtl';
+                editor.formatLine({ direction: 'rtl' });
+            });
+
             toolbar.appendChild(textFormatGroup);
             toolbar.appendChild(lineFormatGroup);
             toolbar.appendChild(alignmentGroup);
             toolbar.appendChild(insertGroup);
             toolbar.appendChild(historyGroup);
             toolbar.appendChild(directionGroup);
-            
-            // Insert toolbar before editor
+
             maindiv.parentNode.insertBefore(toolbar, maindiv);
         }
     }

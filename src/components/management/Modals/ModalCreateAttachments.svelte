@@ -11,6 +11,7 @@
     import Prism from "@/components/Prism.svelte";
     import {removeEmpty} from "@/utils/compare";
     import MetaForm from "@/components/management/forms/MetaForm.svelte";
+    import {untrack} from "svelte";
 
     let {
         meta = $bindable({}),
@@ -117,7 +118,7 @@
                 await updateMeta();
                 return;
             }
-
+            console.log(resourceType, contentType)
             let response;
             if (resourceType == ResourceAttachmentType.comment) {
                 response = await Dmart.request({
@@ -337,6 +338,17 @@
             isLoading = false;
         }
     }
+
+    $effect(() => {
+        if (resourceType) {
+            if(resourceType === ResourceAttachmentType.json) {
+                untrack(()=>{
+                    contentType = ContentType.json;
+                    content = { json: {} };
+                })
+            }
+        }
+    });
 </script>
 
 <Modal
