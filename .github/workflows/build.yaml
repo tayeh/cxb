@@ -26,10 +26,16 @@ jobs:
       - name: Install dependencies
         run: yarn
 
+      - name: Prepare config file 
+        run: cp public/config.sample.json public/config.json
+
       - name: Build CXB
         run: yarn build
         env:
           NODE_ENV: production
+      
+      - name: remove config file 
+        run: rm dist/client/config.json
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
