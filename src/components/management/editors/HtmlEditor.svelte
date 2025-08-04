@@ -2,27 +2,6 @@
     import { onMount, createEventDispatcher } from "svelte";
     import { Editor, h, format } from 'typewriter-editor';
     import { Card } from "flowbite-svelte";
-    import { 
-        LetterBoldOutline, 
-        LetterItalicOutline, 
-        LetterUnderlineOutline,
-        TextSlashOutline,
-        SuperscriptOutline,
-        SubscriptOutline,
-        ParagraphOutline,
-        QuoteOutline,
-        OrderedListOutline,
-        ListOutline,
-        HorizontalLinesOutline,
-        AlignLeftOutline,
-        AlignCenterOutline,
-        AlignRightOutline,
-        AlignJustifyOutline,
-        LinkOutline,
-        ImageOutline,
-        UndoOutline,
-        RedoOutline
-    } from 'flowbite-svelte-icons';
 
     const dispatch = createEventDispatcher();
 
@@ -37,7 +16,6 @@
     let maindiv;
     let editor = null;
 
-    // Define custom formats
     const underline = format({
         name: 'underline',
         selector: 'u',
@@ -70,7 +48,6 @@
         render: (attributes, children) => h('sub', null, children),
     });
 
-    // Add these custom format definitions in your script before onMount
     const alignLeft = format({
         name: 'align-left',
         selector: '[style*="text-align:left"], [style*="text-align: left"]',
@@ -100,7 +77,6 @@
     });
 
     onMount(async () => {
-        // Create editor with full options
         editor = new Editor({
             root: maindiv,
             html: content,
@@ -113,10 +89,10 @@
                     'blockquote', 
                     'code-block', 
                     'hr',
-                    alignLeft,     // Add these
-                    alignCenter,   // alignment
-                    alignRight,    // formats
-                    alignJustify   // here
+                    alignLeft,
+                    alignCenter,
+                    alignRight,
+                    alignJustify
                 ],
                 // Text formats
                 formats: [
@@ -146,7 +122,6 @@
     });
 
     function setupToolbar() {
-        if (!document.getElementById(`toolbar-${uid}`)) {
             const toolbar = document.createElement('div');
             toolbar.id = `toolbar-${uid}`;
             toolbar.className = 'editor-toolbar';
@@ -223,7 +198,6 @@
             toolbar.appendChild(directionGroup);
 
             maindiv.parentNode.insertBefore(toolbar, maindiv);
-        }
     }
 
     function addToolbarButton(toolbar, title, icon, action) {
