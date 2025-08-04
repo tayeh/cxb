@@ -3,7 +3,7 @@
     import {CodeOutline, FileCodeOutline} from "flowbite-svelte-icons";
     import {Dmart, RequestType, ResourceType} from "@edraj/tsdmart";
     import {tick, untrack} from "svelte";
-    import {generateObjectFromSchema, scrollToElById} from "@/utils/renderer/rendererUtils";
+    import {scrollToElById} from "@/utils/renderer/rendererUtils";
     import Prism from "@/components/Prism.svelte";
     import MetaForm from "@/components/management/forms/MetaForm.svelte";
     import MetaUserForm from "@/components/management/forms/MetaUserForm.svelte";
@@ -277,6 +277,8 @@
             tick().then(() => {
                 scrollToElById("error-content");
             });
+        } finally {
+            isHandleCreateEntryLoading = false;
         }
 
         isHandleCreateEntryLoading = false;

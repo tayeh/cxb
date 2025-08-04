@@ -221,6 +221,8 @@
     e.stopPropagation();
     isModalInUpdateMode=false;
     selectedAttachment = null;
+    createMetaContent = {};
+    createPayloadContent = {};
     openCreateAttachmentModal = true;
   }
 

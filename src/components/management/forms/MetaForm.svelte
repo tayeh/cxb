@@ -65,7 +65,7 @@
                 || ($params.subpath && ResourceType.folder)
                 || ResourceType.space;
             let newSubpath = resourceType === ResourceType.folder
-                ? ($params.subpath.split("/").slice(0, -1).join("-") || '/')
+                ? ($params.subpath.split("-").slice(0, -1).join("/") || '/')
                 : $params.subpath;
             newSubpath = newSubpath.replaceAll("-", "/");
             const moveAttrb = {

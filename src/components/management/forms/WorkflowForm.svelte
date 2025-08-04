@@ -16,6 +16,9 @@
     };
 
     function addState() {
+        if(content.states === undefined) {
+            content.states = [];
+        }
         content.states = [...content.states, {
             name: '',
             state: '',
@@ -52,6 +55,9 @@
     }
 
     function addInitialState() {
+        if(content.initial_state === undefined) {
+            content.initial_state = [];
+        }
         content.initial_state = [...content.initial_state, { name: '', roles: [] }];
     }
 
@@ -60,6 +66,9 @@
     }
 
     function addRole(item: any) {
+        if(item.roles === undefined) {
+            item.roles = [];
+        }
         item.roles = [...(item.roles || []), ''];
     }
 

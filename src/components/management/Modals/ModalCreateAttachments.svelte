@@ -340,21 +340,31 @@
     }
 
     $effect(() => {
-        if (resourceType) {
+        if (!isUpdateMode && resourceType) {
             if(resourceType === ResourceAttachmentType.json) {
                 untrack(()=>{
                     contentType = ContentType.json;
                     content = { json: {} };
+                })
+            } else if (resourceType === ResourceAttachmentType.comment) {
+                untrack(()=>{
+                    content = "";
+                })
+            } else if (resourceType === ResourceAttachmentType.media) {
+                untrack(()=>{
+                    contentType = ContentType.image;
+                    content = "";
+                })
+            } else {
+                untrack(()=>{
+                    content = {};
                 })
             }
         }
     });
 </script>
 
-<Modal
-    bind:open={isOpen}
-    size="xl"
->
+<Modal bind:open={isOpen} size="xl">
     <form onsubmit={upload}>
         <div class="flex justify-between items-center px-4 pt-4 border-b rounded-t">
             <h3 class="text-xl font-semibold text-gray-900">
